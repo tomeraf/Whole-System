@@ -14,6 +14,7 @@ import Domain.Response;
 import Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import Domain.Adapters_and_Interfaces.IAuthentication;
 import Domain.Repositories.IUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,7 @@ public class UserService {
     
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
         this.userRepository = userRepository;
         this.jwtAdapter = jwtAdapter;

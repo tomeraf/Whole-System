@@ -8,11 +8,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.function.Function;
+
 
 @Component
 public class JWTAdapter implements IAuthentication {
@@ -23,7 +26,6 @@ public class JWTAdapter implements IAuthentication {
     private final long expirationTime = 24 * 3600000; // 24 hours
     private SecretKey key;
 
-    
     public JWTAdapter() {
         try {
             KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");

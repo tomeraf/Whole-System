@@ -30,6 +30,7 @@ import Domain.DomainServices.PurchaseService;
 import Domain.Repositories.IOrderRepository;
 import Domain.Repositories.IShopRepository;
 import Domain.Repositories.IUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +47,7 @@ public class OrderService {
     private final ConcurrencyHandler ConcurrencyHandler;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
+    @Autowired
     public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter, IPayment payment, IShipment shipment,  ConcurrencyHandler concurrencyHandler) {
         this.userRepository = userRepository;
         this.shopRepository = shopRepository;

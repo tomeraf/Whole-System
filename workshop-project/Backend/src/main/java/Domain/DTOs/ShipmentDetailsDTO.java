@@ -1,5 +1,7 @@
 package Domain.DTOs;
 
+import org.springframework.stereotype.Component;
+
 public class ShipmentDetailsDTO {
 
     private String ID; // ID of the user
@@ -22,6 +24,7 @@ public class ShipmentDetailsDTO {
         this.address = address;
         this.zipcode = zipcode;
     }
+    public ShipmentDetailsDTO() {}
     public String getID() {
         return ID;
     }

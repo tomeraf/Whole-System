@@ -27,6 +27,8 @@ public class HomePresenter {
     private void rnd3Shops() {
         List<ShopDTO> shops = shopService.showAllShops().getData();
         Random rand = new Random();
+        if (shops.isEmpty())
+            return;
         int rndNum = rand.nextInt(shops.size());
         RandomShops = new ArrayList<>();
         for (int i = 0; i < 3; i++)
@@ -42,6 +44,8 @@ public class HomePresenter {
     public List<ItemDTO> get4rndShopItems(ShopDTO shop) {
         List<ItemDTO> RandomItems = new ArrayList<>();
         Random rand = new Random();
+        if (RandomShops.isEmpty())
+            return RandomItems;
         Object[] keys = shop.getItems().keySet().toArray();
         int rndNum = rand.nextInt(keys.length);
         for (int i = 0; i < 4; i++)

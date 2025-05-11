@@ -4,7 +4,9 @@ import java.util.HashMap;
 
 import Domain.Shop;
 import Domain.Repositories.IShopRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class MemoryShopRepository implements IShopRepository {
     private HashMap<Integer, Shop> shops = new HashMap<>();
 

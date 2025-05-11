@@ -3,13 +3,17 @@ package Service;
 import Domain.Repositories.INotificationRepository;
 import Domain.DTOs.NotificationDTO;
 import com.halilovindustries.websocket.Broadcaster;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Queue;
 
+@Service
 public class NotificationService {
     private final INotificationRepository repo;
 
+    @Autowired
     public NotificationService(INotificationRepository repo) {
         this.repo = repo;
     }

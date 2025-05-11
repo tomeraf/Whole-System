@@ -7,7 +7,9 @@ import java.util.List;
 import Domain.DTOs.ItemDTO;
 import Domain.DTOs.Order;
 import Domain.Repositories.IOrderRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class MemoryOrderRepository implements IOrderRepository {
     private HashMap<Integer, Order> orders = new HashMap<>();
 

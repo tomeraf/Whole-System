@@ -14,9 +14,7 @@ import org.springframework.context.annotation.ComponentScan;
  *
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.example.application", "Service"}) // Add the package containing UserService
-@ComponentScan(basePackages = {"com.example.application", "Domain"}) // Add the package containing UserService
-
+@ComponentScan(basePackages = {"com.example.application", "Service", "Domain", "Infrastructure"}) // Combine all package scans
 @Theme(value = "my-app")
 public class Application implements AppShellConfigurator {
 

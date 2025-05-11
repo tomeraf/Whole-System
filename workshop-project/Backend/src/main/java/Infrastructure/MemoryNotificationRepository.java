@@ -2,6 +2,7 @@ package Infrastructure;
 
 import Domain.Repositories.INotificationRepository;
 import Domain.DTOs.NotificationDTO;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+@Repository
 public class MemoryNotificationRepository implements INotificationRepository {
     private int counterId = 0;
     private List<Integer> removedIds = new ArrayList<>(); // List of removed IDs

@@ -1,28 +1,35 @@
 package Domain.Adapters_and_Interfaces;
 
 import Domain.DTOs.PaymentDetailsDTO;
+import org.springframework.stereotype.Component;
 
+@Component("ProxyPayment")
 public class ProxyPayment implements IPayment {
+    /*
     private final PaymentDetailsDTO details;
 
     public ProxyPayment(PaymentDetailsDTO details) {
         this.details = details;
       }
+     */
 
     // This method checks if the payment method is valid
     @Override
-    public boolean validatePaymentDetails() {
+    public boolean validatePaymentDetails(PaymentDetailsDTO details) {
         return true;
     }
 
     // This method processes the payment and returns a transaction ID if successful
     @Override
-    public boolean processPayment(double price) {
+    public boolean processPayment(double price,PaymentDetailsDTO details) {
         return true;
     }
 
+
+    /*
     @Override
     public PaymentDetailsDTO getPaymentDetails() {
-        return details;
+        return null;
     }
+     */
 }

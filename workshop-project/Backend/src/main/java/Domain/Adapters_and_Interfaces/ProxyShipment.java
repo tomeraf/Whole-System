@@ -1,13 +1,17 @@
 package Domain.Adapters_and_Interfaces;
 
 import Domain.DTOs.ShipmentDetailsDTO;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
+@Component("ProxyShipment")
 public class ProxyShipment implements IShipment {
-    private final ShipmentDetailsDTO details;
-
-    public ProxyShipment(ShipmentDetailsDTO details) {
+    /*private final ShipmentDetailsDTO details;
+    public ProxyShipment() {
         this.details = details;
       }
+
+     */
 
     // This method checks if the shipment details are valid
     @Override
@@ -20,10 +24,10 @@ public class ProxyShipment implements IShipment {
     public boolean processShipment(double price) {
         return true;
     }
-
+    /*
     @Override
     public ShipmentDetailsDTO getShipmentDetails() {
-        return details;
+        return null;
     }
-
+    */
 }

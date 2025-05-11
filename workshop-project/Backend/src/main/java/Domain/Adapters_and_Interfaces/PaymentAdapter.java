@@ -1,14 +1,18 @@
 package Domain.Adapters_and_Interfaces;
 
 import Domain.DTOs.PaymentDetailsDTO;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
+@Component
 public class PaymentAdapter implements IPayment {
 
     private final IPayment paymentMethod;
 
     // Dependency injection of the authentication implementation adapter
     // This allows for flexibility in choosing the payment method at runtime
-    public PaymentAdapter(IPayment paymentMethod) {
+    public PaymentAdapter(@Qualifier("ProxyPayment") IPayment paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 

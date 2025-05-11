@@ -1,5 +1,8 @@
 package Domain.DTOs;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class PaymentDetailsDTO {
 
     private String cardNumber;

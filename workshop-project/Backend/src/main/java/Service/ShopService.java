@@ -31,6 +31,7 @@ import Domain.Repositories.IOrderRepository;
 import Domain.Repositories.IShopRepository;
 import Domain.Repositories.IUserRepository;
 import Domain.Permission;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +49,7 @@ public class ShopService {
 
     private static final Logger logger = LoggerFactory.getLogger(ShopService.class);
 
+    @Autowired
     public ShopService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository,
             IAuthentication authenticationAdapter, ConcurrencyHandler concurrencyHandler) {
         this.userRepository = userRepository;
