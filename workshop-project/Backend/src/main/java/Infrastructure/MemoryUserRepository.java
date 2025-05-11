@@ -5,10 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Repository;
+
 import Domain.Guest;
 import Domain.Registered;
 import Domain.Repositories.IUserRepository;
 
+@Repository
 public class MemoryUserRepository implements IUserRepository {
 
     private Map<Integer, Guest> users = new HashMap<>(); // Map to store users by cartID
