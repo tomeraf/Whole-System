@@ -9,10 +9,12 @@ import javax.crypto.KeyGenerator;
 import java.security.NoSuchAlgorithmException;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.function.Function;
 
+@Component
 public class JWTAdapter implements IAuthentication {
     //private String token;
     @Value("${jwt.secret}")
@@ -23,13 +25,13 @@ public class JWTAdapter implements IAuthentication {
 
     
     public JWTAdapter() {
-    try {
-        KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");
-        key = keyGen.generateKey();
-    } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException("HmacSha256 algorithm not available", e);
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");
+            key = keyGen.generateKey();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("HmacSha256 algorithm not available", e);
+        }
     }
-}
 
     public String generateToken(String username) {
         // Set the expiration time to 24 hours from now

@@ -18,7 +18,10 @@ import Domain.Adapters_and_Interfaces.IAuthentication;
 import Domain.Repositories.IUserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserService {
 
     private IUserRepository userRepository;

@@ -5,6 +5,9 @@ import Domain.User.*;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public interface IUserRepository {
     void saveUser(Guest user);
     void saveUser(Registered user);
