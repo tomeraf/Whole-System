@@ -193,6 +193,10 @@ public class UserService {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
             Registered user = userRepository.getUserByName(username);
             user.addSuspension(startDate, endDate);
             return Response.ok();
@@ -207,6 +211,10 @@ public class UserService {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
             Registered user = userRepository.getUserByName(username);
             user.removeSuspension();
             return Response.ok();
@@ -220,6 +228,10 @@ public class UserService {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
             }
             List<Registered> users = userRepository.getAllRegisteredUsers();
             StringBuilder sb = new StringBuilder();

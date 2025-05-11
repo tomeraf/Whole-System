@@ -73,5 +73,8 @@ public class Guest {
     public boolean isSuspended() {
         return false; 
     }
+    public boolean isSystemManager() {
+        return false; 
+    }
 
 }
