@@ -213,7 +213,11 @@ public class Shop implements IMessageListener {
             throw new IllegalArgumentException("Shopping basket is empty. Cannot purchase items.");
         }
         boolean result = true;
-
+        HashMap<Item, Integer> allItems = new HashMap<>();
+        for (Integer itemId : itemsToPurchase.keySet()) {
+            allItems.put(items.get(itemId), itemsToPurchase.get(itemId));
+        }
+        purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
             if (!items.containsKey(id)) {
                 throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -233,6 +237,8 @@ public class Shop implements IMessageListener {
             item.buyItem(allItems.get(item));
             totalPrice = totalPrice + item.getPrice() * itemsToPurchase.get(item.getId()); 
         }
+        double discount = discountPolicy.calculateDiscount(allItems);
+        totalPrice = totalPrice - discount;
         return totalPrice; 
     }
 
@@ -242,16 +248,6 @@ public class Shop implements IMessageListener {
             bidPurchaseCounter++;
             bidPurchaseItems.put(bidPurchase.getId(), bidPurchase);
         } else {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
-    }
-    public void addAuctionPurchase(int itemId, double startingAmount, LocalDateTime startTime, LocalDateTime endTime){
-        if (items.containsKey(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
-            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseCounter, startingAmount, itemId, startTime, endTime);
-            auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);
-            auctionPurchaseCounter++;
-        } 
-        else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
         }
     }
@@ -397,7 +393,7 @@ public class Shop implements IMessageListener {
     }
 
     public void openAuction(int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate) {
-        if (items.containsKey(itemID)) {
+        if (items.containsKey(itemID)&& purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
             AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseCounter, startingPrice, itemID, startDate, endDate);
             auctionPurchaseCounter++;
             auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);

@@ -6,6 +6,7 @@ import java.util.List;
 
 import Domain.DTOs.ConditionDTO;
 import Domain.DTOs.DTOtoDomainFactory;
+import Domain.Shop.Item;
 import Domain.Shop.Policies.Condition.Condition;
 
 public class PurchasePolicy {
@@ -60,4 +61,16 @@ public class PurchasePolicy {
         
     }
     
+    public boolean checkPurchase(HashMap<Item, Integer> items) {
+        if(!allowsPurchaseType(PurchaseType.IMMEDIATE))
+        {
+            throw new IllegalArgumentException("Error: immediate purchase type not allowed.");
+        }
+        for (Condition condition : this.purchaseConditions.values()) {
+            if (!condition.checkCondition(items)) {
+                throw new IllegalArgumentException("Error:"+condition.toString()+" ,not met.");
+            }
+        }
+        return true;
+    }
 }

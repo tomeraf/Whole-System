@@ -14,5 +14,8 @@ public class OrCondition extends CompositeCondition {
         return getCondition1().checkCondition(allItems) || getCondition2().checkCondition(allItems);
     }
 
+    public String toString() {
+        return String.format("%s OR %s", getCondition1().toString(), getCondition2().toString());
+    }
 
 }

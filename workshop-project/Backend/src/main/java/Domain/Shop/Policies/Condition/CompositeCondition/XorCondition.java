@@ -15,4 +15,7 @@ public class XorCondition extends CompositeCondition {
                (!getCondition1().checkCondition(allItems) && getCondition2().checkCondition(allItems));
     }
 
+    public String toString() {
+        return String.format("%s OR %s,but not both", getCondition1().toString(), getCondition2().toString());
+    }
 }

@@ -49,4 +49,8 @@ public class PriceCondition extends BaseCondition {
         return totalPrice >= price;
     }
 
+    public String toString() {
+        return String.format("%s, Minimum purchase amount required: %.2f", super.toString(), price);
+    }
+
 }

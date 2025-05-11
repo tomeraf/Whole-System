@@ -54,4 +54,8 @@ public class QuantityCondition extends BaseCondition {
         return totalQuantity >= quantity;
     }
 
+    public String toString() {
+        return String.format("%s, Minimum quantity required: %d", super.toString(), quantity);
+    }
+
 }

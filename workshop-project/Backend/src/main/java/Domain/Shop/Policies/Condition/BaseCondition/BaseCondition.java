@@ -59,4 +59,18 @@ public abstract class BaseCondition extends Condition {
     public abstract boolean checkCategoryCondition(HashMap<Item, Integer> allItems);
     public abstract boolean checkShopCondition(HashMap<Item, Integer> allItems);
 
+    public String toString() {
+        switch (getType()) {
+            case "Item":
+                return "Item Condition: " + itemId+" ";
+            case "Category":
+                return "Category Condition: " + category.name()+" ";
+            case "Shop":
+                return "Shop Condition ";
+            default:
+                return "Unknown Condition";
+        }
+        
+    }
+
 }

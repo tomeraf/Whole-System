@@ -37,6 +37,9 @@ public class DiscountPolicy {
     public void removeDiscount(int discountId) {
         discounts.removeDiscount(discountId);
     }
+    public double calculateDiscount(HashMap<Item, Integer> allItems) {
+        return discounts.calculateDiscount(allItems);
+    }
 
 
 }
