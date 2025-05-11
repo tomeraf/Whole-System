@@ -445,6 +445,10 @@ public class Shop implements IMessageListener {
     public void addPurchaseCondition(ConditionDTO condition) {
         purchasePolicy.addCondition(condition);
     }
+
+    public void removePurchaseCondition(int conditionID) {
+        purchasePolicy.removeCondition(conditionID);
+    }
 }
 
 

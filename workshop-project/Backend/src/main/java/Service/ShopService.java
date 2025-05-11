@@ -486,6 +486,25 @@ public class ShopService {
         }
         return Response.ok();
     }
+    public Response<Void> removePurchaseCondition(String sessionToken,int shopID, int conditionID){
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.removePurchaseCondition(user, shop, conditionID);
+            logger.info(() -> "Purchase condition removed in shop: " + shop.getName() + " by user: " + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error removing purchase condition: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
 
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);

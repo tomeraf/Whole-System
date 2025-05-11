@@ -208,4 +208,11 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to add purchase conditions");
         }
     }
+    public void removePurchaseCondition(Registered user, Shop shop, int conditionID) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
+            shop.removePurchaseCondition(conditionID);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to remove purchase conditions");
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package Domain.Shop.Policies.Purchase;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import Domain.DTOs.ConditionDTO;
@@ -9,7 +10,7 @@ import Domain.Shop.Policies.Condition.Condition;
 
 public class PurchasePolicy {
     private List<PurchaseType> purchaseTypes;
-    private List<Condition> purchaseConditions;
+    private HashMap<Integer,Condition> purchaseConditions;
     
 
     public PurchasePolicy(){
@@ -17,7 +18,7 @@ public class PurchasePolicy {
         this.purchaseTypes.add(PurchaseType.BID);
         this.purchaseTypes.add(PurchaseType.AUCTION);
         this.purchaseTypes.add(PurchaseType.IMMEDIATE);
-        this.purchaseConditions = new ArrayList<>();
+        this.purchaseConditions = new HashMap<>();
     }
     public void updatePurchaseType(String purchaseType){
         PurchaseType type;
@@ -44,11 +45,19 @@ public class PurchasePolicy {
     }
     public void addCondition(ConditionDTO condition) {
         Condition newCondition = DTOtoDomainFactory.convertDTO(condition);
-        if (this.purchaseConditions.contains(newCondition)) {
+        if (this.purchaseConditions.keySet().contains(newCondition.getId())) {
             throw new IllegalArgumentException("Error: condition already exists.");
         } else {
-            this.purchaseConditions.add(newCondition);
+            this.purchaseConditions.put(newCondition.getId(), newCondition);
         }
+    }
+    public void removeCondition(int conditionID) {
+        if (this.purchaseConditions.keySet().contains(conditionID)) {
+            this.purchaseConditions.remove(conditionID);
+        } else {
+            throw new IllegalArgumentException("Error: condition does not exist.");
+        }
+        
     }
     
 }
