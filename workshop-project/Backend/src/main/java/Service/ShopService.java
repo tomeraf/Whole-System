@@ -28,7 +28,10 @@ import Domain.DomainServices.ShoppingService;
 import Domain.Repositories.IOrderRepository;
 import Domain.Repositories.IShopRepository;
 import Domain.Repositories.IUserRepository;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ShopService {
 
     private IUserRepository userRepository;
@@ -193,7 +196,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
-            HashMap<Integer, ItemDTO> itemDTOs = new HashMap();
+            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : shop.getItems().values()) {
                 ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription());
