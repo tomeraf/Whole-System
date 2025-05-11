@@ -1,6 +1,7 @@
 package Domain.Shop.Condition.BaseCondition;
 
 import java.util.HashMap;
+import Domain.Shop.Category;
 
 import Domain.Shop.Item;
 
@@ -9,6 +10,10 @@ public class PriceCondition extends BaseCondition {
 
     public PriceCondition(double price) {
         super();
+        this.price = price;
+    }
+    public PriceCondition(int itemID,Category category, double price) {
+        super(itemID, category);
         this.price = price;
     }
 

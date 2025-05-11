@@ -8,6 +8,10 @@ import Domain.Shop.Item;
 public class QuantityCondition extends BaseCondition {
     private int quantity;
 
+    public QuantityCondition(int itemId,Category category, int quantity) {
+        super(itemId,category);
+        this.quantity = quantity;
+    }
     public QuantityCondition(int itemId, int quantity) {
         super(itemId);
         this.quantity = quantity;

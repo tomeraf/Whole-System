@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import Domain.DTOs.ConditionDTO;
+import Domain.DTOs.DiscountDTO;
 import Domain.Shop.*;
 import Domain.Shop.Discount.DiscountType;
 import Domain.User.*;
@@ -185,11 +187,25 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to open an auction");
         }
     }
-    public void addDiscount(Registered user, Shop shop, HashMap<String,String> discountDetails) {
+    public void addDiscount(Registered user, Shop shop, DiscountDTO discountDetails) {
         if (user.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
             shop.addDiscount(discountDetails);
         } else {
             throw new IllegalArgumentException("You don't have permission to add discounts");
+        }
+    }
+    public void removeDiscount(Registered user, Shop shop, int discountID) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
+            shop.removeDiscount(discountID);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to remove discounts");
+        }
+    }
+    public void addPurchaseCondition(Registered user, Shop shop, ConditionDTO condition) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
+            shop.addPurchaseCondition(condition);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to add purchase conditions");
         }
     }
 }

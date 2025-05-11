@@ -1,0 +1,85 @@
+package Domain.DTOs;
+
+import Domain.Shop.Condition.*;
+import Domain.Shop.Condition.BaseCondition.*;
+import Domain.Shop.Condition.CompositeCondition.*;
+import Domain.Shop.Discount.BaseDiscount.*;
+import Domain.Shop.Discount.CompositeDiscount.*;
+import Domain.Shop.Discount.*;
+
+public class DTOtoDomainFactory {
+    public static Discount convertDTO(int id,DiscountDTO discountDTO) {
+        switch (discountDTO.getDiscountKind()) {
+            case BASE:
+                return convertBase(id,discountDTO,true);
+            case CONDITIONAL:
+                return convertBase(id, discountDTO, true);
+            case MAX:
+                return new MaxDiscount(id,convertBase(id,discountDTO,true),convertBase(id,discountDTO, false));
+            case COMBINE:
+                return new CombinedDiscount(id,convertBase(id,discountDTO,true),convertBase(id,discountDTO,false));
+            default:
+                throw new IllegalArgumentException("Invalid Discount Type");
+        }
+    }
+    private static BaseDiscount convertBase(int id,DiscountDTO discountDTO,boolean first) {
+        if(first){
+            switch (discountDTO.getDiscountType1()) {
+                case BASE:
+                    return new BaseDiscount(id,discountDTO.getPercentage(), discountDTO.getCategory(), discountDTO.getItemId());
+                case CONDITIONAL:
+                    return new ConditionalDiscount(id,convertDTO(discountDTO.getCondition()), discountDTO.getPercentage(), discountDTO.getItemId(), discountDTO.getCategory());
+                default:
+                    throw new IllegalArgumentException("Invalid Discount Type");
+            }
+        }
+        else {
+            switch (discountDTO.getDiscountType2()) {
+                case BASE:
+                    return new BaseDiscount(id,discountDTO.getPercentage2(), discountDTO.getCategory2(), discountDTO.getItemId2());
+                case CONDITIONAL:
+                    return new ConditionalDiscount(id,convertDTO(discountDTO.getCondition2()), discountDTO.getPercentage2(), discountDTO.getItemId2(), discountDTO.getCategory2());
+                default:
+                    throw new IllegalArgumentException("Invalid Discount Type");
+            }
+
+        }
+    }
+
+    public static Condition convertDTO(ConditionDTO conditionDTO) {
+        switch (conditionDTO.getConditionType()) {
+            case BASE:
+                return convertBase(conditionDTO,true);
+            case OR:
+                return new OrCondition(convertBase(conditionDTO,true), convertBase(conditionDTO,false));
+            case AND:
+                return new AndCondition(convertBase(conditionDTO,true), convertBase(conditionDTO,false));
+            case XOR:
+                return new XorCondition(convertBase(conditionDTO,true), convertBase(conditionDTO,false));
+            default:
+                throw new IllegalArgumentException("Invalid Condition Type");
+        }
+    }
+    private static BaseCondition convertBase(ConditionDTO conditionDTO,boolean first) {
+        if (first) {
+        switch (conditionDTO.getConditionLimits()) {
+            case PRICE:
+                return new PriceCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getPrice());
+            case QUANTITY:
+                return new QuantityCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getQuantity());
+            default:
+                throw new IllegalArgumentException("Invalid Condition Limits");
+        }
+        }
+        else {
+            switch (conditionDTO.getConditionLimits2()) {
+                case PRICE:
+                    return new PriceCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getPrice2());
+                case QUANTITY:
+                    return new QuantityCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getQuantity2());
+                default:
+                    throw new IllegalArgumentException("Invalid Condition Limits");
+            }
+        }
+    }
+}

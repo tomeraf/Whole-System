@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 
 import Domain.Adapters_and_Interfaces.IMessage;
 import Domain.Adapters_and_Interfaces.IMessageListener;
+import Domain.DTOs.ConditionDTO;
+import Domain.DTOs.DiscountDTO;
 import Domain.DTOs.Pair;
 import Domain.DTOs.ShopDTO;
 
@@ -434,8 +436,15 @@ public class Shop implements IMessageListener {
         discountPolicy.updateDiscountType(discountType);
     }
 
-    public void addDiscount(HashMap<String,String> discountDetails) {
+    public void addDiscount(DiscountDTO discountDetails) {
         discountPolicy.addDiscount(discountDetails);
+    }
+    public void removeDiscount(int discountId) {
+        discountPolicy.removeDiscount(discountId);
+    }
+
+    public void addPurchaseCondition(ConditionDTO condition) {
+        purchasePolicy.addCondition(condition);
     }
 }
 

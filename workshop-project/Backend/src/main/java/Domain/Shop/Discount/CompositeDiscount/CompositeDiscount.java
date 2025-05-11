@@ -10,37 +10,30 @@ public abstract class CompositeDiscount extends Discount {
         super(discountId);
         this.discounts = new HashMap<>();
     }
-    public boolean addDiscount(int ancestor_id,Discount discount) {
-        if(ancestor_id==getDiscountId()){
-            discounts.put(discount.getDiscountId(), discount);
-            return true;
-        }
-        else{
-            for(Discount d: discounts.values()){
-                if(d.addDiscount(ancestor_id, discount)){
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-    public boolean removeDiscount(int discountId) {
-        if(discounts.containsKey(discountId)){
-            discounts.remove(discountId);
-            return true;
-        }
-        for(Discount d: discounts.values()){
-            if(d.removeDiscount(discountId)){
-                return true;
-            }
-        }
-        return false;
+    public CompositeDiscount(int id,Discount discount1, Discount discount2) {
+        super(id);
+        this.discounts = new HashMap<>();
+        discounts.put(discount1.getDiscountId(), discount1);
+        discounts.put(discount2.getDiscountId(), discount2);
         
     }
     public HashMap<Integer, Discount> getDiscounts() {
         return discounts;
     }
-
+    public void addDiscount(Discount discount) {
+        if(discounts.containsKey(discount.getDiscountId())){
+            throw new IllegalArgumentException("Discount already exists");
+        }
+        discounts.put(discount.getDiscountId(), discount);
+    }
+    public void removeDiscount(int discountId) {
+        if(discounts.containsKey(discountId)){
+            discounts.remove(discountId);
+        }
+        else{
+            throw new IllegalArgumentException("Discount not found");
+        }
+    }
 
 
 }

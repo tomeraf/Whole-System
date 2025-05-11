@@ -9,6 +9,9 @@ public class CombinedDiscount extends CompositeDiscount {
     public CombinedDiscount(int discountId) {
         super(discountId);
     }
+    public CombinedDiscount(int id, Discount discount1, Discount discount2) {
+        super(id, discount1, discount2);
+    }
 
     @Override
     public double calculateDiscount(HashMap<Item, Integer> allItems) {

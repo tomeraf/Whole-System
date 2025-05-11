@@ -11,6 +11,15 @@ public class BaseDiscount extends Discount {
     private int itemId;
     private Category category;
 
+        public BaseDiscount(int id,int percentage,Category category,int itemId) {
+        this(id, percentage);
+        if(itemId != -1&& category != null){
+            throw new IllegalArgumentException("Cannot have both itemId and category");
+        }
+        this.category = category;
+        this.itemId = itemId;
+
+    }
     public BaseDiscount(int id,int percentage,int itemId) {
         super(id);
         this.percentage = percentage;
@@ -84,18 +93,4 @@ public class BaseDiscount extends Discount {
         return totalDiscount;
     }
 
-    @Override
-    public boolean addDiscount(int ancestor_id, Discount discount) {
-        if(getDiscountId() == ancestor_id){
-            throw new IllegalArgumentException("Cannot add discount to a base discount");
-        }
-        return false;
-    }
-    @Override
-    public boolean removeDiscount(int discountId) {
-        if(getDiscountId() == discountId){
-            return true;
-        }
-        return false;
-    }
 }

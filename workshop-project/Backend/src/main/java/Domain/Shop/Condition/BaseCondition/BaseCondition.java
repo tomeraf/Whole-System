@@ -8,7 +8,14 @@ import Domain.Shop.Condition.Condition;
 public abstract class BaseCondition implements Condition {
     private int itemId;
     private Category category;
-
+    
+    public BaseCondition(int itemId, Category category) {
+        if(itemId != -1 && category != null){
+            throw new IllegalArgumentException("Cannot have both itemId and category");
+        }
+        this.itemId = itemId;
+        this.category = category;
+    }
     public BaseCondition(int itemId) {
         this.itemId = itemId;
         this.category = null;

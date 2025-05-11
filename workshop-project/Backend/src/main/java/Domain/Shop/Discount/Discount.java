@@ -12,8 +12,6 @@ public abstract class Discount {
     public int getDiscountId() {
         return discountId;
     }
-    public abstract boolean addDiscount(int ancestor_id, Discount discount);
-    public abstract boolean removeDiscount(int discountId);
     public abstract double calculateDiscount(HashMap<Item,Integer> allItems);
 
 

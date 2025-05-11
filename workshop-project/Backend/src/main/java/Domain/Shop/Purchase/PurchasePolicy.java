@@ -2,11 +2,14 @@ package Domain.Shop.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;
-import Domain.Rules.Rule;
+
+import Domain.DTOs.ConditionDTO;
+import Domain.DTOs.DTOtoDomainFactory;
+import Domain.Shop.Condition.Condition;
 
 public class PurchasePolicy {
     private List<PurchaseType> purchaseTypes;
-    private List<Rule> purchaseRules;
+    private List<Condition> purchaseConditions;
     
 
     public PurchasePolicy(){
@@ -14,19 +17,7 @@ public class PurchasePolicy {
         this.purchaseTypes.add(PurchaseType.BID);
         this.purchaseTypes.add(PurchaseType.AUCTION);
         this.purchaseTypes.add(PurchaseType.IMMEDIATE);
-        this.purchaseRules = new ArrayList<>();
-    }
-    public void addPurchaseType(String purchaseType) {
-        this.purchaseTypes.add(PurchaseType.fromString(purchaseType));
-    }
-    public void addPurchaseRole(Rule purchaseRule) {
-        this.purchaseRules.add(purchaseRule);
-    }
-    public void removePurchaseType(String purchaseType) {
-        this.purchaseTypes.remove(PurchaseType.fromString(purchaseType));
-    }
-    public void removePurchaseRole(Rule purchaseRule) {
-        this.purchaseRules.remove(purchaseRule);
+        this.purchaseConditions = new ArrayList<>();
     }
     public void updatePurchaseType(String purchaseType){
         PurchaseType type;
@@ -49,6 +40,14 @@ public class PurchasePolicy {
             return true;
         } else {
             throw new IllegalArgumentException("Error: purchase type not allowed.");
+        }
+    }
+    public void addCondition(ConditionDTO condition) {
+        Condition newCondition = DTOtoDomainFactory.convertDTO(condition);
+        if (this.purchaseConditions.contains(newCondition)) {
+            throw new IllegalArgumentException("Error: condition already exists.");
+        } else {
+            this.purchaseConditions.add(newCondition);
         }
     }
     

@@ -3,6 +3,7 @@ package Domain.Shop.Discount.BaseDiscount;
 import java.util.HashMap;
 
 import Domain.Shop.Discount.Discount;
+import Domain.DTOs.ConditionDTO;
 import Domain.Shop.*;
 
 import Domain.Shop.Condition.*;
@@ -10,7 +11,10 @@ import Domain.Shop.Condition.*;
 public class ConditionalDiscount extends BaseDiscount {
     private Condition condition;
     
-
+    public ConditionalDiscount(int id,Condition condition,int percentage,int itemID,Category category) {
+        super(id,percentage, category,itemID);
+        this.condition = condition;
+    }
     public ConditionalDiscount(int id,Condition condition,int percentage,int itemID) {
         super(id,percentage, itemID);
         this.condition = condition;
