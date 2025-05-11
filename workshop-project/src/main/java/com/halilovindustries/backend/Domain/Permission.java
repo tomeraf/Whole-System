@@ -1,0 +1,19 @@
+package com.halilovindustries.backend.Domain;
+
+public enum Permission {
+    FOUNDER,
+    OWNER,
+    UPDATE_ITEM_QUANTITY,
+    UPDATE_ITEM_PRICE,
+    UPDATE_ITEM_DESCRIPTION,
+    UPDATE_PURCHASE_POLICY,
+    UPDATE_SALE_POLICY,
+    VIEW,
+    UPDATE_PERMISSIONS,
+    UPDATE_SUPPLY,
+    UPDATE_ITEM_RATING, 
+    APPOINTMENT,
+    CLOSE_SHOP,
+    ANSWER_BID,
+    OPEN_AUCTION,
+}
