@@ -40,6 +40,9 @@ public class DiscountPolicy {
     public double calculateDiscount(HashMap<Item, Integer> allItems) {
         return discounts.calculateDiscount(allItems);
     }
+    public List<Integer> getDiscountIds() {
+        return discounts.getIds();
+    }
 
 
 }

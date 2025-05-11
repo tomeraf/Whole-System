@@ -30,6 +30,9 @@ public class Order {
     public int getUserID() {
         return userId;
     }
+    public double getTotalPrice() {
+        return totalPrice;
+    }
 
     public String getOrderDetails() {
         StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");

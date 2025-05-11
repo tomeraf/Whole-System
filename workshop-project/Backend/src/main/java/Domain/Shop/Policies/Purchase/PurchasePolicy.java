@@ -3,7 +3,6 @@ package Domain.Shop.Policies.Purchase;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import Domain.DTOs.ConditionDTO;
 import Domain.DTOs.DTOtoDomainFactory;
 import Domain.Shop.Item;

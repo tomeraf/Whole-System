@@ -14,6 +14,7 @@ import java.util.Map;
 import Domain.Shop.*;
 import Domain.Response;
 import Domain.Adapters_and_Interfaces.*;
+import Domain.DTOs.DiscountDTO;
 import Domain.DTOs.ItemDTO;
 import Domain.DTOs.Order;
 import Domain.DTOs.ShopDTO;
@@ -163,5 +164,6 @@ public class AcceptanceTestFixtures {
         when(shipment.validateShipmentDetails()).thenReturn(false);
         when(shipment.processShipment(0.1)).thenReturn(false);
     }
+
 }
 

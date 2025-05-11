@@ -1,6 +1,8 @@
 package Domain.Shop.Policies.Discount.CompositeDiscount;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import Domain.Shop.Policies.Discount.Discount;
 
@@ -34,5 +36,8 @@ public abstract class CompositeDiscount extends Discount {
         }
     }
 
+    public List<Integer> getIds() {
+        return new ArrayList<>(discounts.keySet());
+    }
 
 }

@@ -30,6 +30,7 @@ public class BaseDiscount extends Discount {
         this.category = category;
     }
     public BaseDiscount(int percentage) {
+        this.percentage = percentage;
         this.itemId = -1;
         this.category = null;
     }
