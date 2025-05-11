@@ -31,7 +31,10 @@ import Domain.Repositories.IOrderRepository;
 import Domain.Repositories.IShopRepository;
 import Domain.Repositories.IUserRepository;
 import Domain.Permission;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ShopService {
 
     private IUserRepository userRepository;

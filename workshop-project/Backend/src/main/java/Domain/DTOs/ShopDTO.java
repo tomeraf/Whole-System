@@ -1,7 +1,10 @@
 package Domain.DTOs;
 
+import org.springframework.stereotype.Service;
+
 import java.util.HashMap;
 
+@Service
 public class ShopDTO {
     private int id;
     private String name;
