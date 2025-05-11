@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import Domain.Shop.*;
+import Domain.User.Registered;
 import Domain.Response;
 import Domain.Adapters_and_Interfaces.*;
 import Domain.DTOs.ItemDTO;
@@ -56,6 +57,28 @@ public class AcceptanceTestFixtures {
         String ownerToken = ownerLogin.getData();
         assertNotNull(ownerToken, "Owner token must not be null");
         return ownerToken;
+    }
+
+    public String generateSystemManagerSession(String name, String password) {
+        Response<String> guestResp = userService.enterToSystem();
+        assertTrue(guestResp.isOk(), "System manager enterToSystem should succeed");
+        String userToken = guestResp.getData();
+        assertNotNull(userToken, "System manager guest token must not be null");
+
+        // User registers
+        Response<Void> systemManagerReg = userService.registerUser(
+            userToken, name, password, LocalDate.now().minusYears(30)
+        );
+        assertTrue(systemManagerReg.isOk(), "System manager registration should succeed");
+
+        // User logs in
+        Response<String> systemManagerLogin = userService.loginUser(
+            userToken, name, password
+        );
+        assertTrue(systemManagerLogin.isOk(), "System manager login should succeed");
+        String systemManagerToken = systemManagerLogin.getData();
+        assertNotNull(systemManagerToken, "System manager token must not be null");
+        return systemManagerToken;
     }
 
     public ShopDTO generateShopAndItems(String ownerToken) {

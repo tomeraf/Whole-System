@@ -183,7 +183,10 @@ public class Registered extends Guest implements IMessageListener {
         return this.suspension.isSuspended(LocalDateTime.now());
     }
     public String showSuspension() {
-        return suspension.toString();
+        if(isSuspended()) {
+            return "user:"+username +","+suspension.toString()+"\n";
+        }
+        return "";
     }
 
 

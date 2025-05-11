@@ -43,6 +43,9 @@ public class Suspension {
         }
     }
     public void removeSuspension() {
+        if(startDate == null && endDate == null && !isPermanent) {
+            throw new IllegalArgumentException("No suspension to remove.");
+        }
         this.startDate = null;
         this.endDate = null;
         this.isPermanent = false;
