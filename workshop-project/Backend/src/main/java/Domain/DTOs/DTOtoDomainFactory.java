@@ -1,34 +1,34 @@
 package Domain.DTOs;
 
-import Domain.Shop.Condition.*;
-import Domain.Shop.Condition.BaseCondition.*;
-import Domain.Shop.Condition.CompositeCondition.*;
-import Domain.Shop.Discount.BaseDiscount.*;
-import Domain.Shop.Discount.CompositeDiscount.*;
-import Domain.Shop.Discount.*;
+import Domain.Shop.Policies.Condition.*;
+import Domain.Shop.Policies.Condition.BaseCondition.*;
+import Domain.Shop.Policies.Condition.CompositeCondition.*;
+import Domain.Shop.Policies.Discount.*;
+import Domain.Shop.Policies.Discount.BaseDiscount.*;
+import Domain.Shop.Policies.Discount.CompositeDiscount.*;
 
 public class DTOtoDomainFactory {
-    public static Discount convertDTO(int id,DiscountDTO discountDTO) {
+    public static Discount convertDTO(DiscountDTO discountDTO) {
         switch (discountDTO.getDiscountKind()) {
             case BASE:
-                return convertBase(id,discountDTO,true);
+                return convertBase(discountDTO,true);
             case CONDITIONAL:
-                return convertBase(id, discountDTO, true);
+                return convertBase(discountDTO, true);
             case MAX:
-                return new MaxDiscount(id,convertBase(id,discountDTO,true),convertBase(id,discountDTO, false));
+                return new MaxDiscount(convertBase(discountDTO,true),convertBase(discountDTO, false));
             case COMBINE:
-                return new CombinedDiscount(id,convertBase(id,discountDTO,true),convertBase(id,discountDTO,false));
+                return new CombinedDiscount(convertBase(discountDTO,true),convertBase(discountDTO,false));
             default:
                 throw new IllegalArgumentException("Invalid Discount Type");
         }
     }
-    private static BaseDiscount convertBase(int id,DiscountDTO discountDTO,boolean first) {
+    private static BaseDiscount convertBase(DiscountDTO discountDTO,boolean first) {
         if(first){
             switch (discountDTO.getDiscountType1()) {
                 case BASE:
-                    return new BaseDiscount(id,discountDTO.getPercentage(), discountDTO.getCategory(), discountDTO.getItemId());
+                    return new BaseDiscount(discountDTO.getPercentage(), discountDTO.getCategory(), discountDTO.getItemId());
                 case CONDITIONAL:
-                    return new ConditionalDiscount(id,convertDTO(discountDTO.getCondition()), discountDTO.getPercentage(), discountDTO.getItemId(), discountDTO.getCategory());
+                    return new ConditionalDiscount(convertDTO(discountDTO.getCondition()), discountDTO.getPercentage(), discountDTO.getItemId(), discountDTO.getCategory());
                 default:
                     throw new IllegalArgumentException("Invalid Discount Type");
             }
@@ -36,9 +36,9 @@ public class DTOtoDomainFactory {
         else {
             switch (discountDTO.getDiscountType2()) {
                 case BASE:
-                    return new BaseDiscount(id,discountDTO.getPercentage2(), discountDTO.getCategory2(), discountDTO.getItemId2());
+                    return new BaseDiscount(discountDTO.getPercentage2(), discountDTO.getCategory2(), discountDTO.getItemId2());
                 case CONDITIONAL:
-                    return new ConditionalDiscount(id,convertDTO(discountDTO.getCondition2()), discountDTO.getPercentage2(), discountDTO.getItemId2(), discountDTO.getCategory2());
+                    return new ConditionalDiscount(convertDTO(discountDTO.getCondition2()), discountDTO.getPercentage2(), discountDTO.getItemId2(), discountDTO.getCategory2());
                 default:
                     throw new IllegalArgumentException("Invalid Discount Type");
             }

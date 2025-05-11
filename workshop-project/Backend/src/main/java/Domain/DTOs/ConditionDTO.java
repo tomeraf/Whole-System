@@ -3,8 +3,8 @@ package Domain.DTOs;
 import java.util.concurrent.locks.Condition;
 
 import Domain.Shop.Category;
-import Domain.Shop.Condition.ConditionLimits;
-import Domain.Shop.Condition.ConditionType;
+import Domain.Shop.Policies.Condition.ConditionLimits;
+import Domain.Shop.Policies.Condition.ConditionType;
 
 
 public class ConditionDTO {

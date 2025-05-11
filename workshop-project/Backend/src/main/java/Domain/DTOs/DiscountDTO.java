@@ -1,9 +1,8 @@
 package Domain.DTOs;
 
 import Domain.Shop.Category;
-
-import Domain.Shop.Discount.DiscountKind;
-import Domain.Shop.Discount.DiscountType;
+import Domain.Shop.Policies.Discount.DiscountKind;
+import Domain.Shop.Policies.Discount.DiscountType;
 
 public class DiscountDTO {
     private DiscountKind discount_kind;

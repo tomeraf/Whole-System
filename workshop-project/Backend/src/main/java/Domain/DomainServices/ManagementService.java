@@ -9,7 +9,7 @@ import java.util.Set;
 import Domain.DTOs.ConditionDTO;
 import Domain.DTOs.DiscountDTO;
 import Domain.Shop.*;
-import Domain.Shop.Discount.DiscountType;
+import Domain.Shop.Policies.Discount.DiscountType;
 import Domain.User.*;
 
 

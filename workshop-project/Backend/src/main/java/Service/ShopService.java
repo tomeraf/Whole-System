@@ -13,7 +13,7 @@ import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
 import Domain.Shop.*;
-import Domain.Shop.Discount.*;
+import Domain.Shop.Policies.Discount.*;
 import Domain.DTOs.ConditionDTO;
 import Domain.DTOs.DiscountDTO;
 import Domain.DTOs.ItemDTO;

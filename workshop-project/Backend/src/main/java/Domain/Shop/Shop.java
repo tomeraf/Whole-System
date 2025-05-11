@@ -10,9 +10,8 @@ import Domain.DTOs.ConditionDTO;
 import Domain.DTOs.DiscountDTO;
 import Domain.DTOs.Pair;
 import Domain.DTOs.ShopDTO;
-
-import Domain.Shop.Discount.*;
-import Domain.Shop.Purchase.*;
+import Domain.Shop.Policies.Discount.*;
+import Domain.Shop.Policies.Purchase.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
