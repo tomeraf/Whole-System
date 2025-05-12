@@ -1,26 +1,39 @@
 package com.halilovindustries.frontend.application.views.homepage;
 
+import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
+import com.halilovindustries.websocket.Broadcaster;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 
 @CssImport("./themes/my-app/shop-cards.css")
@@ -29,6 +42,8 @@ import java.util.List;
 @Menu(order = 0, icon = LineAwesomeIconUrl.PENCIL_RULER_SOLID)
 public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
+    private Registration broadcastRegistration;
+
 
     @Autowired
     public HomePageView(HomePresenter p) {
@@ -81,6 +96,8 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("background-color", "white")
                 .set("border", "2px solid darkblue");
 
+        loginButton.addClickListener(e -> openLoginDialog());
+
         Button registerButton = new Button("Register");
         registerButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         registerButton.getStyle()
@@ -88,6 +105,25 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("padding", "0.5em 1em")
                 .set("background-color", "white")
                 .set("border", "2px solid darkblue");
+
+
+        Button logoutButton = new Button("Logout");
+        logoutButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        logoutButton.getStyle()
+            .set("border-radius", "16px")
+            .set("padding", "0.5em 1em")
+            .set("background-color", "white")
+            .set("border", "2px solid darkblue");
+
+        // call presenter
+        logoutButton.addClickListener(e -> {
+            presenter.logoutUser();
+        });
+
+
+
+        // attach our dialog to the button
+        registerButton.addClickListener(e -> openRegisterDialog());
 
         // 1) Left: cart button
         HorizontalLayout leftControls = new HorizontalLayout(viewCart);
@@ -98,7 +134,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         centerControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
 // 3) Right: login & register
-        HorizontalLayout rightControls = new HorizontalLayout(loginButton, registerButton);
+        HorizontalLayout rightControls = new HorizontalLayout(loginButton, registerButton, logoutButton);
         rightControls.setSpacing(true);
         rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
@@ -180,7 +216,84 @@ public class HomePageView extends Composite<VerticalLayout> {
         // 4) Add the featured-shops row to the view
         getContent().add(shopsLayout);
 
-        presenter.saveSessionToken();
+        presenter.saveSessionToken();   
+}
+
+    private void openRegisterDialog() {
+        // create the dialog
+        Dialog dialog = new Dialog();
+        dialog.setWidth("400px");
+
+        // form fields
+        TextField nameField = new TextField("Name");
+        PasswordField passwordField = new PasswordField("Password");
+        DatePicker dobPicker = new DatePicker("Date of Birth");
+
+        // submit button
+        Button submit = new Button("Create Account", evt -> {
+            String name  = nameField.getValue().trim();
+            String pw    = passwordField.getValue();
+            LocalDate dob= dobPicker.getValue();
+            // fire off the registration
+            presenter.registerUser(name, pw, dob);
+            dialog.close();
+        });
+        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        // cancel
+        Button cancel = new Button("Cancel", e -> dialog.close());
+
+        // layout
+        VerticalLayout layout = new VerticalLayout(
+            nameField,
+            passwordField,
+            dobPicker,
+            new HorizontalLayout(submit, cancel)
+        );
+        layout.setPadding(false);
+        layout.setAlignItems(FlexComponent.Alignment.STRETCH);
+
+        dialog.add(layout);
+        dialog.open();
     }
+
+    private void openLoginDialog() {
+        Dialog dialog = new Dialog();
+        
+        dialog.setWidth("400px");
+
+        TextField usernameField = new TextField("Username");
+        PasswordField passwordField = new PasswordField("Password");
+
+        Button submit = new Button("Log In", evt -> {
+                String username = usernameField.getValue().trim();
+                String pw       = passwordField.getValue();
+                presenter.loginUser(username, pw);
+                dialog.close();
+        });
+        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button cancel = new Button("Cancel", e -> dialog.close());
+
+        VerticalLayout layout = new VerticalLayout(
+        usernameField,
+        passwordField,
+        new HorizontalLayout(submit, cancel)
+        );
+        layout.setPadding(false);
+        layout.setAlignItems(FlexComponent.Alignment.STRETCH);
+
+        dialog.add(layout);
+        dialog.open();
+
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        // clean up so we don’t leak listeners
+        presenter.unsubscribeFromBroadcast();
+        super.onDetach(detachEvent);
+    }
+  
 }
 
