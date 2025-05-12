@@ -1,4 +1,4 @@
-package Domain.Purchase;
+package Domain.Shop.Purchase;
 
 public enum PurchaseType {
     IMMEDIATE,

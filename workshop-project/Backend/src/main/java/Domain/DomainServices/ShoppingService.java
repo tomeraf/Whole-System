@@ -2,7 +2,7 @@ package Domain.DomainServices;
 
 import java.util.List;
 
-import Domain.Shop;
+import Domain.Shop.Shop;
 import Domain.DTOs.ItemDTO;
 import Domain.DTOs.Order;
 

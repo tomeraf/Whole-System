@@ -1,11 +1,15 @@
-package Domain;
+package Domain.User;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.cglib.core.Local;
 
 import Domain.Adapters_and_Interfaces.IMessage;
 import Domain.Adapters_and_Interfaces.IMessageListener;
@@ -17,6 +21,7 @@ public class Registered extends Guest implements IMessageListener {
     private String password;
     private HashMap<Integer, IMessage> inbox = new HashMap<>();
     private boolean isSystemManager = false;
+    private Suspension suspension = null;
 
     private LocalDate dateOfBirth;
     
@@ -25,6 +30,7 @@ public class Registered extends Guest implements IMessageListener {
         this.password = password;
         this.dateOfBirth = dateOfBirth;
         this.roleInShops = new ConcurrentHashMap<>();
+        this.suspension=new Suspension();
     }
     public String getUsername() {
         return username;
@@ -159,5 +165,30 @@ public class Registered extends Guest implements IMessageListener {
     public void setSystemManager(boolean isSystemManager) {
         this.isSystemManager = isSystemManager;
     }
+
+
+    // Suspension methods
+    public void addSuspension(Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
+        if (startDate.isPresent() && endDate.isPresent()) {
+            this.suspension.setSuspension(startDate.get(), endDate.get());   
+        }
+        else
+            this.suspension.setSuspension();   
+    }
+    public void removeSuspension() {
+        this.suspension.removeSuspension();
+    }
+    @Override
+    public boolean isSuspended() {
+        return this.suspension.isSuspended(LocalDateTime.now());
+    }
+    public String showSuspension() {
+        if(isSuspended()) {
+            return "user:"+username +","+suspension.toString()+"\n";
+        }
+        return "";
+    }
+
+
 
 }

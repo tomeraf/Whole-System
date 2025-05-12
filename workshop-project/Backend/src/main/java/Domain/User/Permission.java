@@ -1,4 +1,4 @@
-package Domain;
+package Domain.User;
 
 public enum Permission {
     FOUNDER,

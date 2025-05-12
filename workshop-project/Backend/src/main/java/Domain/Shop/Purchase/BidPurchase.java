@@ -1,4 +1,4 @@
-package Domain.Purchase;
+package Domain.Shop.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package Domain.Discount;
+package Domain.Shop.Discount;
 
 import java.sql.Date;
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package Domain.Purchase;
+package Domain.Shop.Purchase;
 
 public abstract class Purchase {
     private int id;

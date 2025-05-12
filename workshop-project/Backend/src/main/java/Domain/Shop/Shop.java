@@ -1,4 +1,4 @@
-package Domain;
+package Domain.Shop;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,19 +9,14 @@ import Domain.Adapters_and_Interfaces.IMessageListener;
 import Domain.DTOs.Pair;
 import Domain.DTOs.ShopDTO;
 
-import Domain.Discount.DiscountPolicy;
-import Domain.Purchase.PurchasePolicy;
-import Domain.Purchase.PurchaseType;
+import Domain.Shop.Discount.*;
+import Domain.Shop.Purchase.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import Domain.Purchase.AuctionPurchase;
-import Domain.Purchase.BidPurchase;
-
 
 public class Shop implements IMessageListener {
 

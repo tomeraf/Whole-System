@@ -1,6 +1,6 @@
 package Domain.DTOs;
 
-import Domain.Category;
+import Domain.Shop.Category;
 
 public class ItemDTO {
     private String name;

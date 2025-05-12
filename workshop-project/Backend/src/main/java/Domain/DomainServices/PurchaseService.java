@@ -1,10 +1,11 @@
 package Domain.DomainServices;
 
-import Domain.*;
 import Domain.Adapters_and_Interfaces.IPayment;
 import Domain.Adapters_and_Interfaces.IShipment;
 import Domain.DTOs.ItemDTO;
 
+import Domain.Shop.*;
+import Domain.User.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -117,7 +118,7 @@ public class PurchaseService {
         }
     }
 
-	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship) {
+	public Order purchaseBidItem(Registered guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship) {
         if(!(ship.validateShipmentDetails()& pay.validatePaymentDetails())){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }

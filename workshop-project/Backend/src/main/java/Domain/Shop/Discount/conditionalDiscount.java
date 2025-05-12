@@ -1,9 +1,9 @@
-package Domain.Discount;
+package Domain.Shop.Discount;
 
 import java.time.LocalDate;
 
-import Domain.Guest;
-import Domain.Item;
+import Domain.User.*;
+import Domain.Shop.Item;
 import Domain.Rules.Rule;
 
 public class conditionalDiscount extends OpenDiscount {

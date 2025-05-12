@@ -1,4 +1,4 @@
-package Domain;
+package Domain.User;
 
 import java.util.HashMap;
 import java.util.Map;

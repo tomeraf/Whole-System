@@ -1,4 +1,4 @@
-package Domain;
+package Domain.Shop;
 
 public enum Category {
     ELECTRONICS,

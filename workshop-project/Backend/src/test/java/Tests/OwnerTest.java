@@ -8,11 +8,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import Domain.IRole;
-import Domain.Manager;
-import Domain.Owner;
-import Domain.Permission;
-import Domain.Registered;
+import Domain.User.*;
 
 public class OwnerTest {
     private Owner owner;       

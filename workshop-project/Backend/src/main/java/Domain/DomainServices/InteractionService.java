@@ -3,8 +3,7 @@ package Domain.DomainServices;
 import java.util.Date;
 
 import Domain.Message;
-import Domain.Permission;
-import Domain.Registered;
+import Domain.User.*;
 import Domain.Adapters_and_Interfaces.IMessage;
 import Domain.Adapters_and_Interfaces.IMessageListener;
 

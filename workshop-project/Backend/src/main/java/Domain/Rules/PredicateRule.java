@@ -2,8 +2,8 @@ package Domain.Rules;
 
 import java.util.function.Predicate;
 
-import Domain.Guest;
-import Domain.Item;
+import Domain.User.*;
+import Domain.Shop.Item;
 
 public class PredicateRule implements Rule {
     private final Rule rule;

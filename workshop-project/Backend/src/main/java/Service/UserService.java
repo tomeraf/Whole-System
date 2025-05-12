@@ -3,13 +3,15 @@ package Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
-import Domain.Guest;
-import Domain.Registered;
+import Domain.User.*;
 import Domain.Response;
 import Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import Domain.Adapters_and_Interfaces.IAuthentication;
@@ -186,5 +188,66 @@ public class UserService {
             return Response.error("Error logging in user: " + e.getMessage());
         }
     }
+
+    //SystemManager only(need to decide how to implement system manager)
+    //requirement:2.6.6
+    public Response<Void> suspendUser(String sessionToken,String username,Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            Registered user = userRepository.getUserByName(username);
+            user.addSuspension(startDate, endDate);
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error suspending user: " + e.getMessage());
+            return Response.error("Error suspending user: " + e.getMessage());
+        }
+    }
+    //requirement:2.6.7
+    public Response<Void> unsuspendUser(String sessionToken,String username) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            Registered user = userRepository.getUserByName(username);
+            user.removeSuspension();
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error unsuspending user: " + e.getMessage());
+            return Response.error("Error unsuspending user: " + e.getMessage());
+        }
+    }
+    //requirement:2.6.8
+    public Response<String> watchSuspensions(String sessionToken) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            List<Registered> users = userRepository.getAllRegisteredUsers();
+            StringBuilder sb = new StringBuilder();
+            for (Registered user : users) {
+                sb.append(user.showSuspension());
+            }
+            return Response.ok(sb.toString());
+        } catch (Exception e) {
+            logger.error(() -> "Error watching suspensions: " + e.getMessage());
+            return Response.error("Error watching suspensions: " + e.getMessage());
+        }
+    }
+
+
 
 }

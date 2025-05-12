@@ -1,4 +1,4 @@
-package Domain.Discount;
+package Domain.Shop.Discount;
 
 public enum DiscountType {
     OPEN,

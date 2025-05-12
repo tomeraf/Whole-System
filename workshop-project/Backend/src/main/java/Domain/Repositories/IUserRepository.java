@@ -1,7 +1,8 @@
 package Domain.Repositories;
 
-import Domain.Guest;
-import Domain.Registered;
+import Domain.User.*;
+
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Repository;
@@ -19,4 +20,6 @@ public interface IUserRepository {
     Map<Integer, Guest> getAllUsers();
 
     Registered getUserByName(String username);
+
+    List<Registered> getAllRegisteredUsers();
 }

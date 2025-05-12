@@ -7,9 +7,10 @@ import java.util.Map;
 
 import org.springframework.stereotype.Repository;
 
-import Domain.Guest;
-import Domain.Registered;
+
 import Domain.Repositories.IUserRepository;
+import Domain.User.Guest;
+import Domain.User.Registered;
 
 @Repository
 public class MemoryUserRepository implements IUserRepository {
@@ -71,6 +72,17 @@ public class MemoryUserRepository implements IUserRepository {
     @Override
     public Map<Integer, Guest> getAllUsers() {
         return users;
+    }
+
+    @Override
+    public List<Registered> getAllRegisteredUsers() {
+        List<Registered> registeredUsers = new ArrayList<>();
+        for (Guest user : users.values()) {
+            if (user instanceof Registered) {
+                registeredUsers.add((Registered) user);
+            }
+        }
+        return registeredUsers;
     }
 
     @Override

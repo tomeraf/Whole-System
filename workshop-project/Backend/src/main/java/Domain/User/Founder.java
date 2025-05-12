@@ -1,4 +1,4 @@
-package Domain;
+package Domain.User;
 
 public class Founder extends Owner {
 

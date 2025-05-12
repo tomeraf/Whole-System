@@ -6,8 +6,8 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
-import Domain.Manager;
-import Domain.Permission;
+import Domain.User.*;
+
 
 public class ManagerTest {
     private Manager manager;

@@ -1,4 +1,4 @@
-package Domain;
+package Domain.Shop;
 
 public class Item {
     private String name;

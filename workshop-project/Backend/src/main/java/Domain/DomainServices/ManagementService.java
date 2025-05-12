@@ -6,14 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import Domain.Category;
-import Domain.Founder;
-import Domain.Item;
-import Domain.Manager;
-import Domain.Owner;
-import Domain.Permission;
-import Domain.Registered;
-import Domain.Shop;
+import Domain.Shop.*;
+import Domain.User.*;
 
 public class ManagementService {
     private static ManagementService instance = null;
@@ -146,7 +140,7 @@ public class ManagementService {
     }
 
     public void closeShop(Registered supplyManager, Shop shop) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP) || supplyManager.isSystemManager()) {
+        if (supplyManager.isSystemManager()|| supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP)) {
             shop.closeShop();
         } else {
             throw new IllegalArgumentException("You don't have permission to close the shop");
