@@ -3,15 +3,18 @@ package com.halilovindustries.backend.Domain.Adapters_and_Interfaces;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
+import jakarta.annotation.PostConstruct;
 
 import javax.crypto.SecretKey;
-import javax.crypto.KeyGenerator;
-import java.security.NoSuchAlgorithmException;
+import javax.crypto.spec.SecretKeySpec;
+// import javax.crypto.KeyGenerator;
+// import java.security.NoSuchAlgorithmException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.util.Base64;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -19,21 +22,26 @@ import java.util.function.Function;
 @Component
 @Primary
 public class JWTAdapter implements IAuthentication {
-    //private String token;
     @Value("${jwt.secret}")
     private String secret;
-    
+
     private final long expirationTime = 24 * 3600000; // 24 hours
     private SecretKey key;
 
-    public JWTAdapter() {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");
-            key = keyGen.generateKey();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("HmacSha256 algorithm not available", e);
-        }
-    }
+    @PostConstruct
+    public void initKey() {
+        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        this.key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HmacSHA256");
+}
+
+    // public JWTAdapter() {
+    //     try {
+    //         KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");
+    //         key = keyGen.generateKey();
+    //     } catch (NoSuchAlgorithmException e) {
+    //         throw new RuntimeException("HmacSha256 algorithm not available", e);
+    //     }
+    // }
 
     public String generateToken(String username) {
         // Set the expiration time to 24 hours from now

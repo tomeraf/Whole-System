@@ -177,8 +177,10 @@ public class HomePageView extends Composite<VerticalLayout> {
             shopsLayout.add(card);
         }
 
-// 4) Add the featured-shops row to the view
+        // 4) Add the featured-shops row to the view
         getContent().add(shopsLayout);
+
+        presenter.saveSessionToken();
     }
 }
 

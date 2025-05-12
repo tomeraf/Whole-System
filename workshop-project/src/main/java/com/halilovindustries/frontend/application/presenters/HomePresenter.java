@@ -1,12 +1,12 @@
 package com.halilovindustries.frontend.application.presenters;
 
+import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -76,6 +76,13 @@ public class HomePresenter {
         return randomItems;
     }
 
-
+    public void saveSessionToken() {
+        Response<String> a = userService.enterToSystem();
+        if (!a.isOk()) {
+            System.out.println("Error: " + a.getError());
+        } else {
+            System.out.println("Session token: " + a.getData());
+        }
+    }
 
 }

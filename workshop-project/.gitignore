@@ -26,3 +26,7 @@ Thumbs.db
 
 # === Test output ===
 surefire-reports/
+
+node_modules/
+
+.vaadin/
