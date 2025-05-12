@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
@@ -27,7 +28,6 @@ public class HomePresenter {
     private final ShopService shopService;
     private final JWTAdapter jwtAdapter;
     private List<ShopDTO> randomShops = new ArrayList<>();
-    private Registration broadcastRegistration;
 
     @Autowired
     public HomePresenter(
@@ -99,7 +99,6 @@ public class HomePresenter {
         System.out.println("Error: " + response.getError());
     } else {
         String token = response.getData();
-        System.out.println("Session token: " + token);
         // Store in localStorage using JS
         UI.getCurrent().getPage().executeJs("localStorage.setItem('token', $0);", token);
         }
@@ -158,35 +157,35 @@ public class HomePresenter {
 
 
 
-    public void loginUser(String username, String password) {
-    getSessionToken(token -> {
-        if (token == null) {
-            Notification.show("No session token found, please reload.");
-            return;
-        }
-        Response<String> resp = userService.loginUser(token, username, password);
-        if (!resp.isOk()) {
-            Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
-        } else {
-            String newToken = resp.getData();
-            UI ui = UI.getCurrent();
-            // overwrite the localStorage
-            ui.getPage().executeJs("localStorage.setItem('token', $0);", newToken);
+//     public void loginUser(String username, String password) {
+//     getSessionToken(token -> {
+//         if (token == null) {
+//             Notification.show("No session token found, please reload.");
+//             return;
+//         }
+//         Response<String> resp = userService.loginUser(token, username, password);
+//         if (!resp.isOk()) {
+//             Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
+//         } else {
+//             String newToken = resp.getData();
+//             UI ui = UI.getCurrent();
+//             // overwrite the localStorage
+//             ui.getPage().executeJs("localStorage.setItem('token', $0);", newToken);
 
-            // now extract user ID and subscribe
-            if (validateToken(newToken)) {
-                String userId = extractUserId(newToken);
-                subscribeToBroadcast(userId, msg -> {
-                    ui.access(() ->
-                        Notification.show("Server: " + msg, 3000, Position.TOP_CENTER)
-                    );
-                });
-            }
+//             // now extract user ID and subscribe
+//             if (validateToken(newToken)) {
+//                 String userId = extractUserId(newToken);
+//                 subscribeToBroadcast(userId, msg -> {
+//                     ui.access(() ->
+//                         Notification.show("Server: " + msg, 3000, Position.TOP_CENTER)
+//                     );
+//                 });
+//             }
 
-            Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
-        }
-    });
-}
+//             Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
+//         }
+//     });
+// }
 
 
 /*    getSessionToken(token -> {
@@ -202,6 +201,34 @@ public class HomePresenter {
                 Notification.show("No session token found, please reload.");
             }
         }); */
+
+
+    public void loginUser(String username, String password, BiConsumer<String, Boolean> onFinish) {
+    getSessionToken(token -> {
+        if (token == null) {
+            Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+            onFinish.accept(null, false);
+            return;
+        }
+
+        Response<String> resp = userService.loginUser(token, username, password);
+        if (!resp.isOk()) {
+            Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
+            onFinish.accept(null, false);
+        } else {
+            String newToken = resp.getData();
+
+            // Save the new token in localStorage
+            UI.getCurrent().getPage()
+                .executeJs("localStorage.setItem('token', $0);", newToken);
+
+            Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
+
+            onFinish.accept(newToken, true);
+        }
+    });
+}
+
 
 
     public Response<String> loginUser(String sessionToken, String username, String password) {
@@ -224,18 +251,11 @@ public class HomePresenter {
     }
 
     /** Subscribe to server pushes for this user. */
-    public void subscribeToBroadcast(String userId, Consumer<String> callback) {
-        broadcastRegistration = Broadcaster.register(userId, callback);
+    public Registration subscribeToBroadcast(String userId, Consumer<String> callback) {
+        return Broadcaster.register(userId, callback);
     }
 
-    /** Unsubscribe when view is detached. */
-    public void unsubscribeFromBroadcast() {
-        if (broadcastRegistration != null) {
-            broadcastRegistration.remove();
-            broadcastRegistration = null;
-        }
-    }
-
+    
 
     public void logoutUser() {
     // 1) get current token
@@ -251,9 +271,6 @@ public class HomePresenter {
             return;
         }
         String guestToken = resp.getData();
-
-        // 3) clear any subscriptions
-        unsubscribeFromBroadcast();
 
         // 4) overwrite with new guest token
         UI.getCurrent()

@@ -37,6 +37,7 @@ public class Broadcaster {
      */
     public static synchronized Registration register(String userUuid, Consumer<String> listener) {
         listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
+        System.out.println("Listener registered for user: " + userUuid);
         return () -> removeListener(userUuid, listener);
     }
 
@@ -58,6 +59,7 @@ public class Broadcaster {
         List<Consumer<String>> userListeners = listeners.get(userUuid);
         if (userListeners != null) {
             userListeners.remove(listener);
+            System.out.println("Listener removed for user: " + userUuid);
             if (userListeners.isEmpty()) {
                 listeners.remove(userUuid);
             }

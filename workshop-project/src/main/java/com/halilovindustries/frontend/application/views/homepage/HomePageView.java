@@ -42,7 +42,9 @@ import java.util.List;
 @Menu(order = 0, icon = LineAwesomeIconUrl.PENCIL_RULER_SOLID)
 public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
-    private Registration broadcastRegistration;
+    private Registration myBroadcastRegistration;
+    private Button loginButton, registerButton, logoutButton;
+
 
 
     @Autowired
@@ -88,7 +90,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("color", "darkblue");
 
 // 3) Login & Register buttons
-        Button loginButton = new Button("Login");
+        loginButton = new Button("Login");
         loginButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         loginButton.getStyle()
                 .set("border-radius", "16px")
@@ -98,7 +100,7 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         loginButton.addClickListener(e -> openLoginDialog());
 
-        Button registerButton = new Button("Register");
+        registerButton = new Button("Register");
         registerButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         registerButton.getStyle()
                 .set("border-radius", "16px")
@@ -107,7 +109,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border", "2px solid darkblue");
 
 
-        Button logoutButton = new Button("Logout");
+        logoutButton = new Button("Logout");
         logoutButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         logoutButton.getStyle()
             .set("border-radius", "16px")
@@ -117,7 +119,7 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         // call presenter
         logoutButton.addClickListener(e -> {
-            presenter.logoutUser();
+            doLogout();
         });
 
 
@@ -217,6 +219,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         getContent().add(shopsLayout);
 
         presenter.saveSessionToken();   
+        showGuestUI(); // show login/register, hide logout
 }
 
     private void openRegisterDialog() {
@@ -268,7 +271,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         Button submit = new Button("Log In", evt -> {
                 String username = usernameField.getValue().trim();
                 String pw       = passwordField.getValue();
-                presenter.loginUser(username, pw);
+                doLogin(username, pw);
                 dialog.close();
         });
         submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -288,12 +291,49 @@ public class HomePageView extends Composite<VerticalLayout> {
 
     }
 
-    @Override
-    protected void onDetach(DetachEvent detachEvent) {
-        // clean up so we don’t leak listeners
-        presenter.unsubscribeFromBroadcast();
-        super.onDetach(detachEvent);
+    private void doLogin(String username, String password) {
+    presenter.loginUser(username, password, (token, success) -> {
+        if (success && token != null && presenter.validateToken(token)) {
+            String userId = presenter.extractUserId(token);
+
+            // ✅ Store this view's listener registration
+            myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
+                UI.getCurrent().access(() -> {
+                    Notification.show("Server: " + msg, 3000, Position.TOP_CENTER);
+                });
+            });
+
+            showLoggedInUI(); // hide login, show logout
+        }
+    });
     }
-  
+
+    private void doLogout() {
+    if (myBroadcastRegistration != null) {
+        myBroadcastRegistration.remove();
+        myBroadcastRegistration = null;
+    }
+    presenter.logoutUser(); // performs backend logout and gets new guest token
+    showGuestUI();          // switch back to guest view
+}
+
+    /** Show login/register, hide logout */
+    private void showGuestUI() {
+        loginButton.setVisible(true);
+        registerButton.setVisible(true);
+        logoutButton.setVisible(false);
+    }
+
+    /** Hide login/register, show logout */
+    private void showLoggedInUI() {
+        loginButton.setVisible(false);
+        registerButton.setVisible(false);
+        logoutButton.setVisible(true);
+    }
+
+    @Override
+    protected void onDetach(DetachEvent event) {
+        doLogout();
+    }
 }
 
