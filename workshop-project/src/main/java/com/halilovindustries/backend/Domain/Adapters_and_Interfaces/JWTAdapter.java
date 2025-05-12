@@ -84,4 +84,8 @@ public class JWTAdapter implements IAuthentication {
                             parseSignedClaims(token).
                             getPayload();
     }
+
+    public void setSecret(String base64Key) {
+        this.secret = base64Key;
+    }
 }

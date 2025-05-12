@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Base64;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
@@ -76,7 +77,16 @@ public abstract class BaseAcceptanceTests {
         shopRepository   = new MemoryShopRepository();
         userRepository   = new MemoryUserRepository();
         orderRepository  = new MemoryOrderRepository();
-        jwtAdapter       = new JWTAdapter();
+        
+        JWTAdapter adapter = new JWTAdapter();
+
+        // mimic what Spring would inject and call
+        String base64Key = Base64.getEncoder().encodeToString("TDNkeEc4qPSBelk6gSaCcc629o5XdyrX0ZmmWh/3LoQ=".getBytes());
+        adapter.setSecret(base64Key); // ← add setter if needed
+        adapter.initKey();
+
+        jwtAdapter = adapter;
+
         concurrencyHandler = new ConcurrencyHandler();
         shipment         = mock(IShipment.class);
         payment          = mock(IPayment.class);
