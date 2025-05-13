@@ -8,11 +8,11 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.halilovindustries.backend.Domain.IRole;
-import com.halilovindustries.backend.Domain.Manager;
-import com.halilovindustries.backend.Domain.Owner;
-import com.halilovindustries.backend.Domain.Permission;
-import com.halilovindustries.backend.Domain.Registered;
+import com.halilovindustries.backend.Domain.User.IRole;
+import com.halilovindustries.backend.Domain.User.Manager;
+import com.halilovindustries.backend.Domain.User.Owner;
+import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Domain.User.Registered;
 
 public class OwnerTest {
     private Owner owner;       

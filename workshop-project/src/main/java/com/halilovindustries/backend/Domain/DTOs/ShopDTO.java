@@ -1,5 +1,6 @@
 package com.halilovindustries.backend.Domain.DTOs;
 
+
 import java.util.HashMap;
 
 public class ShopDTO {

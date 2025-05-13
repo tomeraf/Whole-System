@@ -10,8 +10,10 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+
+
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-import com.halilovindustries.backend.Domain.Category;
+import com.halilovindustries.backend.Domain.Shop.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,8 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import com.halilovindustries.backend.Domain.Permission;
+import com.halilovindustries.backend.Domain.User.*;
 
 /**
  * Acceptance tests for shop operations functionality.
@@ -35,7 +36,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         fixtures.generateShopAndItems(ownerToken);
         
         // Act
-        Response<List<ShopDTO>> shops = shopService.showAllShops();
+        Response<List<ShopDTO>> shops = shopService.showAllShops(ownerToken);
         
         // Assert
         assertNotNull(shops.getData(), "showAllShops should not return null");
@@ -86,7 +87,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(addL.isOk(), "Adding Laptop should succeed");
 
         // (Optional) Retrieve them if you need IDs or to verify all three exist
-        Response<List<ItemDTO>> allResp = shopService.showShopItems(shop.getId());
+        Response<List<ItemDTO>> allResp = shopService.showShopItems(ownerToken,shop.getId());
         assertTrue(allResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> allItems = allResp.getData();
         assertEquals(3, allItems.size(), "Shop should now contain 3 items");
@@ -104,7 +105,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // so they don't filter anything extra
 
         // Call the service
-        Response<List<ItemDTO>> filteredResp = shopService.filterItemsAllShops(filters);
+        Response<List<ItemDTO>> filteredResp = shopService.filterItemsAllShops(ownerToken,filters);
         
         // Assert
         assertTrue(filteredResp.isOk(), "filterItemsAllShops should succeed");
@@ -130,7 +131,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
 
         // Act - Search without any filters
         HashMap<String,String> emptyFilters = new HashMap<>();
-        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(emptyFilters);
+        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(ownerToken,emptyFilters);
         
         // Assert
         assertTrue(searchResp.isOk(), "filterItemsAllShops should succeed");
@@ -150,7 +151,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // Act - Search with a name that matches nothing
         HashMap<String,String> filters = new HashMap<>();
         filters.put("name", "NoSuchItem");
-        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(filters);
+        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(ownerToken,filters);
         
         // Assert
         assertTrue(searchResp.isOk(), "filterItemsAllShops should succeed even if empty");
@@ -173,7 +174,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         filters.put("minPrice","0");
         filters.put("maxPrice","0.50");
 
-        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(shop.getId(), filters);
+        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(ownerToken,shop.getId(), filters);
         
         // Assert
         assertTrue(resp.isOk(), "filterItemsInShop should succeed");
@@ -186,11 +187,12 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testSearchItemsInNonExistentShop_ShouldFail() {
         // Arrange - Guest enters
         userService.enterToSystem();
+        String guestToken = userService.enterToSystem().getData();
 
         // Act - Use a non-existent shop ID
         int missingShopId = 9999;
         HashMap<String,String> filters = new HashMap<>();
-        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(missingShopId, filters);
+        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(guestToken,missingShopId, filters);
 
         // Assert
         // Right now this blows up with a NullPointerException. You need to catch that
@@ -216,7 +218,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
         // 1) Owner creates a shop with items
@@ -224,7 +226,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
         
         String guestToken = userService.enterToSystem().getData();
-        List<ItemDTO> items = shopService.showShopItems(shopDto.getId()).getData();
+        List<ItemDTO> items = shopService.showShopItems(ownerToken,shopDto.getId()).getData();
         HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
         HashMap<Integer, Integer> itemMap = new HashMap<>();
         itemMap.put(items.get(0).getItemID(), 1);
@@ -325,7 +327,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(removeResp.isOk(), "removeItemFromShop should succeed");
 
         // 3) Verify the item is removed
-        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(shopDto.getId());
+        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(ownerToken,shopDto.getId());
         assertTrue(itemsResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> items = itemsResp.getData();
         assertEquals(2, items.size(), "Shop should contain exactly two items after removal");
@@ -370,7 +372,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(editResp.isOk(), "editItemInShop should succeed");
 
         // 3) Verify the item is edited
-        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(shopDto.getId());
+        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(ownerToken,shopDto.getId());
         assertTrue(itemsResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> items = itemsResp.getData();
         assertEquals(3, items.size(), "Shop should contain exactly three items after editing");
@@ -407,7 +409,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertFalse(editResp.isOk(), "editItemInShop should succeed");
 
         // 3) Verify the item is edited
-        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(shopDto.getId());
+        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(ownerToken,shopDto.getId());
         assertTrue(itemsResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> items = itemsResp.getData();
         assertEquals(3, items.size(), "Shop should contain exactly three items after editing");
@@ -702,7 +704,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(givePerm.isOk(), "addShopManagerPermission should succeed");
 
         // 4) Manager edits the quantity of an existing item
-        List<ItemDTO> items = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> items = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO first = items.get(0);
         int newQty = first.getQuantity() + 5;
         Response<Void> editResp = shopService.changeItemQuantityInShop(
@@ -711,7 +713,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(editResp.isOk(), "changeItemQuantityInShop should succeed");
 
         // 5) Verify via service
-        List<ItemDTO> updated = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> updated = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO updatedFirst = updated.stream()
             .filter(i -> i.getItemID() == first.getItemID())
             .findFirst()
@@ -759,7 +761,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(addMgr.isOk(), "addShopManager should succeed");
 
         // 4) Manager attempts to edit the first product’s quantity
-        List<ItemDTO> items = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> items = shopService.showShopItems(ownerToken,shop.getId()).getData();
         int itemId = items.get(0).getItemID();
         int newQty = items.get(0).getQuantity() + 5;
 
@@ -829,7 +831,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(closeResp.isOk(), "closeShopByFounder should succeed");
 
         // 3) After closing, it must no longer show up among open shops
-        List<ShopDTO> openShops = shopService.showAllShops().getData();
+        List<ShopDTO> openShops = shopService.showAllShops(ownerToken).getData();
         assertFalse(openShops.stream().anyMatch(s -> s.getId() == shop.getId()),
                     "Closed shop must not appear in showAllShops()");
     }

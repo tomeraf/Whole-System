@@ -1,6 +1,6 @@
 package com.halilovindustries.backend.Domain.Repositories;
 
-import com.halilovindustries.backend.Domain.Shop;
+import com.halilovindustries.backend.Domain.Shop.Shop;
 
 import java.util.HashMap;
 

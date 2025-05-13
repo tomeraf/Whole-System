@@ -38,7 +38,7 @@ public class HomePresenter {
         this.userService = userService;
         this.shopService = shopService;
         this.jwtAdapter = jwtAdapter;
-        rnd3Shops();
+        //rnd3Shops();
 }
 
     private void rnd3Shops() {
@@ -51,7 +51,9 @@ public class HomePresenter {
 //        for (int i = 0; i < 3; i++)
 //            RandomShops.add(shops.get(rndNum++ % shops.size()));
 
-        List<ShopDTO> shops = shopService.showAllShops().getData();
+        getSessionToken(token -> {
+            if (token != null) {
+                List<ShopDTO> shops = shopService.showAllShops(token).getData();
         randomShops.clear();
         if (shops == null || shops.isEmpty()) return;
 
@@ -60,6 +62,12 @@ public class HomePresenter {
         for (int i = 0; i < 3; i++) {
             randomShops.add(shops.get((start + i) % shops.size()));
         }
+            } else {
+                // no token? probably error
+                Notification.show("No session token found, please reload.");
+            }
+        });
+        
     }
 
 

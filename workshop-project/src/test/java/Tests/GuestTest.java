@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import com.halilovindustries.backend.Domain.Guest;
+import com.halilovindustries.backend.Domain.User.Guest;
 
 public class GuestTest {
     private Guest guest;

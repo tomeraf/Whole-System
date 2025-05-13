@@ -3,8 +3,8 @@ package com.halilovindustries.backend.Domain.Repositories;
 import java.util.HashMap;
 import java.util.List;
 
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
-import com.halilovindustries.backend.Domain.DTOs.Order;
+import com.halilovindustries.backend.Domain.DTOs.*;
+
 
 public interface IOrderRepository {
     void addOrder(Order order);

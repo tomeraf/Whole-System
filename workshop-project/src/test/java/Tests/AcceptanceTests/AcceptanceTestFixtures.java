@@ -1,6 +1,7 @@
 package Tests.AcceptanceTests;
 
 import com.halilovindustries.backend.Service.*;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,13 +11,20 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-import com.halilovindustries.backend.Domain.Category;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.backend.Service.OrderService;
+import com.halilovindustries.backend.Service.ShopService;
+import com.halilovindustries.backend.Service.UserService;
+
+import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.*;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
-import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 public class AcceptanceTestFixtures {
     private final UserService userService;
@@ -57,6 +65,28 @@ public class AcceptanceTestFixtures {
         String ownerToken = ownerLogin.getData();
         assertNotNull(ownerToken, "Owner token must not be null");
         return ownerToken;
+    }
+
+    public String generateSystemManagerSession(String name, String password) {
+        Response<String> guestResp = userService.enterToSystem();
+        assertTrue(guestResp.isOk(), "System manager enterToSystem should succeed");
+        String userToken = guestResp.getData();
+        assertNotNull(userToken, "System manager guest token must not be null");
+
+        // User registers
+        Response<Void> systemManagerReg = userService.registerUser(
+            userToken, name, password, LocalDate.now().minusYears(30)
+        );
+        assertTrue(systemManagerReg.isOk(), "System manager registration should succeed");
+
+        // User logs in
+        Response<String> systemManagerLogin = userService.loginUser(
+            userToken, name, password
+        );
+        assertTrue(systemManagerLogin.isOk(), "System manager login should succeed");
+        String systemManagerToken = systemManagerLogin.getData();
+        assertNotNull(systemManagerToken, "System manager token must not be null");
+        return systemManagerToken;
     }
 
     public ShopDTO generateShopAndItems(String ownerToken) {
@@ -124,7 +154,7 @@ public class AcceptanceTestFixtures {
         assertTrue(chgQty3.isOk(), "changeItemQuantityInShop should succeed");
 
         // 4) Retrieve final list and return it
-        Response<List<ItemDTO>> finalResp = shopService.showShopItems(shopId);
+        Response<List<ItemDTO>> finalResp = shopService.showShopItems(ownerToken,shopId);
         assertTrue(finalResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> items = finalResp.getData();
         assertNotNull(items, "Returned item list must not be null");
@@ -133,7 +163,7 @@ public class AcceptanceTestFixtures {
         return shopService.getShopInfo(ownerToken, shopId).getData();
     }
 
-    public Order successfulBuyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
+        public Order successfulBuyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
         mockPositivePayment(p);
         mockPositiveShipment(s);
 

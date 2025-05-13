@@ -3,8 +3,8 @@ package Tests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.halilovindustries.backend.Domain.Item;
-import com.halilovindustries.backend.Domain.Category;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Category;
 
 import static org.junit.jupiter.api.Assertions.*;
 

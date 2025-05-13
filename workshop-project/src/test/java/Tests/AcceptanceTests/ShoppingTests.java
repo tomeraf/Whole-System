@@ -21,13 +21,19 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.Test;
 
-import com.halilovindustries.backend.Domain.Category;
+import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+
+import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Response;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
+import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 
 public class ShoppingTests extends BaseAcceptanceTests {
@@ -38,7 +44,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         fixtures.generateShopAndItems(ownerToken);
         
-        Response<List<ShopDTO>> shops = shopService.showAllShops();
+        Response<List<ShopDTO>> shops = shopService.showAllShops(ownerToken);
         assertNotNull(shops.getData(), "showAllShops should not return null");
         assertEquals(1, shops.getData().size());
         assertEquals(3, shops.getData().get(0).getItems().size());
@@ -85,7 +91,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(addL.isOk(), "Adding Laptop should succeed");
 
         // 5) (Optional) Retrieve them if you need IDs or to verify all three exist
-        Response<List<ItemDTO>> allResp = shopService.showShopItems(shop.getId());
+        Response<List<ItemDTO>> allResp = shopService.showShopItems(ownerToken,shop.getId());
         assertTrue(allResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> allItems = allResp.getData();
         assertEquals(3, allItems.size(), "Shop should now contain 3 items");
@@ -103,7 +109,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         // so they don't filter anything extra
 
         // 7) Call the service
-        Response<List<ItemDTO>> filteredResp = shopService.filterItemsAllShops(filters);
+        Response<List<ItemDTO>> filteredResp = shopService.filterItemsAllShops(ownerToken,filters);
         assertTrue(filteredResp.isOk(), "filterItemsAllShops should succeed");
 
         List<ItemDTO> result = filteredResp.getData();
@@ -127,7 +133,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // 1) Search without any filters
         HashMap<String,String> emptyFilters = new HashMap<>();
-        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(emptyFilters);
+        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(ownerToken,emptyFilters);
         assertTrue(searchResp.isOk(), "filterItemsAllShops should succeed");
         List<ItemDTO> items = searchResp.getData();
         assertEquals(3, items.size(), "Should return all 3 available items");
@@ -145,7 +151,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         // 2) Search with a name that matches nothing
         HashMap<String,String> filters = new HashMap<>();
         filters.put("name", "NoSuchItem");
-        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(filters);
+        Response<List<ItemDTO>> searchResp = shopService.filterItemsAllShops(ownerToken,filters);
         assertTrue(searchResp.isOk(), "filterItemsAllShops should succeed even if empty");
         assertTrue(searchResp.getData().isEmpty(), "No items should be found");
     }
@@ -167,7 +173,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         filters.put("minPrice","0");
         filters.put("maxPrice","0.50");
 
-        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(shop.getId(), filters);
+        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(ownerToken,shop.getId(), filters);
         assertTrue(resp.isOk(), "filterItemsInShop should succeed");
         List<ItemDTO> results = resp.getData();
         assertEquals(1, results.size(), "Exactly one banana at price <= 0.50 should match");
@@ -177,12 +183,13 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void shopNotFound() {
         // Guest enters
-        userService.enterToSystem();
+        String guestToken=userService.enterToSystem().getData();
+        
 
         // 5) Use a non-existent shop ID
         int missingShopId = 9999;
         HashMap<String,String> filters = new HashMap<>();
-        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(missingShopId, filters);
+        Response<List<ItemDTO>> resp = shopService.filterItemsInShop(guestToken,missingShopId, filters);
 
         // Right now this blows up with a NullPointerException. You need to catch that
         // inside filterItemsInShop and return Response.error("Shop not found");
@@ -205,7 +212,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         //  3) Buyer shopping & checkout 
         // Buyer views the shop's items
-        Response<List<ItemDTO>> viewResp = shopService.showShopItems(shop.getId());
+        Response<List<ItemDTO>> viewResp = shopService.showShopItems(ownerToken,shop.getId());
         assertTrue(viewResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> shopItems = viewResp.getData();
         assertNotNull(shopItems, "shopItems list must not be null");
@@ -231,7 +238,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
         // grab the first item from the shop
-        List<ItemDTO> items = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> items = shopService.showShopItems(ownerToken,shop.getId()).getData();
         assertEquals(3, items.size(), "Shop should have 3 items");
 
         //  2) Buyer setup 
@@ -266,14 +273,14 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
 
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        List<ItemDTO> shopItems = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
         // 2) Buyer setup
@@ -329,13 +336,12 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1", "12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
-        fixtures.mockNegativePayment(p);
 
+        fixtures.mockNegativePayment(p);
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        List<ItemDTO> shopItems = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
         // 2) Buyer setup
@@ -366,14 +372,14 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockNegativeShipment(s);
 
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        List<ItemDTO> shopItems = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
         // 2) Buyer setup
@@ -403,7 +409,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        List<ItemDTO> shopItems = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
 
         // 2) Buyer setup: enter, register, login
         Response<String> guestResp = userService.enterToSystem();
@@ -483,7 +489,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
         // 1) Owner setup
@@ -494,7 +500,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
 
         // 3) Buyer purchases one item (necessary to enable rating)
-        List<ItemDTO> shopItems = shopService.showShopItems(shop.getId()).getData();
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
         ItemDTO toBuy = shopItems.get(0);
 
@@ -557,7 +563,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         // --- Setup -------------------------------------------------------------
         // 1) Prepare payment/shipment mocks
         fixtures.mockPositivePayment(p);
@@ -589,7 +595,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // --- Action ------------------------------------------------------------
         // Buyer attempts to add all three items (including the unavailable one) to cart
-        List<ItemDTO> availableItems = shopService.showShopItems(shopId).getData();
+        List<ItemDTO> availableItems = shopService.showShopItems(ownerToken,shopId).getData();
         HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
         HashMap<Integer, Integer> itemMap = new HashMap<>();
         for (ItemDTO it : availableItems) {
@@ -633,7 +639,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         // --- Arrange mocks for payments and shipments ---
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
@@ -698,7 +704,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         // Stub payment and shipment
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
@@ -753,7 +759,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
 
@@ -783,7 +789,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
 
@@ -811,8 +817,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(offerResp.isOk(), "Submitting auction offer after start should succeed");
         
         // Attempt purchase immediately before auction starts
-        Response<Void> purchaseResp = orderService.purchaseAuctionItem(buyerToken, shopId, auctionId, p, s);
-        assertFalse(purchaseResp.isOk(), "Purchasing before auction ends should fail");
+        Response<Void> purchaseResp = orderService.purchaseAuctionItem(buyerToken, shopId, auctionId, p, s);        assertFalse(purchaseResp.isOk(), "Purchasing before auction ends should fail");
     }
 
     @Test
@@ -821,7 +826,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
+
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
 
@@ -859,8 +864,8 @@ public class ShoppingTests extends BaseAcceptanceTests {
             "1234567890123456", "Some Name", "1","12/25", "123"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-        
-        
+
+
         when(payment.validatePaymentDetails(p)).thenReturn(true);
         when(shipment.validateShipmentDetails(s)).thenReturn(true);
         for (int i = 0; i < 10; i++) {

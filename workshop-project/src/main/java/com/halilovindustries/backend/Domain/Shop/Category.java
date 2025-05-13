@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain;
+package com.halilovindustries.backend.Domain.Shop;
 
 public enum Category {
     ELECTRONICS,

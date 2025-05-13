@@ -7,8 +7,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Repository;
 
-import com.halilovindustries.backend.Domain.Guest;
-import com.halilovindustries.backend.Domain.Registered;
+import com.halilovindustries.backend.Domain.User.Guest;
+import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 
 @Repository
@@ -71,6 +71,17 @@ public class MemoryUserRepository implements IUserRepository {
     @Override
     public Map<Integer, Guest> getAllUsers() {
         return users;
+    }
+
+    @Override
+    public List<Registered> getAllRegisteredUsers() {
+        List<Registered> registeredUsers = new ArrayList<>();
+        for (Guest user : users.values()) {
+            if (user instanceof Registered) {
+                registeredUsers.add((Registered) user);
+            }
+        }
+        return registeredUsers;
     }
 
     @Override

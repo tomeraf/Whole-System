@@ -3,8 +3,8 @@ package com.halilovindustries.backend.Domain.DomainServices;
 import java.util.Date;
 
 import com.halilovindustries.backend.Domain.Message;
-import com.halilovindustries.backend.Domain.Permission;
-import com.halilovindustries.backend.Domain.Registered;
+import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
 

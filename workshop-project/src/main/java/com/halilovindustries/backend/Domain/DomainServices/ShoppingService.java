@@ -2,7 +2,7 @@ package com.halilovindustries.backend.Domain.DomainServices;
 
 import java.util.List;
 
-import com.halilovindustries.backend.Domain.Shop;
+import com.halilovindustries.backend.Domain.Shop.Shop;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 

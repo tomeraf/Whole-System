@@ -21,8 +21,12 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
-import com.halilovindustries.backend.Infrastructure.*;
-import com.halilovindustries.backend.Service.*;
+import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
+import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
+import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
+import com.halilovindustries.backend.Service.OrderService;
+import com.halilovindustries.backend.Service.ShopService;
+import com.halilovindustries.backend.Service.UserService;
 
 public abstract class BaseAcceptanceTests {
     protected IShopRepository shopRepository;
@@ -77,7 +81,6 @@ public abstract class BaseAcceptanceTests {
         shopRepository   = new MemoryShopRepository();
         userRepository   = new MemoryUserRepository();
         orderRepository  = new MemoryOrderRepository();
-        
         JWTAdapter adapter = new JWTAdapter();
 
         // mimic what Spring would inject and call
@@ -86,7 +89,6 @@ public abstract class BaseAcceptanceTests {
         adapter.initKey();
 
         jwtAdapter = adapter;
-
         concurrencyHandler = new ConcurrencyHandler();
         shipment         = mock(IShipment.class);
         payment          = mock(IPayment.class);

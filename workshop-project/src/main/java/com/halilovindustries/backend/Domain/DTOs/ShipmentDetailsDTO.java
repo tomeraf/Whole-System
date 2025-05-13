@@ -1,6 +1,5 @@
 package com.halilovindustries.backend.Domain.DTOs;
 
-
 public class ShipmentDetailsDTO {
 
     private String ID; // ID of the user

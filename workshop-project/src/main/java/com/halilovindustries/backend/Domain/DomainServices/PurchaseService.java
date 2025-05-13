@@ -5,6 +5,8 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 
+import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.User.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

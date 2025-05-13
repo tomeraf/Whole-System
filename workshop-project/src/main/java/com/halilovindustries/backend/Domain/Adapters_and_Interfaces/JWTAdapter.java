@@ -22,9 +22,10 @@ import java.util.function.Function;
 @Component
 @Primary
 public class JWTAdapter implements IAuthentication {
+    //private String token;
     @Value("${jwt.secret}")
     private String secret;
-
+    
     private final long expirationTime = 24 * 3600000; // 24 hours
     private SecretKey key;
 

@@ -6,9 +6,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
-import com.halilovindustries.backend.Domain.Category;
-import com.halilovindustries.backend.Domain.ShoppingBasket;
-import com.halilovindustries.backend.Domain.ShoppingCart;
+import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.User.ShoppingBasket;
+import com.halilovindustries.backend.Domain.User.ShoppingCart;
 
 import java.util.ArrayList;
 import java.util.Arrays;

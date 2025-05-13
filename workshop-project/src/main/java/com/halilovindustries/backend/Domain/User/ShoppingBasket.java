@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain;
+package com.halilovindustries.backend.Domain.User;
 
 import java.util.List;
 

@@ -1,6 +1,5 @@
 package com.halilovindustries.backend.Domain.DTOs;
 
-
 public class PaymentDetailsDTO {
 
     private String cardNumber;

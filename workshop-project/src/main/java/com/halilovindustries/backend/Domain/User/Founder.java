@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain;
+package com.halilovindustries.backend.Domain.User;
 
 public class Founder extends Owner {
 

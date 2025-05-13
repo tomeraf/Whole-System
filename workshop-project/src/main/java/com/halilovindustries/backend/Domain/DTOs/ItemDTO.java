@@ -1,6 +1,6 @@
 package com.halilovindustries.backend.Domain.DTOs;
 
-import com.halilovindustries.backend.Domain.Category;
+import com.halilovindustries.backend.Domain.Shop.Category;
 
 public class ItemDTO {
     private String name;

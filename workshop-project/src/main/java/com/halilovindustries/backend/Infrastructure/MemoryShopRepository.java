@@ -2,7 +2,7 @@ package com.halilovindustries.backend.Infrastructure;
 
 import java.util.HashMap;
 
-import com.halilovindustries.backend.Domain.Shop;
+import com.halilovindustries.backend.Domain.Shop.Shop;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import org.springframework.stereotype.Repository;
 

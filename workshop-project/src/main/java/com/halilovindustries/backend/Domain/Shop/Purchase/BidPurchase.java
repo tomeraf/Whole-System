@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain.Purchase;
+package com.halilovindustries.backend.Domain.Shop.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;

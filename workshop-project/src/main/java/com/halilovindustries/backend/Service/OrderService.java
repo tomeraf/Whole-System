@@ -13,11 +13,11 @@ import java.util.stream.Collectors;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
-import com.halilovindustries.backend.Domain.Guest;
-import com.halilovindustries.backend.Domain.Registered;
+import com.halilovindustries.backend.Domain.User.Guest;
+import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Shop;
-import com.halilovindustries.backend.Domain.ShoppingBasket;
+import com.halilovindustries.backend.Domain.Shop.Shop;
+import com.halilovindustries.backend.Domain.User.ShoppingBasket;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
@@ -102,7 +102,11 @@ public class OrderService {
                 throw new Exception("User not logged in");
             }
             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
+            Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
+
 
             
             Set<Integer> shopIds = userItems.keySet(); // Get the set of shop IDs
@@ -158,6 +162,9 @@ public class OrderService {
             }
             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
             purchaseService.removeItemsFromCart(guest, userItems); // Save the updated cart to the repository
             
             
@@ -190,6 +197,9 @@ public class OrderService {
             }
             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
             
             List<Pair<Integer, Integer>> locksToAcquire = new ArrayList<>();
         
@@ -279,6 +289,9 @@ public class OrderService {
                 }
                 int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
                 Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+                if(guest.isSuspended()) {
+                    throw new Exception("User is suspended");
+                }
                 Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
                 purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice);
     
@@ -302,6 +315,47 @@ public class OrderService {
         }
         return null;
     }
+
+    /**
+     * Performs a direct purchase of a single item.
+     *
+     * @param sessionToken current session token
+     * @param itemID the item to purchase
+     */
+    // public Response<Void> directPurchase(String sessionToken, int shopId, int itemID) {
+    //     Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
+    //     ReentrantLock itemLock = ConcurrencyHandler.getItemLock(shopId, itemID);
+
+    //     shopRead.lock();     
+    //     try {
+    //         itemLock.lockInterruptibly();
+    //         try {
+    //             if (!authenticationAdapter.validateToken(sessionToken)) {
+    //                 throw new Exception("User not logged in");
+    //             }
+    //             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+    //             Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
+    //             purchaseService.directPurchase(guest, itemID);
+    
+    //             logger.info(() -> "Direct purchase completed successfully for item ID: " + itemID);
+    //             return Response.ok();
+    //         } catch (Exception e) {
+    //             logger.error(() -> "Error completing direct purchase: " + e.getMessage());
+    //             return Response.error("Error completing direct purchase: " + e.getMessage());
+    //         }
+    //         finally {
+    //             itemLock.unlock();
+    //         }
+    //     } 
+    //     catch (InterruptedException ie) {
+    //         Thread.currentThread().interrupt();
+    //         logger.error(() -> "Thread was interrupted during direct purchase");
+    //         return Response.error("Thread was interrupted during direct purchase");
+    //     }
+    //     finally {
+    //         shopRead.unlock();
+    //     }
+    // }
 
      /**
      * Retrieves the personal order history for the user.
@@ -330,6 +384,10 @@ public class OrderService {
             }
             int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Guest guest = userRepository.getUserById(userId); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
+            Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseBidItem(guest,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
@@ -349,6 +407,9 @@ public class OrderService {
                 }
                 int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
                 Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+                if(guest.isSuspended()) {
+                    throw new Exception("User is suspended");
+                }
                 Registered user = userRepository.getUserByName(guest.getUsername());
                 Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
                 purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
@@ -369,6 +430,9 @@ public class OrderService {
             }
             int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Guest guest = userRepository.getUserById(userId); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
             Registered registered = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis);

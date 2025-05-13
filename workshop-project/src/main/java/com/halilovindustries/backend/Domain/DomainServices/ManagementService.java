@@ -1,18 +1,13 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.halilovindustries.backend.Domain.Category;
-import com.halilovindustries.backend.Domain.Founder;
-import com.halilovindustries.backend.Domain.Item;
-import com.halilovindustries.backend.Domain.Manager;
-import com.halilovindustries.backend.Domain.Owner;
-import com.halilovindustries.backend.Domain.Permission;
-import com.halilovindustries.backend.Domain.Registered;
-import com.halilovindustries.backend.Domain.Shop;
+import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.User.*;
 
 public class ManagementService {
     private static ManagementService instance = null;
@@ -145,7 +140,7 @@ public class ManagementService {
     }
 
     public void closeShop(Registered supplyManager, Shop shop) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP) || supplyManager.isSystemManager()) {
+        if (supplyManager.isSystemManager()|| supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP)) {
             shop.closeShop();
         } else {
             throw new IllegalArgumentException("You don't have permission to close the shop");

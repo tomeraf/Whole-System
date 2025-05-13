@@ -1,15 +1,15 @@
-package com.halilovindustries.backend.Domain;
+package com.halilovindustries.backend.Domain.Shop;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 
-import com.halilovindustries.backend.Domain.Discount.DiscountPolicy;
-import com.halilovindustries.backend.Domain.Purchase.PurchasePolicy;
-import com.halilovindustries.backend.Domain.Purchase.PurchaseType;
+import com.halilovindustries.backend.Domain.Shop.Purchase.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,17 +17,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.halilovindustries.backend.Domain.Purchase.AuctionPurchase;
-import com.halilovindustries.backend.Domain.Purchase.BidPurchase;
-
-
 public class Shop implements IMessageListener {
 
     private int id;
     private String name;
     private String description;
     private PurchasePolicy purchasePolicy;
-    private DiscountPolicy discountPolicy;
     private HashMap<Integer, Item> items; // itemId -> item
     private Set<Integer> ownerIDs;
     private Set<Integer> managerIDs;
@@ -47,7 +42,6 @@ public class Shop implements IMessageListener {
         this.name = name;
         this.description = description;
         this.purchasePolicy = new PurchasePolicy();
-        this.discountPolicy = new DiscountPolicy();
         this.items = new HashMap<>();
         this.ownerIDs = new HashSet<>();
         this.managerIDs = new HashSet<>();
@@ -68,7 +62,6 @@ public class Shop implements IMessageListener {
     public String getDescription() { return description; }
     public boolean isOpen() { return isOpen; }
     public PurchasePolicy getPurchasePolicy() { return purchasePolicy; }
-    public DiscountPolicy getDiscountPolicy() { return discountPolicy; }
     public HashMap<Integer, Item> getItems() { return items; }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
     public Set<Integer> getManagerIDs() { return managerIDs; }
@@ -78,7 +71,6 @@ public class Shop implements IMessageListener {
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
     public void setPurchasePolicy(PurchasePolicy purchasePolicy) { this.purchasePolicy = purchasePolicy; }
-    public void setDiscountPolicy(DiscountPolicy discountPolicy) { this.discountPolicy = discountPolicy; }
     public void setOpen(boolean isOpen) { this.isOpen = isOpen; }
 
     public Item addItem(String name, Category category, double price, String description){

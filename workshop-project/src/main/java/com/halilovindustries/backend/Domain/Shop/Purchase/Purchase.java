@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain.Purchase;
+package com.halilovindustries.backend.Domain.Shop.Purchase;
 
 public abstract class Purchase {
     private int id;

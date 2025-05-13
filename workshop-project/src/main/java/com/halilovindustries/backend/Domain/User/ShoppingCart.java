@@ -1,11 +1,11 @@
-package com.halilovindustries.backend.Domain;
+package com.halilovindustries.backend.Domain.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.*;
 
 public class ShoppingCart {
     private List<ShoppingBasket> baskets;
