@@ -1,8 +1,8 @@
-package com.halilovindustries.backend.Domain.Shop.Purchase;
+package Domain.Shop.Policies.Purchase;
 
 import java.time.LocalDateTime;
 
-import com.halilovindustries.backend.Domain.DTOs.Pair;
+import Domain.DTOs.Pair;
 
 public class AuctionPurchase extends Purchase {
     private double highestBid=0;

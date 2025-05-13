@@ -1,10 +1,10 @@
-package com.halilovindustries.backend.Domain.Shop.Purchase;
+package Domain.Shop.Policies.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.halilovindustries.backend.Domain.DTOs.Pair;
+import Domain.DTOs.Pair;
 
 public class BidPurchase extends Purchase {
     private int submitterId;

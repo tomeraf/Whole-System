@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain.Shop.Purchase;
+package Domain.Shop.Policies.Purchase;
 
 public enum PurchaseType {
     IMMEDIATE,
