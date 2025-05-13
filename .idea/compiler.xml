@@ -6,15 +6,20 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="Backend" />
-        <module name="my-app" />
+        <module name="workshop-project" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="Backend" target="17" />
+      <module name="Frontend" target="22" />
+      <module name="my-app" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Backend" options="-parameters" />
-      <module name="my-app" options="-parameters" />
+      <module name="my-app" options="" />
+      <module name="workshop-project" options="-parameters" />
     </option>
   </component>
 </project>
