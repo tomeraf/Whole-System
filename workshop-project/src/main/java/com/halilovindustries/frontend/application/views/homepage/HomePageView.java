@@ -18,6 +18,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -53,6 +54,10 @@ public class HomePageView extends Composite<VerticalLayout> {
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
+        getContent().setSizeFull();                     // full width & height
+        getContent().setPadding(false);
+        getContent().getStyle().set("overflow-x", "hidden");
+        getContent().setWidthFull();
         // 1) Search bar + connected search button
         TextField searchBar = new TextField();
         searchBar.setPlaceholder("Search");
@@ -143,7 +148,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         rightControls.setSpacing(true);
         rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        centerControls.setWidthFull();
+        
         centerControls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
 
@@ -153,8 +158,8 @@ public class HomePageView extends Composite<VerticalLayout> {
         header.setAlignItems(FlexComponent.Alignment.CENTER);
 
 // Make only the center expand to push left and right to edges
-        header.expand(centerControls);
-
+searchContainer.setWidth("100%");
+searchContainer.setMaxWidth("400px");
 // Optional: add some padding/gap
         header.setPadding(true);
         header.getStyle().set("gap", "1rem");
@@ -169,6 +174,8 @@ public class HomePageView extends Composite<VerticalLayout> {
         HorizontalLayout shopsLayout = new HorizontalLayout();
         shopsLayout.setWidthFull();
         shopsLayout.setSpacing(true);
+        shopsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+
         shopsLayout.setAlignItems(FlexComponent.Alignment.START);
 
 // 3) Build each shop card with 4 random item images
@@ -176,10 +183,11 @@ public class HomePageView extends Composite<VerticalLayout> {
             VerticalLayout card = new VerticalLayout();
             card.setAlignItems(FlexComponent.Alignment.CENTER);
             card.getStyle()
-                    .set("border", "1px solid #ddd")
-                    .set("border-radius", "8px")
-                    .set("padding", "1rem")
-                    .set("width", "240px");
+                .set("border", "1px solid #ddd")
+                .set("border-radius", "8px")
+                .set("padding", "1rem");
+            card.setWidth("24%");              // four cards ≈ 100%
+            shopsLayout.setFlexGrow(1, card);  // allow it to shrink/grow
 
             // Shop name as title
             H3 title = new H3(shop.getName());
@@ -228,7 +236,9 @@ public class HomePageView extends Composite<VerticalLayout> {
     @Override
     protected void onAttach(AttachEvent event) {
         super.onAttach(event);
-
+UI.getCurrent().getPage().executeJs(
+    "document.body.style.overflowX = 'hidden';"
+  );
         // Grab the token from localStorage:
         presenter.getSessionToken(token -> {
             // Vaadin callbacks already run on the UI thread, but to be safe:
