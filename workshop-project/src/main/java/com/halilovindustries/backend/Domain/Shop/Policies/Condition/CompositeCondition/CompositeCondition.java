@@ -1,6 +1,6 @@
-package Domain.Shop.Policies.Condition.CompositeCondition;
+package com.halilovindustries.backend.Domain.Shop.Policies.Condition.CompositeCondition;
 
-import Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 
 public abstract class CompositeCondition extends Condition {
     private Condition condition1;

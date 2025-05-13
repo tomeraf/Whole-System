@@ -1,10 +1,10 @@
-package Domain.Shop.Policies.Discount.CompositeDiscount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount;
 
 import java.util.HashMap;
 
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Discount.Discount;
-import Domain.Shop.Policies.Discount.BaseDiscount.BaseDiscount;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.BaseDiscount;
 
 public class MaxDiscount extends CompositeDiscount {
     

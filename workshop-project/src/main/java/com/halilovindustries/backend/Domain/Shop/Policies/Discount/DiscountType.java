@@ -1,4 +1,4 @@
-package Domain.Shop.Policies.Discount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount;
 
 public enum DiscountType {
     BASE,

@@ -1,10 +1,10 @@
-package Domain.Shop.Policies.Discount.BaseDiscount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount;
 
 import java.util.HashMap;
 
-import Domain.Shop.Category;
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 
 public class BaseDiscount extends Discount {
     private int percentage;

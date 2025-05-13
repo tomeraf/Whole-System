@@ -1,8 +1,8 @@
-package Domain.Shop.Policies.Discount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount;
 
 import java.util.HashMap;
 
-import Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.*;
 
 public abstract class Discount {
     private static int idCounter = 0;

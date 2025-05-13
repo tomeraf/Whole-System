@@ -1,12 +1,12 @@
-package Domain.Shop.Policies.Purchase;
+package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import Domain.DTOs.ConditionDTO;
-import Domain.DTOs.DTOtoDomainFactory;
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DTOtoDomainFactory;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 
 public class PurchasePolicy {
     private List<PurchaseType> purchaseTypes;

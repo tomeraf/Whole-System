@@ -1,9 +1,12 @@
-package Domain.Shop.Policies.Condition.BaseCondition;
+package com.halilovindustries.backend.Domain.Shop.Policies.Condition.BaseCondition;
 
 import java.util.HashMap;
-import Domain.Shop.Category;
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Condition.Condition;
+
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Category;
+
+
 
 public abstract class BaseCondition extends Condition {
     private int itemId;

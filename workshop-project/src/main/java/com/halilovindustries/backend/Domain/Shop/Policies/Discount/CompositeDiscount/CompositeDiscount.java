@@ -1,10 +1,10 @@
-package Domain.Shop.Policies.Discount.CompositeDiscount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 
 public abstract class CompositeDiscount extends Discount {
     private HashMap<Integer,Discount> discounts;

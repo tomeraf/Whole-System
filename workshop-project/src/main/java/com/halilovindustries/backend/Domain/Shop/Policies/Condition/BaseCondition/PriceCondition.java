@@ -1,9 +1,9 @@
-package Domain.Shop.Policies.Condition.BaseCondition;
+package com.halilovindustries.backend.Domain.Shop.Policies.Condition.BaseCondition;
 
 import java.util.HashMap;
-import Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Category;
 
-import Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Item;
 
 public class PriceCondition extends BaseCondition {
     private double price;

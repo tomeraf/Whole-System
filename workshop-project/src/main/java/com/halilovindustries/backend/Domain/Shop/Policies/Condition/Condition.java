@@ -1,8 +1,7 @@
-package Domain.Shop.Policies.Condition;
+package com.halilovindustries.backend.Domain.Shop.Policies.Condition;
 
 import java.util.HashMap;
-
-import Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Item;
 
 public abstract class Condition {
     private static int idCounter = 0;

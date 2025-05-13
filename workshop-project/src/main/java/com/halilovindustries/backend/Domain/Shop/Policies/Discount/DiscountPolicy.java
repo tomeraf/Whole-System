@@ -1,15 +1,15 @@
-package Domain.Shop.Policies.Discount;
+package com.halilovindustries.backend.Domain.Shop.Policies.Discount;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import Domain.DTOs.DTOtoDomainFactory;
-import Domain.DTOs.DiscountDTO;
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Discount.BaseDiscount.*;
-import Domain.Shop.Policies.Discount.CompositeDiscount.CombinedDiscount;
-import Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.DTOs.DTOtoDomainFactory;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount.CombinedDiscount;
+import com.halilovindustries.backend.Domain.Shop.Category;
 
 public class DiscountPolicy {
     private List<DiscountType> discountTypes;

@@ -1,9 +1,9 @@
-package Domain.Shop.Policies.Condition.CompositeCondition;
+package com.halilovindustries.backend.Domain.Shop.Policies.Condition.CompositeCondition;
 
 import java.util.HashMap;
 
-import Domain.Shop.Item;
-import Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 public class OrCondition extends CompositeCondition {
     public OrCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
