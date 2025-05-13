@@ -16,6 +16,10 @@ import com.vaadin.flow.server.menu.MenuConfiguration;
 import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.List;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.halilovindustries.frontend.application.views.homepage.ShopsView;
+import com.halilovindustries.frontend.application.views.homepage.MyShopsView;
+import com.halilovindustries.frontend.application.views.homepage.CategoriesView;
 
 /**
  * The main view is a top-level placeholder for other views.
@@ -44,7 +48,7 @@ getStyle().setWidth("1900px");
     }
 
     private void addDrawerContent() {
-        Span appName = new Span("project");
+        Span appName = new Span("Hello, sign in");
         appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
         Header header = new Header(appName);
 
@@ -55,6 +59,10 @@ getStyle().setWidth("1900px");
 
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
+
+        nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.CART.create()));
+        nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
+        nav.addItem(new SideNavItem("Categories", CategoriesView.class, VaadinIcon.LIST.create()));
 
         List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
         menuEntries.forEach(entry -> {
