@@ -128,15 +128,19 @@ public class UserService {
                 }
     
                 int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
+                
                 Guest guest = userRepository.getUserById(userID);
                 // if getUsername() is non-null, they’re already registered
                 if (guest.getUsername() != null) {
                     throw new Exception("Unauthorized register attempt for ID=" + userID);
                 }
-                
                 Registered registered = guest.register(username, encodePassword(password), dateOfBirth);
+                
+                if (userRepository.getUserByName(username) != null)
+                    throw new Exception("Username already exists");
                 userRepository.removeGuestById(userID); // Remove the guest from the repository
                 userRepository.saveUser(registered);
+                 // should be actually inside guest.register..
                 return Response.ok();
             } catch (Exception e) {
                 logger.error(() -> "Error registering user: " + e.getMessage());
@@ -250,5 +254,17 @@ public class UserService {
     }
 
 
-
+    public boolean isLoggedIn(String sessionToken) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
+            return userRepository.getUserById(userID) != null && 
+                   userRepository.getUserById(userID).getUsername() != null;
+        } catch (Exception e) {
+            logger.error(() -> "Error checking login status: " + e.getMessage());
+            return false;
+        }
+    }
 }

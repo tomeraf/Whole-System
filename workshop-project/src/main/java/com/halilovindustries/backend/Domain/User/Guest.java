@@ -19,6 +19,7 @@ public class Guest {
         }
         Registered newUser = new Registered(username, password, dateOfBirth);
         newUser.setCart(getCart());
+        newUser.setSessionToken(sessionToken);
         return newUser;
     }
 
