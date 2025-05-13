@@ -11,19 +11,21 @@ import java.util.concurrent.locks.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import Domain.Shop.Category;
-import Domain.Shop.Policies.Condition.ConditionLimits;
-import Domain.Shop.Policies.Condition.ConditionType;
-import Domain.Shop.Policies.Discount.DiscountKind;
-import Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import io.jsonwebtoken.lang.Assert;
 import jakarta.validation.constraints.AssertTrue;
-import Domain.Response;
-import Domain.DTOs.ConditionDTO;
-import Domain.DTOs.DiscountDTO;
-import Domain.DTOs.ItemDTO;
-import Domain.DTOs.Order;
-import Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.Response;
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
+import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.Order;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 
 public class DiscountsTests extends BaseAcceptanceTests {
     @BeforeEach
@@ -72,6 +74,10 @@ public class DiscountsTests extends BaseAcceptanceTests {
     @Test
     public void testDiscountAppliedToBasket_ShouldSucceed() {
         // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1","12/25", "123"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
@@ -95,12 +101,16 @@ public class DiscountsTests extends BaseAcceptanceTests {
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
-        Order created = fixtures.successfulBuyCartContent(customerToken);
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
         assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
     }
     @Test
     public void testMaxDiscountAppliedToBasket_ShouldSucceed(){
         // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1","12/25", "123"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
@@ -126,7 +136,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
-        Order created = fixtures.successfulBuyCartContent(customerToken);
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
         assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
     }
 
@@ -210,6 +220,10 @@ public class DiscountsTests extends BaseAcceptanceTests {
     @Test
     public void testPurchaseConditionBlocksPurchase_ShouldSucceed(){
         // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1","12/25", "123"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
@@ -231,10 +245,10 @@ public class DiscountsTests extends BaseAcceptanceTests {
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
-        fixtures.mockPositivePayment();
-        fixtures.mockPositiveShipment();
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
         Response<Order> purchaseResp = orderService.buyCartContent(
-            customerToken
+            customerToken, p, s
         );
         assertFalse(purchaseResp.isOk(), "Discount should be applied to the total price");
     }

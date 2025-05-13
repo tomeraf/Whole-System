@@ -100,16 +100,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @Test
     public void testWatchSuspension_SuspensionOver_ShouldSucceed(){
         fixtures.generateRegisteredUserSession("user", "password");
-        userService.suspendUser(managerToken, "user", Optional.of(LocalDateTime.now()), Optional.of(LocalDateTime.now().plusSeconds(3)));
+        userService.suspendUser(managerToken, "user",Optional.empty(),Optional.empty());
         Response<String> response = userService.watchSuspensions(managerToken);
         assertTrue(response.isOk(), "System Manager should be able to watch a user's suspension");
         String suspensionInfo = response.getData();
         assertTrue(suspensionInfo.contains("user:user"), "Suspension info should not contain the user's name");
-        try{
-        Thread.sleep(4000);
-        }catch (InterruptedException e){
-            e.printStackTrace();
-        }
+        //remove suspension
+        userService.unsuspendUser(managerToken, "user");
+        //check if suspension is over
         Response<String> response2 = userService.watchSuspensions(managerToken);
         assertTrue(response2.isOk(), "System Manager should be able to watch a user's suspension");
         String suspensionInfo2 = response2.getData();

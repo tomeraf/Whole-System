@@ -12,6 +12,9 @@ import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.User.*;
 import com.halilovindustries.backend.Domain.Response;
@@ -445,54 +448,6 @@ public class ShopService {
         return Response.ok();
     }
 
-    public Response<Void> updateDiscountType(String sessionToken, int shopID, String discountType) {
-        // Check if the user is logged in
-        // If not, prompt to log in or register
-        // If logged in, update the discount type for the item in the shop with the
-        // provided details
-        try {
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User is not logged in");
-            }
-            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if(user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Shop shop = this.shopRepository.getShopById(shopID);
-            this.managementService.updateDiscountType(user, shop, discountType);
-            logger.info(() -> "Discount type updated in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
-            logger.error(() -> "Error updating discount type: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-        return Response.ok();
-    }
-
-    public Response<Void> updatePurchaseType(String sessionToken, int shopID, String purchaseType) {
-        // Check if the user is logged in
-        // If not, prompt to log in or register
-        // If logged in, update the purchase type for the item in the shop with the
-        // provided details
-        try {
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User is not logged in");
-            }
-            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if(user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Shop shop = this.shopRepository.getShopById(shopID);
-            this.managementService.updatePurchaseType(user, shop, purchaseType);
-            logger.info(() -> "Purchase type updated in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
-            logger.error(() -> "Error updating purchase type: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-        return Response.ok();
-    }
-
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
@@ -870,6 +825,133 @@ public class ShopService {
             logger.info(() -> "Auction opened: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
             logger.error(() -> "Error opening auction: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+
+    public Response<Void> addDiscount(String sessionToken, int shopID, DiscountDTO discountDetails) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.addDiscount(user, shop, discountDetails);
+            logger.info(() -> "Discount added in shop: " + shop.getName() + " by user: "
+                    + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error adding discount: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+    public Response<Void> removeDiscount(String sessionToken, int shopID, int discountID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.removeDiscount(user, shop, discountID);
+            logger.info(() -> "Discount removed in shop: " + shop.getName() + " by user: "
+                    + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error removing discount: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+    public Response<Void> updateDiscountType(String sessionToken, int shopID, DiscountType discountType) {
+        // Check if the user is logged in
+        // If not, prompt to log in or register
+        // If logged in, update the discount type for the item in the shop with the
+        // provided details
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            this.managementService.updateDiscountType(user, shop, discountType);
+            logger.info(() -> "Discount type updated in shop: " + shop.getName() + " by user: " + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error updating discount type: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+
+    //purchase policy
+        public Response<Void> updatePurchaseType(String sessionToken, int shopID, String purchaseType) {
+        // Check if the user is logged in
+        // If not, prompt to log in or register
+        // If logged in, update the purchase type for the item in the shop with the
+        // provided details
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            this.managementService.updatePurchaseType(user, shop, purchaseType);
+            logger.info(() -> "Purchase type updated in shop: " + shop.getName() + " by user: " + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error updating purchase type: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+    public Response<Void> addPurchaseConditon(String sessionToken,int shopID, ConditionDTO condition){
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.addPurchaseCondition(user, shop, condition);
+            logger.info(() -> "Purchase condition added in shop: " + shop.getName() + " by user: " + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error adding purchase condition: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+    public Response<Void> removePurchaseCondition(String sessionToken,int shopID, int conditionID){
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.removePurchaseCondition(user, shop, conditionID);
+            logger.info(() -> "Purchase condition removed in shop: " + shop.getName() + " by user: " + userID);
+        } catch (Exception e) {
+            logger.error(() -> "Error removing purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
         return Response.ok();
