@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.views.homepage;
 
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
+import com.halilovindustries.frontend.application.presenters.MyShopsPresenter;
 import com.halilovindustries.frontend.application.views.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
@@ -24,11 +25,11 @@ import java.util.List;
 @PageTitle("My Shops")
 @Route(value = "my-shops", layout = MainLayout.class)
 public class MyShopsView extends VerticalLayout {
-    private final HomePresenter presenter;
+    private final MyShopsPresenter presenter;
     private final FlexLayout cardsLayout;
 
     @Autowired
-    public MyShopsView(HomePresenter presenter) {
+    public MyShopsView(MyShopsPresenter presenter) {
         this.presenter = presenter;
         setSizeFull();
         setPadding(true);
