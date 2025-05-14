@@ -90,7 +90,7 @@ public class BidPurchase extends Purchase {
     private void setCounterBidID(int counterID) {
         this.CounterBidID = counterID;
     }
-    public Pair<Integer,Double> purchaseBidItem(int userID, Set<Integer> memberIds) {
+    public Pair<Integer,Double> purchaseBidItem(int userID, List<Integer> memberIds) {
         memberIds.add(userID); // Add the user ID to the set of member IDs
         if(!AcceptingMembers.containsAll(memberIds)){
             throw new IllegalArgumentException("Error: not all members accepted the bid.");

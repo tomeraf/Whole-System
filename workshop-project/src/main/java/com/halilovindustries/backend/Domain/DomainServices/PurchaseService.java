@@ -121,11 +121,11 @@ public class PurchaseService {
         }
     }
 
-	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
+	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails,List<Integer> memberIds) {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
-		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID());
+		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID(), memberIds);
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());

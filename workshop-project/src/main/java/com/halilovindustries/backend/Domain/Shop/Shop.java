@@ -375,14 +375,14 @@ public class Shop implements IMessageListener {
         }
     }
 
-    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID) {
+    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID,List<Integer> memberIDs) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
             try{
                 if(!getItem(bidPurchase.getItemId()).quantityCheck(1)){
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
-                return bidPurchase.purchaseBidItem(userID, ownerIDs);
+                return bidPurchase.purchaseBidItem(userID, memberIDs);
             }
              catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
