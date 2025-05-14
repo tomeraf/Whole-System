@@ -221,6 +221,9 @@ public class ShopService {
             if(user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            if (shopRepository.getShopByName(name) != null) {
+                return Response.error("Shop name already exists");
+            }
             Shop shop = managementService.createShop(shopRepository.getAllShops().size(),
                     user, name, description);
             shopRepository.addShop(shop);

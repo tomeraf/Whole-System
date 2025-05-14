@@ -8,6 +8,7 @@ import java.util.List;
 public interface IShopRepository {
     void addShop(Shop shop);
     Shop getShopById(int id);
+    Shop getShopByName(String name);
     void updateShop(Shop shop);
     void deleteShop(int id);
     HashMap<Integer,Shop> getAllShops();
