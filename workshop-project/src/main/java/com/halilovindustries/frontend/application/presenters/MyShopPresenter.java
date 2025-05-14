@@ -41,37 +41,4 @@ public class MyShopPresenter extends AbstractPresenter {
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
     }
-
-    public void getSessionToken(Consumer<String> callback) {
-    UI.getCurrent().getPage()
-        .executeJs("return localStorage.getItem('token');")
-        .then(String.class, token -> {
-            if (token != null) {
-                callback.accept(token); // Pass it back to whoever called
-            } else {
-                callback.accept(null);
-            }
-        });
-    }
-    
-    /** Validate the JWT before trusting it. */
-    public boolean validateToken(String token) {
-        return jwtAdapter.validateToken(token);
-    }
-
-    /** Extract the “username” (or user-id) from a valid JWT. */
-    public String extractUserId(String token) {
-        return jwtAdapter.getUsername(token);
-    }
-
-    public List<ItemDTO> getCartContent(String sessionToken) {
-        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
-        if (resp.isOk() && resp.getData() != null) {
-            return resp.getData();
-        }
-        return Collections.emptyList();
-    }
-    public boolean isLoggedIn(String sessionToken) {
-        return userService.isLoggedIn(sessionToken);
-    }
 }
