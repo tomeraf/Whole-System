@@ -214,4 +214,5 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to remove purchase conditions");
         }
     }
+
 }

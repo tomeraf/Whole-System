@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-import com.halilovindustries.backend.Domain.User.Guest;
 import com.halilovindustries.backend.Domain.User.Registered;
 
 import java.time.LocalDateTime;
@@ -136,5 +135,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     public void testCloseShop_ShopNotFound_ShouldFail() {
         Response<Void> closeResp = shopService.closeShop(managerToken, 999);
         assertTrue(!closeResp.isOk(), "closeShopBySystemManager should fail");
+    }
+
+    //try to to do an action while suspended
+    @Test
+    public void testActionWhileSuspended_ShouldFail() {
+        String token=fixtures.generateRegisteredUserSession("user", "password");
+        userService.suspendUser(managerToken, "user", Optional.empty(), Optional.empty());
+        Response<ShopDTO> response = shopService.createShop(token, "MyShop", "A shop for tests");
+        assertTrue(!response.isOk(), "ודקר should not be able to create a shop while suspended");
     }
 }

@@ -1,12 +1,10 @@
 package Tests.AcceptanceTests;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.locks.Condition;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,8 +14,6 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLim
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
-import io.jsonwebtoken.lang.Assert;
-import jakarta.validation.constraints.AssertTrue;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;

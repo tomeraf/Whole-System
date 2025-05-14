@@ -1,6 +1,6 @@
 package Tests.AcceptanceTests;
 
-import com.halilovindustries.backend.Service.*;
+
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -20,9 +20,7 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 
 import com.halilovindustries.backend.Domain.Shop.*;
-import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.*;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
