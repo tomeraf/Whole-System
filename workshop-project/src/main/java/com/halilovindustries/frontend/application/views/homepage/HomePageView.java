@@ -17,6 +17,9 @@ import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -30,9 +33,6 @@ import com.vaadin.flow.shared.Registration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.Notification.Position;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -49,16 +49,61 @@ public class HomePageView extends Composite<VerticalLayout> {
     private Button loginButton, registerButton, logoutButton;
     private Button viewCart;
 
-
-
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
-        getContent().setSizeFull();                     // full width & height
-        getContent().setPadding(false);
-        getContent().getStyle().set("overflow-x", "hidden");
-        getContent().setWidthFull();
-        // 1) Search bar + connected search button
+        
+        // Build UI components
+        HorizontalLayout header = createHeader();
+        HorizontalLayout shopsLayout = createShopsSection();
+        
+        // Add components to main layout
+        getContent().add(header);
+        getContent().add(shopsLayout);
+    }
+
+    private HorizontalLayout createHeader() {
+        HorizontalLayout leftControls = new HorizontalLayout(createCartButton());
+        leftControls.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        HorizontalLayout centerControls = new HorizontalLayout(createSearchBar());
+        centerControls.setAlignItems(FlexComponent.Alignment.CENTER);
+        centerControls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+
+        HorizontalLayout rightControls = createAuthButtons();
+        rightControls.setSpacing(true);
+        rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        // Combine into header
+        HorizontalLayout header = new HorizontalLayout(leftControls, centerControls, rightControls);
+        header.setWidthFull();
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setPadding(true);
+        header.getStyle().set("gap", "1rem");
+        
+        return header;
+    }
+
+    private Button createCartButton() {
+        viewCart = new Button(VaadinIcon.CART.create());
+        viewCart.addThemeVariants(ButtonVariant.LUMO_ICON);
+        viewCart.getStyle()
+                .set("width", "3rem")
+                .set("height", "3rem")
+                .set("min-width", "3rem")
+                .set("min-height", "3rem")
+                .set("padding", "0")
+                .set("border-radius", "50%")
+                .set("background-color", "white")
+                .set("border", "2px solid darkblue")
+                .set("color", "darkblue");
+        
+        viewCart.addClickListener(e -> UI.getCurrent().navigate("cart"));
+        
+        return viewCart;
+    }
+
+    private HorizontalLayout createSearchBar() {
         TextField searchBar = new TextField();
         searchBar.setPlaceholder("Search");
         searchBar.setWidth("400px");
@@ -82,178 +127,131 @@ public class HomePageView extends Composite<VerticalLayout> {
         searchContainer.setSpacing(false);
         searchContainer.setPadding(false);
         searchContainer.setAlignItems(FlexComponent.Alignment.CENTER);
-
-// 2) Round cart icon button
-        viewCart = new Button(VaadinIcon.CART.create());
-        viewCart.addThemeVariants(ButtonVariant.LUMO_ICON);
-        viewCart.getStyle()
-                .set("width", "3rem")
-                .set("height", "3rem")
-                .set("min-width", "3rem")
-                .set("min-height", "3rem")
-                .set("padding", "0")
-                .set("border-radius", "50%")
-                .set("background-color", "white")
-                .set("border", "2px solid darkblue")
-                .set("color", "darkblue");
-
-// 3) Login & Register buttons
-        loginButton = new Button("Login");
-        loginButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-        loginButton.getStyle()
-                .set("border-radius", "16px")
-                .set("padding", "0.5em 1em")
-                .set("background-color", "white")
-                .set("border", "2px solid darkblue");
-
-        loginButton.addClickListener(e -> openLoginDialog());
-
-        registerButton = new Button("Register");
-        registerButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-        registerButton.getStyle()
-                .set("border-radius", "16px")
-                .set("padding", "0.5em 1em")
-                .set("background-color", "white")
-                .set("border", "2px solid darkblue");
-
-
-        logoutButton = new Button("Logout");
-        logoutButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-        logoutButton.getStyle()
-            .set("border-radius", "16px")
-            .set("padding", "0.5em 1em")
-            .set("background-color", "white")
-            .set("border", "2px solid darkblue");
-
-        // call presenter
-        logoutButton.addClickListener(e -> {
-            doLogout();
-        });
-
-
-
-        // attach our dialog to the button
-        registerButton.addClickListener(e -> openRegisterDialog());
-
-        // 1) Left: cart button
-        HorizontalLayout leftControls = new HorizontalLayout(viewCart);
-        leftControls.setAlignItems(FlexComponent.Alignment.CENTER);
-
-// 2) Center: your searchContainer (already sized to 400px or whatever)
-        HorizontalLayout centerControls = new HorizontalLayout(searchContainer);
-        centerControls.setAlignItems(FlexComponent.Alignment.CENTER);
-
-// 3) Right: login & register
-        HorizontalLayout rightControls = new HorizontalLayout(loginButton, registerButton, logoutButton);
-        rightControls.setSpacing(true);
-        rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
-
         
-        centerControls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        return searchContainer;
+    }
 
+    private HorizontalLayout createAuthButtons() {
+        loginButton = createLoginButton();
+        registerButton = createRegisterButton();
+        logoutButton = createLogoutButton();
+        
+        return new HorizontalLayout(loginButton, registerButton, logoutButton);
+    }
 
-// 4) Combine into header
-        HorizontalLayout header = new HorizontalLayout(leftControls, centerControls, rightControls);
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
+    private Button createLoginButton() {
+        Button button = new Button("Login");
+        button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        button.getStyle()
+                .set("border-radius", "16px")
+                .set("padding", "0.5em 1em")
+                .set("background-color", "white")
+                .set("border", "2px solid darkblue");
 
-// Make only the center expand to push left and right to edges
-searchContainer.setWidth("100%");
-searchContainer.setMaxWidth("400px");
-// Optional: add some padding/gap
-        header.setPadding(true);
-        header.getStyle().set("gap", "1rem");
+        button.addClickListener(e -> openLoginDialog());
+        return button;
+    }
 
-// 5) Add header to your view
-        getContent().add(header);
+    private Button createRegisterButton() {
+        Button button = new Button("Register");
+        button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        button.getStyle()
+                .set("border-radius", "16px")
+                .set("padding", "0.5em 1em")
+                .set("background-color", "white")
+                .set("border", "2px solid darkblue");
 
-        // 1) Get 4 random shops
+        button.addClickListener(e -> openRegisterDialog());
+        return button;
+    }
+
+    private Button createLogoutButton() {
+        Button button = new Button("Logout");
+        button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        button.getStyle()
+                .set("border-radius", "16px")
+                .set("padding", "0.5em 1em")
+                .set("background-color", "white")
+                .set("border", "2px solid darkblue");
+
+        button.addClickListener(e -> doLogout());
+        return button;
+    }
+
+    private HorizontalLayout createShopsSection() {
+        // Get 4 random shops
         List<ShopDTO> featuredShops = presenter.getRandomShops();
 
-// 2) Container for the shop cards
+        // Container for the shop cards
         HorizontalLayout shopsLayout = new HorizontalLayout();
         shopsLayout.setWidthFull();
         shopsLayout.setSpacing(true);
         shopsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-
         shopsLayout.setAlignItems(FlexComponent.Alignment.START);
 
-// 3) Build each shop card with 4 random item images
+        // Build each shop card with 4 random item images
         for (ShopDTO shop : featuredShops) {
-            VerticalLayout card = new VerticalLayout();
-            card.setAlignItems(FlexComponent.Alignment.CENTER);
-            card.getStyle()
+            shopsLayout.add(createShopCard(shop));
+        }
+        
+        return shopsLayout;
+    }
+
+    private VerticalLayout createShopCard(ShopDTO shop) {
+        VerticalLayout card = new VerticalLayout();
+        card.setAlignItems(FlexComponent.Alignment.CENTER);
+        card.getStyle()
                 .set("border", "1px solid #ddd")
                 .set("border-radius", "8px")
                 .set("padding", "1rem");
-            card.setWidth("24%");              // four cards ≈ 100%
-            shopsLayout.setFlexGrow(1, card);  // allow it to shrink/grow
+        card.setWidth("24%");              // four cards ≈ 100%
+        card.setFlexGrow(1);               // allow it to shrink/grow
 
-            // Shop name as title
-            H3 title = new H3(shop.getName());
-            title.getStyle().set("margin", "0 0 0.5rem 0");
-            card.add(title);
+        // Shop name as title
+        H3 title = new H3(shop.getName());
+        title.getStyle().set("margin", "0 0 0.5rem 0");
+        card.add(title);
 
-            // Grid for 4 items
-            Div grid = new Div();
-            grid.getStyle()
-                    .set("display", "grid")
-                    .set("grid-template-columns", "1fr 1fr")
-                    .set("gap", "0.5rem");
-
-            // Fetch 4 random items for this shop
-            List<ItemDTO> items = presenter.get4rndShopItems(shop);
-            for (ItemDTO item : items) {
-                VerticalLayout cell = new VerticalLayout();
-                cell.setAlignItems(FlexComponent.Alignment.CENTER);
-                cell.getStyle().set("padding", "0.25rem");
-
-                // Use Unsplash to get a picture by item name
-                String q = URLEncoder.encode(item.getName(), StandardCharsets.UTF_8);
-                String imgUrl = "https://source.unsplash.com/100x100/?" + q;
-                Image img = new Image(imgUrl, item.getName());
-                img.setWidth("80px");
-                img.setHeight("80px");
-
-                Span name = new Span(item.getName());
-                name.getStyle().set("font-size", "0.8em");
-
-                cell.add(img, name);
-                grid.add(cell);
-            }
-
-            card.add(grid);
-            shopsLayout.add(card);
-        }
-        // … your styling …
-        viewCart.addClickListener(e -> UI.getCurrent().navigate("cart"));   // ← wire up
-
-        // 4) Add the featured-shops row to the view
-        getContent().add(shopsLayout);
-
+        // Grid for 4 items
+        Div grid = createItemGrid(shop);
+        card.add(grid);
+        
+        return card;
     }
 
-    @Override
-    protected void onAttach(AttachEvent event) {
-        super.onAttach(event);
-UI.getCurrent().getPage().executeJs(
-    "document.body.style.overflowX = 'hidden';"
-  );
-        // Grab the token from localStorage:
-        presenter.getSessionToken(token -> {
-            // Vaadin callbacks already run on the UI thread, but to be safe:
-            UI.getCurrent().access(() -> {
-                // If there's no token, or it’s expired/invalid:
-                if (token == null || !presenter.validateToken(token) || !presenter.isLoggedIn(token)) {
-                    // create a fresh guest token
-                    presenter.saveSessionToken();
-                    showGuestUI();
-                } else {
-                    // leave the existing user token in place
-                    showLoggedInUI();
-                }
-            });
-        });
+    private Div createItemGrid(ShopDTO shop) {
+        Div grid = new Div();
+        grid.getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "1fr 1fr")
+                .set("gap", "0.5rem");
+
+        // Fetch 4 random items for this shop
+        List<ItemDTO> items = presenter.get4rndShopItems(shop);
+        for (ItemDTO item : items) {
+            grid.add(createItemCell(item));
+        }
+        
+        return grid;
+    }
+
+    private VerticalLayout createItemCell(ItemDTO item) {
+        VerticalLayout cell = new VerticalLayout();
+        cell.setAlignItems(FlexComponent.Alignment.CENTER);
+        cell.getStyle().set("padding", "0.25rem");
+
+        // Use Unsplash to get a picture by item name
+        String q = URLEncoder.encode(item.getName(), StandardCharsets.UTF_8);
+        String imgUrl = "https://source.unsplash.com/100x100/?" + q;
+        Image img = new Image(imgUrl, item.getName());
+        img.setWidth("80px");
+        img.setHeight("80px");
+
+        Span name = new Span(item.getName());
+        name.getStyle().set("font-size", "0.8em");
+
+        cell.add(img, name);
+        return cell;
     }
 
     private void openRegisterDialog() {
@@ -268,9 +266,9 @@ UI.getCurrent().getPage().executeJs(
 
         // submit button
         Button submit = new Button("Create Account", evt -> {
-            String name  = nameField.getValue().trim();
-            String pw    = passwordField.getValue();
-            LocalDate dob= dobPicker.getValue();
+            String name = nameField.getValue().trim();
+            String pw = passwordField.getValue();
+            LocalDate dob = dobPicker.getValue();
             // fire off the registration
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
@@ -290,10 +288,10 @@ UI.getCurrent().getPage().executeJs(
 
         // layout
         VerticalLayout layout = new VerticalLayout(
-            nameField,
-            passwordField,
-            dobPicker,
-            new HorizontalLayout(submit, cancel)
+                nameField,
+                passwordField,
+                dobPicker,
+                new HorizontalLayout(submit, cancel)
         );
         layout.setPadding(false);
         layout.setAlignItems(FlexComponent.Alignment.STRETCH);
@@ -304,33 +302,31 @@ UI.getCurrent().getPage().executeJs(
 
     private void openLoginDialog() {
         Dialog dialog = new Dialog();
-        
         dialog.setWidth("400px");
 
         TextField usernameField = new TextField("Username");
         PasswordField passwordField = new PasswordField("Password");
 
         Button submit = new Button("Log In", evt -> {
-                String username = usernameField.getValue().trim();
-                String pw       = passwordField.getValue();
-                doLogin(username, pw);
-                dialog.close();
+            String username = usernameField.getValue().trim();
+            String pw = passwordField.getValue();
+            doLogin(username, pw);
+            dialog.close();
         });
         submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         Button cancel = new Button("Cancel", e -> dialog.close());
 
         VerticalLayout layout = new VerticalLayout(
-        usernameField,
-        passwordField,
-        new HorizontalLayout(submit, cancel)
+                usernameField,
+                passwordField,
+                new HorizontalLayout(submit, cancel)
         );
         layout.setPadding(false);
         layout.setAlignItems(FlexComponent.Alignment.STRETCH);
 
         dialog.add(layout);
         dialog.open();
-
     }
 
     private void doLogin(String username, String password) {
@@ -351,13 +347,13 @@ UI.getCurrent().getPage().executeJs(
     }
 
     private void doLogout() {
-    if (myBroadcastRegistration != null) {
-        myBroadcastRegistration.remove();
-        myBroadcastRegistration = null;
+        if (myBroadcastRegistration != null) {
+            myBroadcastRegistration.remove();
+            myBroadcastRegistration = null;
+        }
+        presenter.logoutUser(); // performs backend logout and gets new guest token
+        showGuestUI();          // switch back to guest view
     }
-    presenter.logoutUser(); // performs backend logout and gets new guest token
-    showGuestUI();          // switch back to guest view
-}
 
     /** Show login/register, hide logout */
     private void showGuestUI() {
@@ -371,12 +367,6 @@ UI.getCurrent().getPage().executeJs(
         loginButton.setVisible(false);
         registerButton.setVisible(false);
         logoutButton.setVisible(true);
-    }
-
-    @ClientCallable
-    public void onBrowserUnload() {
-        // fire your normal logout logic
-        doLogout();
     }
 
     private void openCartDialog() {
@@ -412,10 +402,39 @@ UI.getCurrent().getPage().executeJs(
 
                 dialog.add(layout);
                 dialog.open();
-
             } else {
                 Notification.show("Please log in to view your cart.", 2000, Position.MIDDLE);
             }
         });
+    }
+
+    @Override
+    protected void onAttach(AttachEvent event) {
+        super.onAttach(event);
+        UI.getCurrent().getPage().executeJs(
+            "document.body.style.overflowX = 'hidden';"
+        );
+        // Grab the token from localStorage:
+        presenter.getSessionToken(token -> {
+            // Vaadin callbacks already run on the UI thread, but to be safe:
+            UI.getCurrent().access(() -> {
+                System.out.println("Token: " + token);
+                // If there's no token, or it's expired/invalid:
+                if (token == null || !presenter.validateToken(token) || !presenter.isLoggedIn(token)) {
+                    // create a fresh guest token
+                    presenter.saveSessionToken();
+                    showGuestUI();
+                } else {
+                    // leave the existing user token in place
+                    showLoggedInUI();
+                }
+            });
+        });
+    }
+
+    @ClientCallable
+    public void onBrowserUnload() {
+        // fire your normal logout logic
+        doLogout();
     }
 }

@@ -34,7 +34,7 @@ public class MainLayout extends AppLayout {
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
-getStyle().setWidth("1900px");
+getStyle().setWidth("100%");
     }
 
     private void addHeaderContent() {
