@@ -1,7 +1,6 @@
-package com.halilovindustries.frontend.application.views.homepage;
+package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
-import com.halilovindustries.frontend.application.views.MainLayout;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;

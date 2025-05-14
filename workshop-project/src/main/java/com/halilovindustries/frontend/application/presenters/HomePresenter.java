@@ -81,22 +81,6 @@ public class HomePresenter extends AbstractPresenter {
         });
     }
 
-    public void registerUser(String name, String password, LocalDate dateOfBirth) {
-        getSessionToken(token -> {
-            if (token != null) {
-                Response<Void> res = userService.registerUser(token, name, password, dateOfBirth);
-                if (res.isOk()) {
-                    Notification.show("Registration successful!", 2000, Position.TOP_CENTER);
-                } else {
-                    Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
-                }
-            } else {
-                // no token? probably error
-                Notification.show("No session token found, please reload.");
-            }
-        });
-    }
-
     public void loginUser(String username, String password, BiConsumer<String, Boolean> onFinish) {
         getSessionToken(token -> {
             if (token == null) {
@@ -232,13 +216,5 @@ public class HomePresenter extends AbstractPresenter {
             Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
             }
         });
-    }
-
-    public List<ItemDTO> getCartContent(String sessionToken) {
-        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
-        if (resp.isOk() && resp.getData() != null) {
-            return resp.getData();
-        }
-        return Collections.emptyList();
     }
 }

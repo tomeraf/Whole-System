@@ -1,6 +1,5 @@
-package com.halilovindustries.frontend.application.views.homepage;
+package com.halilovindustries.frontend.application.views;
 
-import com.halilovindustries.frontend.application.views.MainLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;

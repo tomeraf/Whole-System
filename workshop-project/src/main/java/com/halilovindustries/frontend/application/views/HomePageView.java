@@ -1,5 +1,5 @@
 
-package com.halilovindustries.frontend.application.views.homepage;
+package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -327,7 +327,7 @@ public class HomePageView extends Composite<VerticalLayout> {
             if (success && token != null && presenter.validateToken(token)) {
                 String userId = presenter.extractUserId(token);
 
-                // ✅ Store this view's listener registration
+                // Store this view's listener registration
                 myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
                     UI.getCurrent().access(() -> {
                         Notification.show("Server: " + msg, 3000, Position.TOP_CENTER);
@@ -360,45 +360,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         loginButton.setVisible(false);
         registerButton.setVisible(false);
         logoutButton.setVisible(true);
-    }
-
-    private void openCartDialog() {
-        System.out.println("Pressed on cart button");
-
-        // 1) fetch token
-        presenter.getSessionToken(token -> {
-            if (token != null && presenter.validateToken(token)) {
-                System.out.println("Token: " + token);
-                // 2) fetch items
-                List<ItemDTO> items = presenter.getCartContent(token);
-
-                // 3) build dialog
-                Dialog dialog = new Dialog();
-                dialog.setWidth("600px");
-
-                H3 title = new H3("Your Shopping Cart");
-                title.getStyle().set("margin-bottom", "1em");
-
-                Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
-                grid.setItems(items);
-                grid.removeAllColumns();
-                grid.addColumn(ItemDTO::getName).setHeader("Name");
-                grid.addColumn(ItemDTO::getQuantity).setHeader("Qty");
-                grid.addColumn(ItemDTO::getPrice).setHeader("Price");
-
-                Button close = new Button("Close", evt -> dialog.close());
-                close.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-                VerticalLayout layout = new VerticalLayout(title, grid, close);
-                layout.setPadding(false);
-                layout.setAlignItems(FlexComponent.Alignment.STRETCH);
-
-                dialog.add(layout);
-                dialog.open();
-            } else {
-                Notification.show("Please log in to view your cart.", 2000, Position.MIDDLE);
-            }
-        });
     }
 
     @Override

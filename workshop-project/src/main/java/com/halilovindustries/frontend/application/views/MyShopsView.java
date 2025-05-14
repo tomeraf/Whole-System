@@ -1,9 +1,8 @@
-package com.halilovindustries.frontend.application.views.homepage;
+package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.frontend.application.presenters.MyShopsPresenter;
-import com.halilovindustries.frontend.application.views.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;

@@ -493,6 +493,11 @@ public class ShopService {
         return Response.ok();
     }
 
+    // public int getShopID(String shopName) {
+    //     return shopRepository.getAllShops().values().stream()
+    //             .filter(shop -> shop.getName().equals(shopName)).findFirst().get().getId();
+    // }
+
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {

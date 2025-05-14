@@ -1,6 +1,7 @@
-package com.halilovindustries.frontend.application.views.homepage;
+package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.frontend.application.presenters.CartPresenter;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
@@ -20,12 +21,12 @@ import java.util.List;
 @PageTitle("Your Cart")
 public class CartView extends Composite<VerticalLayout>
                        implements BeforeEnterObserver {
-  private final HomePresenter presenter;
+  private final CartPresenter presenter;
   private final Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
   private final Button back = new Button("← Back", e -> UI.getCurrent().navigate(""));
 
   @Autowired
-  public CartView(HomePresenter presenter) {
+  public CartView(CartPresenter presenter) {
     this.presenter = presenter;
     grid.removeAllColumns();
     grid.addColumn(ItemDTO::getName).setHeader("Name");

@@ -17,9 +17,6 @@ import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.List;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.halilovindustries.frontend.application.views.homepage.ShopsView;
-import com.halilovindustries.frontend.application.views.homepage.MyShopsView;
-import com.halilovindustries.frontend.application.views.homepage.CategoriesView;
 
 /**
  * The main view is a top-level placeholder for other views.

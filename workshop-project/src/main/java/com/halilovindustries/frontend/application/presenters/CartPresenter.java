@@ -18,6 +18,8 @@ import com.halilovindustries.backend.Service.UserService;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
+import io.jsonwebtoken.lang.Collections;
+
 public class CartPresenter extends AbstractPresenter {
     private List<ShopDTO> randomShops = new ArrayList<>();
     @Autowired
@@ -68,5 +70,13 @@ public class CartPresenter extends AbstractPresenter {
             notification.setPosition(Position.MIDDLE);
             notification.setDuration(3000);
         }
+    }
+
+    public List<ItemDTO> getCartContent(String sessionToken) {
+        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
+        if (resp.isOk() && resp.getData() != null) {
+            return resp.getData();
+        }
+        return Collections.emptyList();
     }
 }
