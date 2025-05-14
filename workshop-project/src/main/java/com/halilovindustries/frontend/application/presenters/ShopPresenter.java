@@ -43,36 +43,4 @@ public class ShopPresenter extends AbstractPresenter {
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
     }
-    
-    public void removeFromCart(String sessionToken, ItemDTO item) {
-        // Convert ItemDTO to HashMap<Integer, List<Integer>> as required by removeItemsFromCart
-        java.util.HashMap<Integer, java.util.List<Integer>> itemsMap = new java.util.HashMap<>();
-        // Assuming ItemDTO has getId() and getQuantity() methods
-        java.util.List<Integer> quantities = new java.util.ArrayList<>();
-        quantities.add(item.getQuantity());
-        itemsMap.put(item.getItemID(), quantities);
-
-        Response<Void> resp = orderService.removeItemsFromCart(sessionToken, itemsMap);
-        if (resp.isOk()) {
-            Notification notification = Notification.show("Item removed from cart");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        } else {
-            Notification notification = Notification.show("Failed to remove item from cart");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        }
-    }
-    public void buyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
-        Response<Order> resp = orderService.buyCartContent(sessionToken, p, s);
-        if (resp.isOk()) {
-            Notification notification = Notification.show("Purchase successful");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        } else {
-            Notification notification = Notification.show("Failed to purchase items");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        }
-    }
 }
