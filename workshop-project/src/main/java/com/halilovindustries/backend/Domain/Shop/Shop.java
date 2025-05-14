@@ -357,6 +357,9 @@ public class Shop implements IMessageListener {
                 managerIDs.remove(id);
         }
     }
+    public boolean isShopMember(int userId) {
+        return ownerIDs.contains(userId) || managerIDs.contains(userId);
+    }
 
     public boolean canAddItemsToBasket(HashMap<Integer,Integer> itemsMap) {
         for (Integer itemId : itemsMap.keySet()) {
@@ -444,6 +447,15 @@ public class Shop implements IMessageListener {
 
     public void removePurchaseCondition(int conditionID) {
         purchasePolicy.removeCondition(conditionID);
+    }
+
+    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
+        if (bidPurchaseItems.containsKey(bidId)) {
+            BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
+            bidPurchase.answerOnCounterBid(userID, accept);
+        } else {
+            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
+        }
     }
 }
 

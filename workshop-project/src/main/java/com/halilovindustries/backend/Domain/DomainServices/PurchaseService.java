@@ -158,4 +158,8 @@ public class PurchaseService {
         Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip);
         return order;
     }
+
+    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
+        shop.answerOnCounterBid(bidId, accept, user.getUserID());
+    }
 }

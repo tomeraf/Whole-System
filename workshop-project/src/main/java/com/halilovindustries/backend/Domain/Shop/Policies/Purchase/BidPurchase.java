@@ -102,6 +102,13 @@ public class BidPurchase extends Purchase {
         done = true; // Mark the bid as done
         return new Pair<>(getItemId(), getAmount()); // Return the item ID and bid amount as a pair
     }
+    public void answerOnCounterBid(int userID, boolean accept) {
+        if(getBuyerId()!=userID)
+        {
+            throw new IllegalArgumentException("Error: user is not the buyer of the bid.");
+        }
+        receiveDecision(userID, accept);
+    }
 
 
 }

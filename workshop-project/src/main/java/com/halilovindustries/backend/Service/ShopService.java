@@ -59,6 +59,9 @@ public class ShopService {
         this.concurrencyHandler = concurrencyHandler;
     }
 
+
+    //show and filter
+
     public Response<List<ShopDTO>> showAllShops(String sessionToken) {
         if (!authenticationAdapter.validateToken(sessionToken)) {
             return Response.error("User not logged in");
@@ -67,6 +70,27 @@ public class ShopService {
                 shopRepository.getAllShops().values().stream().filter((shop) -> shop.isOpen()).toList());
         List<ShopDTO> shopDTOs = new ArrayList<>();
         for (Shop shop : s) {
+            HashMap<Integer, Item> items = shop.getItems();
+            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
+            for (Item item : items.values()) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription());
+                itemDTOs.put(item.getId(), itemDTO);
+            }
+            ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
+                    shop.getRating(), shop.getRatingCount());
+            shopDTOs.add(shopDTO);
+        }
+        return Response.ok(shopDTOs);
+    }
+    public Response<List<ShopDTO>> showUserShops(String sessionToken){
+        if (!authenticationAdapter.validateToken(sessionToken)) {
+            return Response.error("User not logged in");
+        }
+        int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+
+        List<ShopDTO> shopDTOs = new ArrayList<>();
+        for (Shop shop : shopRepository.getUserShops(userID)) {
             HashMap<Integer, Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : items.values()) {
@@ -155,6 +179,36 @@ public class ShopService {
         }
     }
 
+    public Response<ShopDTO> getShopInfo(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
+            for (Item item : shop.getItems().values()) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription());
+                itemDTOs.put(item.getId(), itemDTO);
+            }
+            ShopDTO shopDto = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
+                    shop.getRating(), shop.getRatingCount());
+            logger.info(() -> "Shop info retrieved: " + shopDto.getName() + " by user: "
+                    + userRepository.getUserById(userID).getUsername());
+            return Response.ok(shopDto);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving shop info: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    //shop management
+
     public Response<ShopDTO> createShop(String sessionToken, String name, String description) {
         Lock creationLock = concurrencyHandler.getGlobalShopCreationLock();
         try {
@@ -189,33 +243,36 @@ public class ShopService {
         }
     }
 
-    public Response<ShopDTO> getShopInfo(String sessionToken, int shopID) {
+    public Response<Void> closeShop(String sessionToken, int shopID) {
+        // Check if the user is logged in
+        // If not, prompt to log in or register
+        // If logged in, close the shop with the provided details
         try {
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User is not logged in");
+            Lock shopWrite = concurrencyHandler.getShopWriteLock(shopID);
+            shopWrite.lock();
+            try {
+                // now exclusive: no reads or other writes
+                if (!authenticationAdapter.validateToken(sessionToken)) {
+                    throw new Exception("User is not logged in");
+                }
+                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+                Registered user = (Registered) this.userRepository.getUserById(userID);
+                if(user.isSuspended()) {
+                    return Response.error("User is suspended");
+                }
+                Shop shop = shopRepository.getShopById(shopID);
+                managementService.closeShop(user, shop);
+                logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
+                return Response.ok();
+            } finally {
+                shopWrite.unlock();
             }
-            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if(user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Shop shop = this.shopRepository.getShopById(shopID);
-            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : shop.getItems().values()) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
-                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription());
-                itemDTOs.put(item.getId(), itemDTO);
-            }
-            ShopDTO shopDto = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
-                    shop.getRating(), shop.getRatingCount());
-            logger.info(() -> "Shop info retrieved: " + shopDto.getName() + " by user: "
-                    + userRepository.getUserById(userID).getUsername());
-            return Response.ok(shopDto);
         } catch (Exception e) {
-            logger.error(() -> "Error retrieving shop info: " + e.getMessage());
+            logger.error(() -> "Error closing shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
     }
+
 
     public Response<ItemDTO> addItemToShop(String sessionToken, int shopID, String itemName, Category category,
             double itemPrice, String description) {
@@ -401,6 +458,9 @@ public class ShopService {
         }
     }
 
+
+    //customer interaction
+
     public Response<Void> rateShop(String sessionToken, int shopID, int rating) {
         // If logged in, rate the shop with the provided rating
         try {
@@ -448,6 +508,76 @@ public class ShopService {
         return Response.ok();
     }
 
+        public Response<Void> sendMessage(String sessionToken, int shopId, String title, String content) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopId);
+            int newMessageId = shop.getNextMessageId();
+            IMessage message = interactionService.createMessage(newMessageId, shop.getId(), shop.getName(),
+                    shop.getId(), title, content);
+            interactionService.sendMessage(shop, message);
+            logger.info(() -> "Message sent: " + message.getId() + " in shop: " + shop.getName() + " by user: "
+                    + sessionToken);
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error sending message: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title,
+            String content) {
+        ReentrantLock messageLock = concurrencyHandler.getBidLock(shopId, messageId);
+
+        try {
+            messageLock.lockInterruptibly();
+            try {
+                if (!authenticationAdapter.validateToken(sessionToken)) {
+                    throw new Exception("User is not logged in");
+                }
+                String username = authenticationAdapter.getUsername(sessionToken);
+                Registered user = userRepository.getUserByName(username);
+                if(user.isSuspended()) {
+                    return Response.error("User is suspended");
+                }
+                Shop shop = shopRepository.getShopById(shopId);
+                int newMessageId = shop.getNextMessageId();
+                IMessage parentMessage = shop.getAllMessages().get(messageId);
+                IMessage responseMessage = interactionService.createMessage(newMessageId, shop.getId(), shop.getName(),
+                        shop.getId(), title, content);
+                interactionService.respondToMessage(user, parentMessage, responseMessage);
+            } finally {
+                messageLock.unlock();
+            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            return Response.error("Thread was interrupted.");
+        }
+
+        catch (Exception e) {
+            logger.error(() -> "Error responding to message: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+        return Response.ok();
+    }
+
+    public Response<HashMap<Integer, IMessage>> getInbox(int shopID) {
+        try {
+            return Response.ok(shopRepository.getShopById(shopID).getAllMessages());
+        } catch (Exception e) {
+            logger.error(() -> "Error getting all messages: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    //management
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
@@ -621,36 +751,6 @@ public class ShopService {
         return Response.ok();
     }
 
-    public Response<Void> closeShop(String sessionToken, int shopID) {
-        // Check if the user is logged in
-        // If not, prompt to log in or register
-        // If logged in, close the shop with the provided details
-        try {
-            Lock shopWrite = concurrencyHandler.getShopWriteLock(shopID);
-            shopWrite.lock();
-            try {
-                // now exclusive: no reads or other writes
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if(user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.closeShop(user, shop);
-                logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
-                return Response.ok();
-            } finally {
-                shopWrite.unlock();
-            }
-        } catch (Exception e) {
-            logger.error(() -> "Error closing shop: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-    }
-
     public Response<String> getMembersPermissions(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -677,66 +777,7 @@ public class ShopService {
         }
     }
 
-    public Response<Void> sendMessage(String sessionToken, int shopId, String title, String content) {
-        try {
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User is not logged in");
-            }
-            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if(user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Shop shop = shopRepository.getShopById(shopId);
-            int newMessageId = shop.getNextMessageId();
-            IMessage message = interactionService.createMessage(newMessageId, shop.getId(), shop.getName(),
-                    shop.getId(), title, content);
-            interactionService.sendMessage(shop, message);
-            logger.info(() -> "Message sent: " + message.getId() + " in shop: " + shop.getName() + " by user: "
-                    + sessionToken);
-            return Response.ok();
-        } catch (Exception e) {
-            logger.error(() -> "Error sending message: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-    }
-
-    public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title,
-            String content) {
-        ReentrantLock messageLock = concurrencyHandler.getBidLock(shopId, messageId);
-
-        try {
-            messageLock.lockInterruptibly();
-            try {
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                String username = authenticationAdapter.getUsername(sessionToken);
-                Registered user = userRepository.getUserByName(username);
-                if(user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopId);
-                int newMessageId = shop.getNextMessageId();
-                IMessage parentMessage = shop.getAllMessages().get(messageId);
-                IMessage responseMessage = interactionService.createMessage(newMessageId, shop.getId(), shop.getName(),
-                        shop.getId(), title, content);
-                interactionService.respondToMessage(user, parentMessage, responseMessage);
-            } finally {
-                messageLock.unlock();
-            }
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return Response.error("Thread was interrupted.");
-        }
-
-        catch (Exception e) {
-            logger.error(() -> "Error responding to message: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-        return Response.ok();
-    }
-
+    //bids and auctions
     public Response<Void> answerBid(String sessionToken, int shopID, int bidID, boolean accept) {
         ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
 
@@ -800,15 +841,6 @@ public class ShopService {
         }
     }
 
-    public Response<HashMap<Integer, IMessage>> getInbox(int shopID) {
-        try {
-            return Response.ok(shopRepository.getShopById(shopID).getAllMessages());
-        } catch (Exception e) {
-            logger.error(() -> "Error getting all messages: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-    }
-
     public Response<Void> openAuction(String sessionToken, int shopID, int itemID, double startingPrice,
             LocalDateTime startDate, LocalDateTime endDate) {
         try {
@@ -830,6 +862,7 @@ public class ShopService {
         return Response.ok();
     }
 
+    //policies
     public Response<Void> addDiscount(String sessionToken, int shopID, DiscountDTO discountDetails) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {

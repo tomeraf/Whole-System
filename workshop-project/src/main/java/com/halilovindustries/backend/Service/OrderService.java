@@ -316,6 +316,35 @@ public class OrderService {
         }
         return null;
     }
+    
+    /**
+     * Answers on a counter bid.
+     *
+     * @param sessionToken current session token
+     * @param itemID the item to bid on
+     * @param accept whether to accept the counter bid
+     */
+    public Response<Void> answerOnCounterBid(String sessionToken,int shopId,int bidId,boolean accept) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User not logged in");
+            }
+            int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Guest guest = userRepository.getUserById(userId); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
+            Registered user = userRepository.getUserByName(guest.getUsername());
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            purchaseService.answerOnCounterBid(user,shop,bidId,accept);
+    
+            logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId);
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error answering on counter bid: " + e.getMessage());
+            return Response.error("Error answering on counter bid: " + e.getMessage());
+        }
+    }
 
     /**
      * Performs a direct purchase of a single item.
