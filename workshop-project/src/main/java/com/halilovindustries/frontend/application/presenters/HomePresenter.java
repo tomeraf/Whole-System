@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -44,68 +45,6 @@ public class HomePresenter {
         this.shopService   = shopService;
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
-        //rnd3Shops();
-    }
-
-
-       private void rnd3Shops() {
-//        List<ShopDTO> shops = shopService.showAllShops().getData();
-//        Random rand = new Random();
-//        if (shops.isEmpty())
-//            return;
-//        int rndNum = rand.nextInt(shops.size());
-//        RandomShops = new ArrayList<>();
-//        for (int i = 0; i < 3; i++)
-//            RandomShops.add(shops.get(rndNum++ % shops.size()));
-
-        getSessionToken(token -> {
-            if (token != null) {
-                List<ShopDTO> shops = shopService.showAllShops(token).getData();
-        randomShops.clear();
-        if (shops == null || shops.isEmpty()) return;
-
-        Random rand = new Random();
-        int start = rand.nextInt(shops.size());
-        for (int i = 0; i < 3; i++) {
-            randomShops.add(shops.get((start + i) % shops.size()));
-        }
-            } else {
-                // no token? probably error
-                Notification.show("No session token found, please reload.");
-            }
-        });
-        
-    }
-
-
-    public List<ShopDTO> getRandomShops() {
-        return randomShops;
-    }
-
-
-    public List<ItemDTO> get4rndShopItems(ShopDTO shop) {
-//        List<ItemDTO> randomItems = new ArrayList<>();
-//        Random rand = new Random();
-//        if (randomShops.isEmpty())
-//            return randomItems;
-//        Object[] keys = shop.getItems().keySet().toArray();
-//        int rndNum = rand.nextInt(keys.length);
-//        for (int i = 0; i < 4; i++)
-//            randomItems.add(shop.getItems().get((Integer)(keys[rndNum%keys.length])));
-//        return randomItems;
-
-        List<ItemDTO> randomItems = new ArrayList<>();
-        if (shop.getItems() == null || shop.getItems().isEmpty())
-            return randomItems;
-
-        Object[] keys = shop.getItems().keySet().toArray();
-        Random rand = new Random();
-        int start = rand.nextInt(keys.length);
-        for (int i = 0; i < 4; i++) {
-            int idx = (start + i) % keys.length;
-            randomItems.add(shop.getItems().get((Integer)keys[idx]));
-        }
-        return randomItems;
     }
 
     public void saveSessionToken() {
@@ -286,12 +225,12 @@ public class HomePresenter {
             }
 
             // ------------- should not be removed! -------------
-            Response<List<ShopDTO>> resp = shopService.getUserShops(token);
-            if (!resp.isOk()) {
-                onFinish.accept(Collections.emptyList(), false);
-            } else {
-                onFinish.accept(resp.getData(), true);
-            }
+            // Response<List<ShopDTO>> resp = shopService.showUserShops(token);
+            // if (!resp.isOk()) {
+            //     onFinish.accept(Collections.emptyList(), false);
+            // } else {
+            //     onFinish.accept(resp.getData(), true);
+            // }
         });
     }
 
@@ -304,5 +243,40 @@ public class HomePresenter {
     }
     public boolean isLoggedIn(String sessionToken) {
         return userService.isLoggedIn(sessionToken);
+    }
+
+    public void addItemToCart(int shopId, int itemId, int quantity, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            if (token == null || !validateToken(token)) {
+                onFinish.accept(false);
+                return;
+            }
+            // build the nested map: shopId → (itemId→quantity)
+            HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+            HashMap<Integer, Integer> itemsMap = new HashMap<>();
+            itemsMap.put(itemId, quantity);
+            userItems.put(shopId, itemsMap);
+
+            Response<Void> resp = orderService.addItemsToCart(token, userItems);
+            onFinish.accept(resp.isOk());
+        });
+    }
+
+    /**
+     * Fetch all open shops from the backend.
+     */
+    public void showAllShops(BiConsumer<List<ShopDTO>, Boolean> onFinish) {
+        getSessionToken(token -> {
+            if (token == null || !validateToken(token)) {
+                onFinish.accept(Collections.emptyList(), false);
+                return;
+            }
+            Response<List<ShopDTO>> resp = shopService.showAllShops(token);
+            if (!resp.isOk()) {
+                onFinish.accept(Collections.emptyList(), false);
+            } else {
+                onFinish.accept(resp.getData(), true);
+            }
+        });
     }
 }

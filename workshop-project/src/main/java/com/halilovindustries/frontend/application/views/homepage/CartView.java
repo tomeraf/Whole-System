@@ -38,6 +38,7 @@ public class CartView extends Composite<VerticalLayout>
   @Override
   public void beforeEnter(BeforeEnterEvent event) {
     presenter.getSessionToken(token -> {
+      System.out.println("Token: " + token);
       if (token == null || !presenter.validateToken(token)) {
         Notification.show("Please log in first", 2000, Position.MIDDLE);
         event.rerouteTo(HomePageView.class);
