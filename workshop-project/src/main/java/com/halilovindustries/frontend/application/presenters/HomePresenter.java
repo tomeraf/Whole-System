@@ -27,12 +27,8 @@ import com.vaadin.flow.shared.Registration;
 import io.jsonwebtoken.lang.Collections;
 
 @Component
-public class HomePresenter {
+public class HomePresenter extends AbstractPresenter {
     private List<ShopDTO> randomShops = new ArrayList<>();
-    private final UserService    userService;
-    private final ShopService    shopService;
-    private final JWTAdapter     jwtAdapter;
-    private final OrderService   orderService;      // ← new
 
     @Autowired
     public HomePresenter(
@@ -234,6 +230,83 @@ public class HomePresenter {
         });
     }
 
+    
+    public void getRandomItems(int count, Consumer<List<ItemDTO>> onFinish) {
+        // Step 1: pull whatever token is in localStorage
+        getSessionToken(stored -> {
+            String token = stored;
+
+            // Step 2: if it’s null/invalid/expired → grab a fresh **guest** token synchronously
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Response<String> guestResp = userService.enterToSystem();
+                if (guestResp.isOk()) {
+                    token = guestResp.getData();
+                    // update the browser storage so future calls see it
+                    UI.getCurrent()
+                    .getPage()
+                    .executeJs("localStorage.setItem('token', $0);", token);
+                } else {
+                    // if even guest fails, bail out
+                    onFinish.accept(Collections.emptyList());
+                    return;
+                }
+            }
+
+            // (Optional) debug
+            System.out.println("[getRandomItems] using token = " + token);
+
+            // Step 3: now safely call your shopService
+            List<ItemDTO> picked = new ArrayList<>();
+            Response<List<ShopDTO>> shopsResp = shopService.showAllShops(token);
+            if (shopsResp.isOk()) {
+                List<ShopDTO> shops = shopsResp.getData();
+                if (shops.size() == 0)
+                    return;
+                Random rnd = new Random();
+                for (int i = 0; i < count; i++) {
+                    ShopDTO shop = shops.get(rnd.nextInt(shops.size()));
+                    Response<List<ItemDTO>> itemsResp = shopService.showShopItems(token, shop.getId());
+                    if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
+                        List<ItemDTO> items = itemsResp.getData();
+                        if (items.size() > 0)
+                            picked.add(items.get(rnd.nextInt(items.size())));
+                    }
+                }
+            }
+
+            // Step 4: pass them back
+            onFinish.accept(picked);
+        });
+    }
+
+
+    /**
+     * Add a single item by wrapping it in the
+     * addItemsToCart(batch…) call.
+     */
+    public void saveInCart(ItemDTO item) {
+        getSessionToken(token -> {
+            if (token == null) {
+            Notification.show("Please log in first", 2000, Position.MIDDLE);
+            return;
+            }
+
+            // build the nested map: { shopId → { itemId → qty } }
+            HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+            HashMap<Integer, Integer> itemsForShop = new HashMap<>();
+            itemsForShop.put(item.getItemID(), 1);
+            userItems.put(item.getShopId(), itemsForShop);
+
+            // call your batch‐add method
+            Response<Void> resp = orderService.addItemsToCart(token, userItems);
+            if (resp.isOk()) {
+            Notification.show("Added \"" + item.getName() + "\" to cart", 2000, Position.TOP_CENTER);
+            } else {
+            Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+            }
+        });
+    }
+
     public List<ItemDTO> getCartContent(String sessionToken) {
         Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
         if (resp.isOk() && resp.getData() != null) {
@@ -243,40 +316,5 @@ public class HomePresenter {
     }
     public boolean isLoggedIn(String sessionToken) {
         return userService.isLoggedIn(sessionToken);
-    }
-
-    public void addItemToCart(int shopId, int itemId, int quantity, Consumer<Boolean> onFinish) {
-        getSessionToken(token -> {
-            if (token == null || !validateToken(token)) {
-                onFinish.accept(false);
-                return;
-            }
-            // build the nested map: shopId → (itemId→quantity)
-            HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-            HashMap<Integer, Integer> itemsMap = new HashMap<>();
-            itemsMap.put(itemId, quantity);
-            userItems.put(shopId, itemsMap);
-
-            Response<Void> resp = orderService.addItemsToCart(token, userItems);
-            onFinish.accept(resp.isOk());
-        });
-    }
-
-    /**
-     * Fetch all open shops from the backend.
-     */
-    public void showAllShops(BiConsumer<List<ShopDTO>, Boolean> onFinish) {
-        getSessionToken(token -> {
-            if (token == null || !validateToken(token)) {
-                onFinish.accept(Collections.emptyList(), false);
-                return;
-            }
-            Response<List<ShopDTO>> resp = shopService.showAllShops(token);
-            if (!resp.isOk()) {
-                onFinish.accept(Collections.emptyList(), false);
-            } else {
-                onFinish.accept(resp.getData(), true);
-            }
-        });
     }
 }

@@ -26,13 +26,9 @@ import com.vaadin.flow.shared.Registration;
 import io.jsonwebtoken.lang.Collections;
 
 @Component
-public class MyShopPresenter {
+public class MyShopPresenter extends AbstractPresenter {
     private List<ShopDTO> randomShops = new ArrayList<>();
-    private final UserService    userService;
-    private final ShopService    shopService;
-    private final JWTAdapter     jwtAdapter;
-    private final OrderService   orderService;      // ← new
-
+    
     @Autowired
     public MyShopPresenter(
         UserService userService,

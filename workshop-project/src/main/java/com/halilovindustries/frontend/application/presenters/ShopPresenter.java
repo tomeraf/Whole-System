@@ -29,13 +29,8 @@ import com.vaadin.flow.shared.Registration;
 import io.jsonwebtoken.lang.Collections;
 
 @Component
-public class ShopPresenter {
+public class ShopPresenter extends AbstractPresenter {
     private List<ShopDTO> randomShops = new ArrayList<>();
-    private final UserService    userService;
-    private final ShopService    shopService;
-    private final JWTAdapter     jwtAdapter;
-    private final OrderService   orderService;      // ← new
-
     @Autowired
     public ShopPresenter(
         UserService userService,
@@ -49,38 +44,11 @@ public class ShopPresenter {
         this.orderService  = orderService;           // ← assign
     }
 
-    public void getSessionToken(Consumer<String> callback) {
-    UI.getCurrent().getPage()
-        .executeJs("return localStorage.getItem('token');")
-        .then(String.class, token -> {
-            if (token != null) {
-                callback.accept(token); // Pass it back to whoever called
-            } else {
-                callback.accept(null);
-            }
-        });
-    }
-    
-    /** Validate the JWT before trusting it. */
-    public boolean validateToken(String token) {
-        return jwtAdapter.validateToken(token);
-    }
-
     /** Extract the “username” (or user-id) from a valid JWT. */
     public String extractUserId(String token) {
         return jwtAdapter.getUsername(token);
     }
 
-    public List<ItemDTO> getCartContent(String sessionToken) {
-        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
-        if (resp.isOk() && resp.getData() != null) {
-            return resp.getData();
-        }
-        return Collections.emptyList();
-    }
-    public boolean isLoggedIn(String sessionToken) {
-        return userService.isLoggedIn(sessionToken);
-    }
     public void removeFromCart(String sessionToken, ItemDTO item) {
         // Convert ItemDTO to HashMap<Integer, List<Integer>> as required by removeItemsFromCart
         java.util.HashMap<Integer, java.util.List<Integer>> itemsMap = new java.util.HashMap<>();

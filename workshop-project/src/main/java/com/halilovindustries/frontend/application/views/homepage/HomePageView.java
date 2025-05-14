@@ -1,3 +1,4 @@
+
 package com.halilovindustries.frontend.application.views.homepage;
 
 import com.halilovindustries.backend.Domain.Response;
@@ -7,7 +8,6 @@ import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.ClientCallable;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -50,24 +50,20 @@ public class HomePageView extends Composite<VerticalLayout> {
     private Registration myBroadcastRegistration;
     private Button loginButton, registerButton, logoutButton;
     private Button viewCart;
-    private FlexLayout cardsLayout;
+    private HorizontalLayout randomSection;
+
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
-        
-        // Build UI components
-        HorizontalLayout header = createHeader();
-        
-        // Add components to main layout
-        getContent().add(header);
 
-        cardsLayout = new FlexLayout();
-        cardsLayout.addClassName("shop-cards-layout");
-        cardsLayout.setSizeFull();
+        getContent().add(createHeader());
 
-        // add to the root
-        getContent().add(header, cardsLayout);
-        getContent().setFlexGrow(1, cardsLayout);  // so cardsLayout expands
+        // create an _empty_ placeholder for our cards
+        randomSection = new HorizontalLayout();
+        randomSection.setWidthFull();
+        randomSection.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        randomSection.getStyle().set("gap", "1rem");
+        getContent().add(randomSection);
     }
 
     private HorizontalLayout createHeader() {
@@ -160,6 +156,21 @@ public class HomePageView extends Composite<VerticalLayout> {
         return button;
     }
 
+    private void loadRandomItems(HorizontalLayout target) {
+        // clear any old cards
+        target.removeAll();
+
+        // now fetch 3 items
+        presenter.getRandomItems(3, items -> {
+            // back on the UI thread, add their cards
+            UI.getCurrent().access(() -> {
+                for (ItemDTO item : items) {
+                    target.add(createItemCard(item));
+                }
+            });
+        });
+    }
+
     private Button createRegisterButton() {
         Button button = new Button("Register");
         button.addThemeVariants(ButtonVariant.LUMO_SMALL);
@@ -185,6 +196,57 @@ public class HomePageView extends Composite<VerticalLayout> {
         button.addClickListener(e -> doLogout());
         return button;
     }
+
+    private HorizontalLayout createRandomItemsSection() {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setWidthFull();
+        layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        layout.getStyle().set("gap", "1rem");
+
+        // asynchronously fetch 3 random items…
+        presenter.getRandomItems(3, items -> {
+        // back onto the UI thread to mutate the layout
+            UI.getCurrent().access(() -> {
+                layout.removeAll();
+                for (ItemDTO item : items) {
+                    layout.add(createItemCard(item));
+                }
+            });
+        });
+
+        return layout;
+    }
+
+    private VerticalLayout createItemCard(ItemDTO item) {
+        VerticalLayout card = new VerticalLayout();
+        card.setAlignItems(FlexComponent.Alignment.CENTER);
+        card.getStyle()
+            .set("border", "1px solid #ddd")
+            .set("border-radius", "8px")
+            .set("padding", "1rem")
+            .set("width", "200px");        // or “30%” if you prefer fluid sizing
+
+        // image
+        String q = URLEncoder.encode(item.getName(), StandardCharsets.UTF_8);
+        Image img = new Image("https://source.unsplash.com/100x100/?" + q, item.getName());
+        img.setWidth("80px");
+        img.setHeight("80px");
+
+        // name & price
+        Span name = new Span(item.getName());
+        name.getStyle().set("font-size", "0.9em");
+        Span price = new Span("$" + item.getPrice());
+        price.getStyle().set("font-weight", "bold");
+
+        // Save In Cart
+        Button save = new Button("Save In Cart", evt -> presenter.saveInCart(item));
+        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        save.getStyle().set("width", "100%");
+
+        card.add(img, name, price, save);
+        return card;
+    }
+
     private void openRegisterDialog() {
         // create the dialog
         Dialog dialog = new Dialog();
@@ -300,6 +362,45 @@ public class HomePageView extends Composite<VerticalLayout> {
         logoutButton.setVisible(true);
     }
 
+    private void openCartDialog() {
+        System.out.println("Pressed on cart button");
+
+        // 1) fetch token
+        presenter.getSessionToken(token -> {
+            if (token != null && presenter.validateToken(token)) {
+                System.out.println("Token: " + token);
+                // 2) fetch items
+                List<ItemDTO> items = presenter.getCartContent(token);
+
+                // 3) build dialog
+                Dialog dialog = new Dialog();
+                dialog.setWidth("600px");
+
+                H3 title = new H3("Your Shopping Cart");
+                title.getStyle().set("margin-bottom", "1em");
+
+                Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
+                grid.setItems(items);
+                grid.removeAllColumns();
+                grid.addColumn(ItemDTO::getName).setHeader("Name");
+                grid.addColumn(ItemDTO::getQuantity).setHeader("Qty");
+                grid.addColumn(ItemDTO::getPrice).setHeader("Price");
+
+                Button close = new Button("Close", evt -> dialog.close());
+                close.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+                VerticalLayout layout = new VerticalLayout(title, grid, close);
+                layout.setPadding(false);
+                layout.setAlignItems(FlexComponent.Alignment.STRETCH);
+
+                dialog.add(layout);
+                dialog.open();
+            } else {
+                Notification.show("Please log in to view your cart.", 2000, Position.MIDDLE);
+            }
+        });
+    }
+
     @Override
     protected void onAttach(AttachEvent event) {
         super.onAttach(event);
@@ -319,68 +420,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 }
             });
         });
-
-        // then load & render the shop cards
-        loadShopCards();
-    }
-
-    private void loadShopCards() {
-        presenter.showAllShops((shops, success) -> {
-            if (!success) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Failed to load shops", 2000, Position.TOP_CENTER)
-                );
-                return;
-            }
-            UI.getCurrent().access(() -> {
-                cardsLayout.removeAll();
-                // show up to 3 cards
-                shops.stream()
-                     .limit(3)
-                     .forEach(shop -> cardsLayout.add(createShopCard(shop)));
-            });
-        });
-    }
-
-    private Component createShopCard(ShopDTO shop) {
-        // image placeholder
-        Div img = new Div();
-        img.addClassName("shop-card-image");
-        // shop info
-        H4 title = new H4(shop.getName());
-        Paragraph desc = new Paragraph(shop.getDescription());
-
-        // “Save In Cart” button
-        Button save = new Button("Save In Cart");
-        save.addClassName("shop-card-button");
-        save.addClickListener(e -> {
-            // grab the first item from this shop (or however you choose)
-            Integer firstItemId = shop.getItems().keySet().stream().findFirst().orElse(null);
-            if (firstItemId == null) {
-                Notification.show("No items to add!", 1500, Position.TOP_CENTER);
-                return;
-            }
-            presenter.addItemToCart(
-                shop.getId(),
-                firstItemId,
-                1,                 // quantity
-                success -> UI.getCurrent().access(() -> {
-                    if (success) {
-                        Notification.show("Added to cart!", 1500, Position.TOP_CENTER);
-                    } else {
-                        Notification.show("Failed to add to cart", 2000, Position.MIDDLE);
-                    }
-                })
-            );
-        });
-        save.addClassName("shop-card-button");
-
-        // assemble
-        VerticalLayout card = new VerticalLayout(img, title, desc, save);
-        card.addClassName("shop-card");
-        card.setPadding(false);
-        card.setAlignItems(FlexComponent.Alignment.CENTER);
-        return card;
+        loadRandomItems(randomSection);
     }
 
     @ClientCallable
