@@ -43,12 +43,7 @@ public class ShopPresenter extends AbstractPresenter {
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
     }
-
-    /** Extract the “username” (or user-id) from a valid JWT. */
-    public String extractUserId(String token) {
-        return jwtAdapter.getUsername(token);
-    }
-
+    
     public void removeFromCart(String sessionToken, ItemDTO item) {
         // Convert ItemDTO to HashMap<Integer, List<Integer>> as required by removeItemsFromCart
         java.util.HashMap<Integer, java.util.List<Integer>> itemsMap = new java.util.HashMap<>();
