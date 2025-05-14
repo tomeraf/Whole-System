@@ -6,6 +6,7 @@ import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -14,8 +15,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -44,12 +47,17 @@ public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
     private Registration myBroadcastRegistration;
     private Button loginButton, registerButton, logoutButton;
+    private Button viewCart;
 
 
 
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
+        getContent().setSizeFull();                     // full width & height
+        getContent().setPadding(false);
+        getContent().getStyle().set("overflow-x", "hidden");
+        getContent().setWidthFull();
         // 1) Search bar + connected search button
         TextField searchBar = new TextField();
         searchBar.setPlaceholder("Search");
@@ -76,7 +84,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         searchContainer.setAlignItems(FlexComponent.Alignment.CENTER);
 
 // 2) Round cart icon button
-        Button viewCart = new Button(VaadinIcon.CART.create());
+        viewCart = new Button(VaadinIcon.CART.create());
         viewCart.addThemeVariants(ButtonVariant.LUMO_ICON);
         viewCart.getStyle()
                 .set("width", "3rem")
@@ -140,7 +148,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         rightControls.setSpacing(true);
         rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        centerControls.setWidthFull();
+        
         centerControls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
 
@@ -150,8 +158,8 @@ public class HomePageView extends Composite<VerticalLayout> {
         header.setAlignItems(FlexComponent.Alignment.CENTER);
 
 // Make only the center expand to push left and right to edges
-        header.expand(centerControls);
-
+searchContainer.setWidth("100%");
+searchContainer.setMaxWidth("400px");
 // Optional: add some padding/gap
         header.setPadding(true);
         header.getStyle().set("gap", "1rem");
@@ -166,6 +174,8 @@ public class HomePageView extends Composite<VerticalLayout> {
         HorizontalLayout shopsLayout = new HorizontalLayout();
         shopsLayout.setWidthFull();
         shopsLayout.setSpacing(true);
+        shopsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+
         shopsLayout.setAlignItems(FlexComponent.Alignment.START);
 
 // 3) Build each shop card with 4 random item images
@@ -173,10 +183,11 @@ public class HomePageView extends Composite<VerticalLayout> {
             VerticalLayout card = new VerticalLayout();
             card.setAlignItems(FlexComponent.Alignment.CENTER);
             card.getStyle()
-                    .set("border", "1px solid #ddd")
-                    .set("border-radius", "8px")
-                    .set("padding", "1rem")
-                    .set("width", "240px");
+                .set("border", "1px solid #ddd")
+                .set("border-radius", "8px")
+                .set("padding", "1rem");
+            card.setWidth("24%");              // four cards ≈ 100%
+            shopsLayout.setFlexGrow(1, card);  // allow it to shrink/grow
 
             // Shop name as title
             H3 title = new H3(shop.getName());
@@ -214,13 +225,36 @@ public class HomePageView extends Composite<VerticalLayout> {
             card.add(grid);
             shopsLayout.add(card);
         }
+        // … your styling …
+        viewCart.addClickListener(e -> UI.getCurrent().navigate("cart"));   // ← wire up
 
         // 4) Add the featured-shops row to the view
         getContent().add(shopsLayout);
 
-        presenter.saveSessionToken();   
-        showGuestUI(); // show login/register, hide logout
-}
+    }
+
+    @Override
+    protected void onAttach(AttachEvent event) {
+        super.onAttach(event);
+UI.getCurrent().getPage().executeJs(
+    "document.body.style.overflowX = 'hidden';"
+  );
+        // Grab the token from localStorage:
+        presenter.getSessionToken(token -> {
+            // Vaadin callbacks already run on the UI thread, but to be safe:
+            UI.getCurrent().access(() -> {
+                // If there's no token, or it’s expired/invalid:
+                if (token == null || !presenter.validateToken(token) || !presenter.isLoggedIn(token)) {
+                    // create a fresh guest token
+                    presenter.saveSessionToken();
+                    showGuestUI();
+                } else {
+                    // leave the existing user token in place
+                    showLoggedInUI();
+                }
+            });
+        });
+    }
 
     private void openRegisterDialog() {
         // create the dialog
@@ -238,7 +272,15 @@ public class HomePageView extends Composite<VerticalLayout> {
             String pw    = passwordField.getValue();
             LocalDate dob= dobPicker.getValue();
             // fire off the registration
-            presenter.registerUser(name, pw, dob);
+            presenter.registerUser(name, pw, dob, (newToken, success) -> {
+                if (success) {
+                    // we already set localStorage & showed a welcome toast in presenter
+                    showLoggedInUI();  
+                    dialog.close();
+                } else {
+                    // nothing to do—errors already surfaced in presenter
+                }
+            });
             dialog.close();
         });
         submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -292,20 +334,20 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private void doLogin(String username, String password) {
-    presenter.loginUser(username, password, (token, success) -> {
-        if (success && token != null && presenter.validateToken(token)) {
-            String userId = presenter.extractUserId(token);
+        presenter.loginUser(username, password, (token, success) -> {
+            if (success && token != null && presenter.validateToken(token)) {
+                String userId = presenter.extractUserId(token);
 
-            // ✅ Store this view's listener registration
-            myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
-                UI.getCurrent().access(() -> {
-                    Notification.show("Server: " + msg, 3000, Position.TOP_CENTER);
+                // ✅ Store this view's listener registration
+                myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
+                    UI.getCurrent().access(() -> {
+                        Notification.show("Server: " + msg, 3000, Position.TOP_CENTER);
+                    });
                 });
-            });
 
-            showLoggedInUI(); // hide login, show logout
-        }
-    });
+                showLoggedInUI(); // hide login, show logout
+            }
+        });
     }
 
     private void doLogout() {
@@ -331,9 +373,49 @@ public class HomePageView extends Composite<VerticalLayout> {
         logoutButton.setVisible(true);
     }
 
-    @Override
-    protected void onDetach(DetachEvent event) {
+    @ClientCallable
+    public void onBrowserUnload() {
+        // fire your normal logout logic
         doLogout();
     }
-}
 
+    private void openCartDialog() {
+        System.out.println("Pressed on cart button");
+
+        // 1) fetch token
+        presenter.getSessionToken(token -> {
+            if (token != null && presenter.validateToken(token)) {
+                System.out.println("Token: " + token);
+                // 2) fetch items
+                List<ItemDTO> items = presenter.getCartContent(token);
+
+                // 3) build dialog
+                Dialog dialog = new Dialog();
+                dialog.setWidth("600px");
+
+                H3 title = new H3("Your Shopping Cart");
+                title.getStyle().set("margin-bottom", "1em");
+
+                Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
+                grid.setItems(items);
+                grid.removeAllColumns();
+                grid.addColumn(ItemDTO::getName).setHeader("Name");
+                grid.addColumn(ItemDTO::getQuantity).setHeader("Qty");
+                grid.addColumn(ItemDTO::getPrice).setHeader("Price");
+
+                Button close = new Button("Close", evt -> dialog.close());
+                close.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+                VerticalLayout layout = new VerticalLayout(title, grid, close);
+                layout.setPadding(false);
+                layout.setAlignItems(FlexComponent.Alignment.STRETCH);
+
+                dialog.add(layout);
+                dialog.open();
+
+            } else {
+                Notification.show("Please log in to view your cart.", 2000, Position.MIDDLE);
+            }
+        });
+    }
+}
