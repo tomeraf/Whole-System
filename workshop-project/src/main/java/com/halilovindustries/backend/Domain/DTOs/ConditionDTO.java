@@ -10,39 +10,53 @@ public class ConditionDTO {
     private int itemId;
     private Category category;
     private ConditionLimits conditionLimits;
-    private int price;
-    private int quantity;
+    private int minPrice;
+    private int maxPrice;
+    private int minQuantity;
+    private int maxQuantity;
     private ConditionLimits conditionLimits2;
     private int itemId2;
-    private int quantity2;
-    private int price2;
+    private int minPrice2;
+    private int maxPrice2;
+    private int minQuantity2;
+    private int maxQuantity2;
     private Category category2;
 
-    public ConditionDTO(ConditionType condition_type, int itemId, Category category, int price, int quantity, int itemId2, int quantity2, int price2, Category category2,ConditionLimits conditionLimits, ConditionLimits conditionLimits2) {
+
+    public ConditionDTO(ConditionType condition_type,int itemId,Category category,ConditionLimits conditionLimits,int minPrice,int maxPrice,int minQuantity,int maxQuantity,ConditionLimits conditionLimits2,int itemId2,int minPrice2,int maxPrice2,int minQuantity2,int maxQuantity2,Category category2) {
         this.condition_type = condition_type;
         this.itemId = itemId;
         this.category = category;
-        this.price = price;
-        this.quantity = quantity;
-        this.itemId2 = itemId2;
-        this.quantity2 = quantity2;
-        this.price2 = price2;
-        this.category2 = category2;
         this.conditionLimits = conditionLimits;
+        this.minPrice = minPrice;
+        this.maxPrice = maxPrice;
+        this.minQuantity = minQuantity;
+        this.maxQuantity = maxQuantity;
         this.conditionLimits2 = conditionLimits2;
+        this.itemId2 = itemId2;
+        this.minPrice2 = minPrice2;
+        this.maxPrice2 = maxPrice2;
+        this.minQuantity2 = minQuantity2;
+        this.maxQuantity2 = maxQuantity2;
+        this.category2 = category2;
     }
-    public ConditionDTO(int itemId, Category category, int price, int quantity, ConditionLimits conditionLimits) {
+
+    public ConditionDTO(int itemId, Category category, ConditionLimits conditionLimits, int minPrice, int maxPrice, int minQuantity, int maxQuantity) {
         this.condition_type = ConditionType.BASE;
         this.itemId = itemId;
         this.category = category;
-        this.price = price;
-        this.quantity = quantity;
         this.conditionLimits = conditionLimits;
-        this.itemId2 = -1;
-        this.quantity2 = -1;
-        this.price2 = -1;
-        this.category2 = null;
+        this.minPrice = minPrice;
+        this.maxPrice = maxPrice;
+        this.minQuantity = minQuantity;
+        this.maxQuantity = maxQuantity;
         this.conditionLimits2 = null;
+        this.itemId2 = -1;
+        this.minPrice2 = -1;
+        this.maxPrice2 = -1;
+        this.minQuantity2 = -1;
+        this.maxQuantity2 = -1;
+        this.category2 = null;
     }
 
     public ConditionType getConditionType() {
@@ -57,36 +71,51 @@ public class ConditionDTO {
         return category;
     }
 
-    public int getPrice() {
-        return price;
+    public ConditionLimits getConditionLimits() {
+        return conditionLimits;
     }
 
-    public int getQuantity() {
-        return quantity;
+    public int getMinPrice() {
+        return minPrice;
+    }
+
+    public int getMaxPrice() {
+        return maxPrice;
+    }
+
+    public int getMinQuantity() {
+        return minQuantity;
+    }
+
+    public int getMaxQuantity() {
+        return maxQuantity;
+    }
+
+    public ConditionLimits getConditionLimits2() {
+        return conditionLimits2;
     }
 
     public int getItemId2() {
         return itemId2;
     }
 
-    public int getQuantity2() {
-        return quantity2;
+    public int getMinPrice2() {
+        return minPrice2;
     }
 
-    public int getPrice2() {
-        return price2;
+    public int getMaxPrice2() {
+        return maxPrice2;
+    }
+
+    public int getMinQuantity2() {
+        return minQuantity2;
+    }
+
+    public int getMaxQuantity2() {
+        return maxQuantity2;
     }
 
     public Category getCategory2() {
         return category2;
     }
-    public ConditionLimits getConditionLimits() {
-        return conditionLimits;
-    }
-    public ConditionLimits getConditionLimits2() {
-        return conditionLimits2;
-    }
-    
-
-
 }

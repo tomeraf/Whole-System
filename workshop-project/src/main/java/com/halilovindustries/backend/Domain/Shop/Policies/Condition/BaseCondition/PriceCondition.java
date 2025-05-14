@@ -6,26 +6,69 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
 
 public class PriceCondition extends BaseCondition {
-    private double price;
+    private double minPrice;
+    private double maxPrice;
 
-    public PriceCondition(double price) {
+    public PriceCondition(double minPrice, double maxPrice) {
         super();
-        this.price = price;
+        buildPriceRange(minPrice, maxPrice);
     }
-    public PriceCondition(int itemID,Category category, double price) {
+    public PriceCondition(int itemID,Category category, double minPrice, double maxPrice) {
         super(itemID, category);
-        this.price = price;
-    }
+        buildPriceRange(minPrice, maxPrice);
 
-    public double getPrice() {
-        return price;
+        
+    }
+    private void buildPriceRange(double minPrice, double maxPrice) {
+        // If both minPrice and maxPrice are -1, throw an exception
+        if (minPrice == -1 && maxPrice == -1) {
+            throw new IllegalArgumentException("Both minPrice and maxPrice cannot be -1");
+        }
+
+        // If both minPrice and maxPrice are provided, validate them
+        if (minPrice != -1 && maxPrice != -1) {
+            if (minPrice < 0 || maxPrice < 0) {
+                throw new IllegalArgumentException("minPrice and maxPrice must be at least 0");
+            }
+            if (maxPrice < minPrice) {
+                throw new IllegalArgumentException("maxPrice must be greater than or equal to minPrice");
+            }
+            this.minPrice = minPrice;
+            this.maxPrice = maxPrice;
+            return;
+        }
+
+        // If minPrice is -1 and maxPrice is provided
+        if (minPrice == -1) {
+            if (maxPrice < 0) {
+                throw new IllegalArgumentException("maxPrice must be at least 0");
+            }
+            this.minPrice = 0;
+            this.maxPrice = maxPrice;
+            return;
+        }
+
+        // If maxPrice is -1 and minPrice is provided
+        if (maxPrice == -1) {
+            if (minPrice < 0) {
+                throw new IllegalArgumentException("minPrice must be at least 0");
+            }
+            this.minPrice = minPrice;
+            this.maxPrice = Double.MAX_VALUE; // Set maxPrice to the maximum possible value
+        }
+    }
+    public double getMinPrice() {
+        return minPrice;
+    }
+    public double getMaxPrice() {
+        return maxPrice;
     }
 
     @Override
     public boolean checkItemCondition(HashMap<Item, Integer> allItems) {
         for (Item item : allItems.keySet()) {
             if (item.getId() == getItemId()) {
-                return item.getPrice()*allItems.get(item) >= price;
+                return item.getPrice()*allItems.get(item) >= minPrice && item.getPrice()*allItems.get(item) <= maxPrice;
             }
         }
         return false;
@@ -38,7 +81,7 @@ public class PriceCondition extends BaseCondition {
                 totalPrice += item.getPrice()*allItems.get(item);
             }
         }
-        return totalPrice >= price;
+        return totalPrice >= minPrice && totalPrice <= maxPrice;
     }
     @Override
     public boolean checkShopCondition(HashMap<Item, Integer> allItems) {
@@ -46,11 +89,11 @@ public class PriceCondition extends BaseCondition {
         for (Item item : allItems.keySet()) {
             totalPrice += item.getPrice()*allItems.get(item);
         }
-        return totalPrice >= price;
+        return totalPrice >= minPrice && totalPrice <= maxPrice;
     }
 
     public String toString() {
-        return String.format("%s, Minimum purchase amount required: %.2f", super.toString(), price);
+        return String.format("PriceCondition [minPrice=%.2f, maxPrice=%.2f]", minPrice, maxPrice);
     }
 
 }

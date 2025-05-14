@@ -187,7 +187,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, 100,-1,ConditionLimits.PRICE);
+        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
     }
@@ -196,7 +196,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        ConditionDTO condition = new ConditionDTO(ConditionType.AND,-1, Category.ELECTRONICS, 100,-1,0,3,-1,null,ConditionLimits.PRICE,ConditionLimits.QUANTITY);
+        ConditionDTO condition = new ConditionDTO(ConditionType.AND, -1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1, ConditionLimits.QUANTITY, 0, -1, -1, 1, 3, null);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
     }
@@ -206,7 +206,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
-        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, 100,-1,ConditionLimits.PRICE);
+        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
         Response<Void> removeRsp=shopService.removePurchaseCondition(ownerToken, shop.getId(), 0);
@@ -224,7 +224,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
         //should buy electronics worth 1000
-        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, 1000,-1,ConditionLimits.PRICE);
+        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 1000, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
@@ -246,7 +246,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         Response<Order> purchaseResp = orderService.buyCartContent(
             customerToken, p, s
         );
-        assertFalse(purchaseResp.isOk(), "Discount should be applied to the total price");
+        assertFalse(purchaseResp.isOk(), "Purchase should be blocked by the condition");
     }
 
 }

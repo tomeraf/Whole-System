@@ -64,9 +64,9 @@ public class DTOtoDomainFactory {
         if (first) {
         switch (conditionDTO.getConditionLimits()) {
             case PRICE:
-                return new PriceCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getPrice());
+                return new PriceCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getMinPrice(),conditionDTO.getMaxPrice());
             case QUANTITY:
-                return new QuantityCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getQuantity());
+                return new QuantityCondition(conditionDTO.getItemId(),conditionDTO.getCategory(),conditionDTO.getMinQuantity(),conditionDTO.getMaxQuantity());
             default:
                 throw new IllegalArgumentException("Invalid Condition Limits");
         }
@@ -74,9 +74,9 @@ public class DTOtoDomainFactory {
         else {
             switch (conditionDTO.getConditionLimits2()) {
                 case PRICE:
-                    return new PriceCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getPrice2());
+                    return new PriceCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getMinPrice2(),conditionDTO.getMaxPrice2());
                 case QUANTITY:
-                    return new QuantityCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getQuantity2());
+                    return new QuantityCondition(conditionDTO.getItemId2(),conditionDTO.getCategory2(),conditionDTO.getMinQuantity2(),conditionDTO.getMaxQuantity2());
                 default:
                     throw new IllegalArgumentException("Invalid Condition Limits");
             }
