@@ -65,17 +65,31 @@ public class ShopView extends VerticalLayout {
                 .set("background-color", "#F7B05B")
                 .set("color", "black");
 
-// 4️⃣ Put them in that exact order, full-width & centered
-        HorizontalLayout controls = new HorizontalLayout(filterBtn, searchBar, searchBtn);
-        controls.setWidthFull();
-        controls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        controls.setAlignItems(FlexComponent.Alignment.CENTER);
-        controls.setSpacing(false);
-        controls.setPadding(false);
+        Button msgBtn = new Button("Message", VaadinIcon.ENVELOPE.create());
+        msgBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        msgBtn.getStyle()
+                .set("background-color", "#6200EE")
+                .set("color", "white")
+                .set("border", "none")
+                .set("border-radius", "8px")
+                .set("padding", "0.6em 1.2em");
 
-        add(titleRow, controls);
+        // 1️⃣ Build an inner bar with filter/search/searchBtn
+        HorizontalLayout searchBarGroup = new HorizontalLayout(filterBtn, searchBar, searchBtn);
+        searchBarGroup.setWidthFull();                                             // fill available space
+        searchBarGroup.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        searchBarGroup.setAlignItems(FlexComponent.Alignment.CENTER);
+        searchBarGroup.setSpacing(false);
+        searchBarGroup.setPadding(false);
 
-        // …then below here you can render the shop’s items, etc.
+// 2️⃣ Parent row that contains the centered group + the right‐aligned msgBtn
+        HorizontalLayout actionsRow = new HorizontalLayout(searchBarGroup, msgBtn);
+        actionsRow.setWidthFull();
+        actionsRow.setAlignItems(FlexComponent.Alignment.CENTER);
+        actionsRow.expand(searchBarGroup);                                          // give all extra space to searchBarGroup
+
+// 3️⃣ Add your titleRow and this new row
+        add(titleRow, actionsRow);
     }
 
     private void openFilterDialog() {

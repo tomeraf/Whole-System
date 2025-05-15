@@ -6,13 +6,10 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.websocket.Broadcaster;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.ClientCallable;
-import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -25,6 +22,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
@@ -141,6 +139,8 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border-right", "none")                // drop the right border
                 .set("background-color", "lightblue")
                 .set("color", "black");
+
+        filterBtn.addClickListener(e -> openFilterDialog());
 
         HorizontalLayout searchContainer = new HorizontalLayout(filterBtn, searchBar, searchBtn);
         searchContainer.setSpacing(false);
@@ -403,5 +403,50 @@ public class HomePageView extends Composite<VerticalLayout> {
     public void onBrowserUnload() {
         // fire your normal logout logic
         doLogout();
+    }
+
+    private void openFilterDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("300px");
+
+        NumberField minPrice = new NumberField("Min Price");
+        NumberField maxPrice = new NumberField("Max Price");
+
+        ComboBox<String> category = new ComboBox<>("Category");
+        category.setItems("All", "Electronics", "Clothing", "Books"); // example
+
+        ComboBox<Integer> ItemRating = new ComboBox<>("Item Rating");
+        ItemRating.setItems(1, 2, 3, 4, 5);
+
+        ComboBox<Integer> ShopRating = new ComboBox<>("Shop Rating");
+        ShopRating.setItems(1, 2, 3, 4, 5);
+
+        Button apply = new Button("Apply", e -> {
+            // TODO: pull values from minPrice, maxPrice, category, rating
+            // and pass them to your presenter
+            dialog.close();
+        });
+        apply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        VerticalLayout layout = new VerticalLayout(
+                new Text("Filter by:"),
+                minPrice,
+                maxPrice,
+                category,
+                ItemRating,
+                ShopRating,
+                apply
+        );
+        layout.setPadding(false);
+        layout.setSpacing(true);
+
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    @Override
+    protected void onDetach(DetachEvent event) {
+        doLogout();
+        // presenter.exitAsGuest();
     }
 }

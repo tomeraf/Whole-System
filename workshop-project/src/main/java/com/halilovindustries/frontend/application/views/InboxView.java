@@ -1,0 +1,78 @@
+package com.halilovindustries.frontend.application.views;
+
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
+
+@Route(value = "inbox", layout = MainLayout.class)
+@PageTitle("Inbox")
+public class InboxView extends VerticalLayout {
+
+    public InboxView() {
+        setPadding(true);
+        setSpacing(true);
+
+        // — Title —
+        add(new H2("Inbox"));
+
+        // — Search bar (no filter) —
+        HorizontalLayout searchRow = new HorizontalLayout(createSearchBar());
+        searchRow.setWidthFull();
+        searchRow.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        add(searchRow);
+
+        // — Conversations list skeleton —
+        Grid<Void> grid = new Grid<>(Void.class, false);
+        // Shop column
+        grid.addColumn(v -> "")
+                .setHeader("Shops")
+                .setAutoWidth(true);
+        // “Open” arrow column
+        grid.addComponentColumn(v -> {
+                    Button open = new Button(VaadinIcon.CHEVRON_RIGHT.create());
+                    open.addThemeVariants(ButtonVariant.LUMO_ICON);
+                    return open;
+                })
+                .setHeader("")  // blank header
+                .setAutoWidth(true);
+
+        // no data → only headers show
+        add(grid);
+
+        setSizeFull();
+    }
+
+    private HorizontalLayout createSearchBar() {
+        TextField search = new TextField();
+        search.setPlaceholder("Search shops…");
+        search.setWidth("400px");
+        search.getStyle()
+                .set("height", "38px")
+                .set("border-radius", "4px 0 0 4px")
+                .set("border-right", "none");
+
+        Button btn = new Button(VaadinIcon.SEARCH.create());
+        btn.getStyle()
+                .set("height", "38px")
+                .set("min-width", "38px")
+                .set("padding", "0")
+                .set("border-radius", "0 4px 4px 0")
+                .set("border", "1px solid #ccc")
+                .set("background-color", "#F7B05B")
+                .set("color", "black");
+
+        HorizontalLayout bar = new HorizontalLayout(search, btn);
+        bar.setSpacing(false);
+        bar.setPadding(false);
+        bar.setAlignItems(FlexComponent.Alignment.CENTER);
+        return bar;
+    }
+}
