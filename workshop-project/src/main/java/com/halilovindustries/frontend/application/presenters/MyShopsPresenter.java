@@ -5,26 +5,12 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
-import com.halilovindustries.websocket.Broadcaster;
-import com.vaadin.flow.component.UI;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 
 public class MyShopsPresenter extends AbstractPresenter {
     // This class is currently empty, but you can add methods and properties as needed.

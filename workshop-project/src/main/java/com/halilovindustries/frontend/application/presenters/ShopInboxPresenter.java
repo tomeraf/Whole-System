@@ -1,13 +1,8 @@
 package com.halilovindustries.frontend.application.presenters;
-import java.util.List;
-import java.util.function.Consumer;
 
+import java.util.function.Consumer;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
-import com.halilovindustries.backend.Domain.DTOs.Order;
-import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -57,7 +52,7 @@ public class ShopInboxPresenter extends AbstractPresenter {
 
     public void sendMessege(int shopID, String title, String content, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null && !validateToken(token) && !isLoggedIn(token)) {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
                 UI.getCurrent().access(() ->
                     Notification.show("User is not logged in - guest cannot watch shop details", 2000, Position.MIDDLE)
                     );

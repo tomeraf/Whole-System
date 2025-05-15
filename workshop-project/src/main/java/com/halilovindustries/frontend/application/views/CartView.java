@@ -46,11 +46,12 @@ public class CartView extends Composite<VerticalLayout>
         return;
       }
 
-      List<ItemDTO> items = presenter.getCartContent(token);
-      grid.setItems(items);
-      if (items.isEmpty()) {
-        Notification.show("Your cart is empty", 2000, Position.MIDDLE);
-      }
+      presenter.checkCartContent(items -> {
+        grid.setItems(items);
+        if (items.isEmpty()) {
+          Notification.show("Your cart is empty", 2000, Position.MIDDLE);
+        }
+      });
     }
     );
   }

@@ -8,12 +8,11 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 
 @Component
 public class MyShopPresenter extends AbstractPresenter {
@@ -34,11 +33,16 @@ public class MyShopPresenter extends AbstractPresenter {
 
     public void getShopInfo(int shopId, Consumer<ShopDTO> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
+
             Response<ShopDTO> resp = shopService.getShopInfo(token, shopId);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -52,16 +56,22 @@ public class MyShopPresenter extends AbstractPresenter {
                 }
             }
         });
-    }
+    });
+}
 
     // Method to to close my shop; im founder
     public void closeShop(int shopId, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
+
             Response<Void> resp = shopService.closeShop(token, shopId);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -71,5 +81,6 @@ public class MyShopPresenter extends AbstractPresenter {
                 onFinish.accept(true);
             }
         });
-    }
+    });
+}
 }

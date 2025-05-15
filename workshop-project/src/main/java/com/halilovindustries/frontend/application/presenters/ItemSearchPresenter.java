@@ -6,14 +6,13 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
-
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 
 public class ItemSearchPresenter extends AbstractPresenter {
 
@@ -32,11 +31,16 @@ public class ItemSearchPresenter extends AbstractPresenter {
     // Method to search for items in a specific shop with filters (no shop rate filter)
     public void filterItemsInShop(int shopId, HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
+
             Response<List<ItemDTO>> resp = shopService.filterItemsInShop(token, shopId, filters);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -50,16 +54,22 @@ public class ItemSearchPresenter extends AbstractPresenter {
                 }
             }
         });
-    }
+    });
+}
 
     // Method to search for items in all shops with filters (with shop rate filter)
     public void filterItemsAllShops(HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
+
             Response<List<ItemDTO>> resp = shopService.filterItemsAllShops(token, filters);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -73,5 +83,6 @@ public class ItemSearchPresenter extends AbstractPresenter {
                 }
             }
         });
-    }
+    });
+}
 }
