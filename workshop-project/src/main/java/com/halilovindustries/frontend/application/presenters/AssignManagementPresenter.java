@@ -1,6 +1,9 @@
 package com.halilovindustries.frontend.application.presenters;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import org.springframework.stereotype.Component;
+
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
@@ -11,6 +14,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
+@Component
 public class AssignManagementPresenter extends AbstractPresenter {
 
     public AssignManagementPresenter(

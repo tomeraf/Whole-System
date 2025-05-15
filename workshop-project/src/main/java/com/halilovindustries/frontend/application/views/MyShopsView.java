@@ -168,15 +168,15 @@ public class MyShopsView extends VerticalLayout {
         TextField name = new TextField("Shop Name");
         TextArea desc = new TextArea("Description");
         Button ok = new Button("Create", e -> {
-            presenter.createShop(name.getValue(), desc.getValue(), (newShop, success) -> {
+            presenter.createShop(name.getValue(), desc.getValue(), newShop -> {
                 UI.getCurrent().access(() -> {
-                    if (success) {
-                        Notification.show("Created “" + newShop.getName() + "”", 1500, Position.TOP_CENTER);
-                        dlg.close();
-                        loadShops();
-                    } else {
+                    if (newShop == null) {
                         Notification.show("Failed to create shop", 2000, Position.MIDDLE);
+                        return;
                     }
+                    Notification.show("Created “" + newShop.getName() + "”", 1500, Position.TOP_CENTER);
+                    dlg.close();
+                    loadShops();
                 });
             });
         });

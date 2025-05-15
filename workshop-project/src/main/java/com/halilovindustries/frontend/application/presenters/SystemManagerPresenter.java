@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
@@ -16,6 +17,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
+@Component
 public class SystemManagerPresenter extends AbstractPresenter {
 
     @Autowired

@@ -149,6 +149,27 @@ public class HomePresenter extends AbstractPresenter {
         });
     }
 
+    public void exitAsGuest() {
+        // 1) get current token
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token)) {
+                Notification.show("No valid session to exit from.", 2000, Position.MIDDLE);
+                return;
+            }
+            // 2) call logoutRegistered on the backend
+            Response<Void> resp = userService.exitAsGuest(token);
+            if (!resp.isOk()) {
+                Notification.show("Logout failed: " + resp.getError(), 3000, Position.MIDDLE);
+                return;
+            }
+        });
+        });
+    }
+
     
     public void getRandomItems(int count, Consumer<List<ItemDTO>> onFinish) {
         // Step 1: pull whatever token is in localStorage

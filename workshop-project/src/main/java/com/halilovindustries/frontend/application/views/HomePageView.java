@@ -54,14 +54,11 @@ public class HomePageView extends Composite<VerticalLayout> {
     //private final FlexLayout itemsLayout = new FlexLayout();
     private final FlexLayout cardsLayout;
     private TextField searchBar;
-    private Button searchBtn;
-    private Button filterBtn;
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
 
         getContent().add(createHeader());
-        searchBar = new TextField();
         cardsLayout = new FlexLayout();
         cardsLayout.setWidthFull();
         cardsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
@@ -74,7 +71,7 @@ public class HomePageView extends Composite<VerticalLayout> {
     private HorizontalLayout createHeader() {
         HorizontalLayout leftControls = new HorizontalLayout(createCartButton());
         leftControls.setAlignItems(FlexComponent.Alignment.CENTER);
-
+    
         HorizontalLayout centerControls = new HorizontalLayout(createSearchBar());
         centerControls.setAlignItems(FlexComponent.Alignment.CENTER);
         centerControls.setWidthFull();
@@ -116,6 +113,7 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private HorizontalLayout createSearchBar() {
+        searchBar = new TextField();
         searchBar.setPlaceholder("Search");
         searchBar.setWidth("400px");
         searchBar.getStyle()
@@ -123,7 +121,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border-radius", "4px 0 0 4px")
                 .set("border-right", "none");
 
-        searchBtn = new Button(VaadinIcon.SEARCH.create());
+        Button searchBtn = new Button(VaadinIcon.SEARCH.create());
         searchBtn.getStyle()
                 .set("height", "38px")
                 .set("min-width", "38px")
@@ -135,7 +133,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("color", "black");
         searchBtn.addClickListener(e -> doSearch());
 
-        filterBtn = new Button("", VaadinIcon.FILTER.create());
+        Button filterBtn = new Button("", VaadinIcon.FILTER.create());
         filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         filterBtn.getStyle()
                 .set("height", "36px")
@@ -415,6 +413,7 @@ public class HomePageView extends Composite<VerticalLayout> {
     public void onBrowserUnload() {
         // fire your normal logout logic
         doLogout();
+        presenter.exitAsGuest();
     }
 
     private void openFilterDialog() {
@@ -459,11 +458,5 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         dialog.add(layout);
         dialog.open();
-    }
-
-    @Override
-    protected void onDetach(DetachEvent event) {
-        doLogout();
-        // presenter.exitAsGuest();
     }
 }

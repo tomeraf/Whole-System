@@ -1,6 +1,9 @@
 package com.halilovindustries.frontend.application.presenters;
 
 import java.util.function.Consumer;
+
+import org.springframework.stereotype.Component;
+
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.Order;
@@ -13,6 +16,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
+@Component
 public class PurchasePresenter extends AbstractPresenter {
 
     public PurchasePresenter(

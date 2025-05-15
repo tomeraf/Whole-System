@@ -6,10 +6,13 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import java.util.function.Consumer;
 
+import org.springframework.stereotype.Component;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
+@Component
 public class BidPresenter extends AbstractPresenter {
 
     // Bid class for the shop side logic 

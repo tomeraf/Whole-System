@@ -6,10 +6,14 @@ import com.halilovindustries.backend.Service.UserService;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.springframework.stereotype.Component;
+
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.shared.Registration;
 
+@Component
 public class InboxPresenter extends AbstractPresenter {
 
     // each registered user have his own inbox - this class

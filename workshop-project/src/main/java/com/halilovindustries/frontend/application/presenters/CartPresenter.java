@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -16,7 +18,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
-
+@Component
 public class CartPresenter extends AbstractPresenter {
     private List<ShopDTO> randomShops = new ArrayList<>();
     @Autowired
