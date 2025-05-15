@@ -55,7 +55,7 @@ public class MemoryShopRepository implements IShopRepository {
                 return shop;
             }
         }
-        throw new IllegalArgumentException("Shop with name " + name + " does not exist.");
+        return null;
     }
 
 }

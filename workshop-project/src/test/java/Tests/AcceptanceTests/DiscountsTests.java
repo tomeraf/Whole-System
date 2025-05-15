@@ -34,7 +34,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testUpdateDiscountType_AsOwner_ShouldSucceed() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // Act
         Response<Void> response = shopService.updateDiscountType(ownerToken, shop.getId(), DiscountType.CONDITIONAL);
@@ -47,7 +47,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         // Act
         Response<Void> response = shopService.updateDiscountType(customerToken, shop.getId(), DiscountType.CONDITIONAL);
         // Assert
@@ -59,7 +59,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testAddDiscount_AsOwner_ShouldSucceed() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
@@ -76,7 +76,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
@@ -109,7 +109,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         DiscountDTO discount = new DiscountDTO(DiscountKind.MAX,-1, Category.ELECTRONICS, 10, null,0,null,50,null ,DiscountType.BASE,DiscountType.BASE);
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
@@ -143,7 +143,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testRemoveDiscount_AsOwner_ShouldSucceed() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
@@ -159,7 +159,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
@@ -172,7 +172,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testRemoveDiscount_DiscountDoesntExists_ShouldFail() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         Response<Void> removeResponse = shopService.removeDiscount(ownerToken, shop.getId(), 1);
         // Assert
         assertFalse(removeResponse.isOk(), "Owner should not be able to remove a discount that doesn't exist");
@@ -186,7 +186,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testAddPurchaseCondition_AsOwner_ShouldSucceed() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
@@ -195,7 +195,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testAddPurchaseANDCondition_AsOwner_ShouldSucceed() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         ConditionDTO condition = new ConditionDTO(ConditionType.AND, -1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1, ConditionLimits.QUANTITY, 0, -1, -1, 1, 3, null);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
@@ -205,7 +205,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testRemovePurchaseCondition_AsOwner_ShouldSucceed(){
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
@@ -222,7 +222,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         //should buy electronics worth 1000
         ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 1000, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseConditon(ownerToken, shop.getId(), condition);

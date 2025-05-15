@@ -87,11 +87,11 @@ public class AcceptanceTestFixtures {
         return systemManagerToken;
     }
 
-    public ShopDTO generateShopAndItems(String ownerToken) {
+    public ShopDTO generateShopAndItems(String ownerToken,String name) {
         // 1) Owner creates the shop
         Response<ShopDTO> shopResp = shopService.createShop(
             ownerToken, 
-            "MyShop", 
+            name, 
             "A shop for tests"
         );
         assertTrue(shopResp.isOk(), "Shop creation should succeed");

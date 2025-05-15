@@ -119,14 +119,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @Test
     public void testCloseShop_AsSystemManager_ShouldSucceed() {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         Response<Void> closeResp = shopService.closeShop(managerToken, shop.getId());
         assertTrue(closeResp.isOk(), "closeShopBySystemManager should succeed");
     }
     @Test
     public void testCloseShop_NotAsSystemManager_ShouldFail() {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         String userToken = fixtures.generateRegisteredUserSession("user", "password");
         Response<Void> closeResp = shopService.closeShop(userToken, shop.getId());
         assertTrue(!closeResp.isOk(), "closeShopBySystemManager should fail");
