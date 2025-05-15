@@ -79,54 +79,37 @@ public class MyShopsView extends VerticalLayout {
         });
     }
 
-    private VerticalLayout createShopCard(ShopDTO shop) {
-        VerticalLayout card = new VerticalLayout();
-        card.setWidth("200px");
-        card.setHeight("120px");
-        card.setAlignItems(FlexComponent.Alignment.CENTER);
-        card.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        card.getStyle()
-            .set("border", "1px solid #ddd")
-            .set("border-radius", "8px")
-            .set("padding", "0.5rem")
-            .set("box-shadow", "2px 2px 6px rgba(0,0,0,0.1)")
-            .set("cursor", "pointer");
+    // private VerticalLayout createShopCard(ShopDTO shop) {
+    //     VerticalLayout card = new VerticalLayout();
+    //     card.setWidth("200px");
+    //     card.setHeight("120px");
+    //     card.setAlignItems(FlexComponent.Alignment.CENTER);
+    //     card.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+    //     card.getStyle()
+    //         .set("border", "1px solid #ddd")
+    //         .set("border-radius", "8px")
+    //         .set("padding", "0.5rem")
+    //         .set("box-shadow", "2px 2px 6px rgba(0,0,0,0.1)")
+    //         .set("cursor", "pointer");
 
-        // <<< ADD THIS LINE TO force each card to occupy 25% of the row >>>
-        card.getStyle().set("flex", "0 0 25%");
+    //     // <<< ADD THIS LINE TO force each card to occupy 25% of the row >>>
+    //     card.getStyle().set("flex", "0 0 25%");
 
-        // shop name as a button (full width)
-        Button title = new Button(shop.getName(), e ->
-            UI.getCurrent().navigate("shop/" + shop.getId())
-        );
-        title.setWidthFull();
-        title.getStyle()
-             .set("background", "none")
-             .set("border", "none")
-             .set("text-align", "center")
-             .set("font-weight", "bold");
-        title.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    //     // shop name as a button (full width)
+    //     Button title = new Button(shop.getName(), e ->
+    //         UI.getCurrent().navigate("shop/" + shop.getId())
+    //     );
+    //     title.setWidthFull();
+    //     title.getStyle()
+    //          .set("background", "none")
+    //          .set("border", "none")
+    //          .set("text-align", "center")
+    //          .set("font-weight", "bold");
+    //     title.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
 
-        card.add(title);
-        return card;
-    }
-
-    private Button createCard1(ShopDTO shop) {
-        Button card = new Button(shop.getName(), e ->
-            UI.getCurrent().navigate("shop/" + shop.getId())
-        );
-        card.setWidth("200px");
-        card.setHeight("200px");
-        card.getStyle()
-            .set("border", "1px solid #ddd")
-            .set("border-radius", "8px")
-            .set("box-shadow", "0 2px 4px rgba(0,0,0,0.05)")
-            .set("background-color", "white")
-            .set("cursor", "pointer");
-        // remove the default button padding & background so it looks like a card:
-        card.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_CONTRAST);
-        return card;
-    }
+    //     card.add(title);
+    //     return card;
+    // }
 
     private Div createCard(ShopDTO shop) {
         // card wrapper
@@ -179,8 +162,6 @@ public class MyShopsView extends VerticalLayout {
         card.add(title, desc, ratingRow);
         return card;
     }
-
-
 
     private void openCreateDialog() {
         Dialog dlg = new Dialog();

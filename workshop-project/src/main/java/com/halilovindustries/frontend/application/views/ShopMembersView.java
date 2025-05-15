@@ -1,5 +1,6 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.frontend.application.presenters.AssignManagementPresenter;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
@@ -17,7 +18,7 @@ import java.util.Set;
 @Route(value = "shop-members", layout = MainLayout.class)
 @PageTitle("Shop Members")
 public class ShopMembersView extends VerticalLayout {
-
+    private AssignManagementPresenter presenter;
     public ShopMembersView() {
         setPadding(true);
         setSpacing(true);
