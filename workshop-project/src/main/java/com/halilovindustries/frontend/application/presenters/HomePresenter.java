@@ -9,10 +9,8 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,11 +22,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.shared.Registration;
 
-import io.jsonwebtoken.lang.Collections;
-
 @Component
 public class HomePresenter extends AbstractPresenter {
-    private List<ShopDTO> randomShops = new ArrayList<>();
 
     @Autowired
     public HomePresenter(
@@ -61,49 +56,57 @@ public class HomePresenter extends AbstractPresenter {
                             BiConsumer<String, Boolean> onFinish) {
         // 1) grab the current token
         getSessionToken(oldToken -> {
-            if (oldToken == null) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+            ui.access(() -> {
+                if (oldToken == null) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
+                }
 
-            // 2) attempt registration
-            Response<Void> res = userService.registerUser(oldToken, name, password, dateOfBirth);
-            if (!res.isOk()) {
-                Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
-            // Persist it in localStorage
-            UI.getCurrent().getPage().executeJs("localStorage.setItem('token',$0);", oldToken);
-            Notification.show("Welcome, " + name + "!", 2000, Position.TOP_CENTER);
-            onFinish.accept(oldToken, true);
+                // 2) attempt registration
+                Response<Void> res = userService.registerUser(oldToken, name, password, dateOfBirth);
+                if (!res.isOk()) {
+                    Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
+                }
+                // Persist it in localStorage
+                UI.getCurrent().getPage().executeJs("localStorage.setItem('token',$0);", oldToken);
+                Notification.show("Welcome, " + name + "!", 2000, Position.TOP_CENTER);
+                onFinish.accept(oldToken, true);
+                });
         });
     }
 
     public void loginUser(String username, String password, BiConsumer<String, Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+            ui.access(() -> {
+                if (token == null) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
+                }
 
-            Response<String> resp = userService.loginUser(token, username, password);
-            if (!resp.isOk()) {
-                Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
-                onFinish.accept(null, false);
-            } else {
-                String newToken = resp.getData();
+                Response<String> resp = userService.loginUser(token, username, password);
+                if (!resp.isOk()) {
+                    Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                } else {
+                    String newToken = resp.getData();
 
-                // Save the new token in localStorage
-                UI.getCurrent().getPage()
-                    .executeJs("localStorage.setItem('token', $0);", newToken);
+                    // Save the new token in localStorage
+                    UI.getCurrent().getPage()
+                        .executeJs("localStorage.setItem('token', $0);", newToken);
 
-                Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
+                    Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
 
-                onFinish.accept(newToken, true);
-            }
+                    onFinish.accept(newToken, true);
+                }
+                });
         });
     }
     
@@ -120,6 +123,10 @@ public class HomePresenter extends AbstractPresenter {
     public void logoutUser() {
         // 1) get current token
         getSessionToken(oldToken -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (oldToken == null || !validateToken(oldToken)) {
                 Notification.show("No valid session to log out from.", 2000, Position.MIDDLE);
                 return;
@@ -133,11 +140,12 @@ public class HomePresenter extends AbstractPresenter {
             String guestToken = resp.getData();
 
             // 4) overwrite with new guest token
-            UI.getCurrent()
+            ui
             .getPage()
             .executeJs("localStorage.setItem('token', $0);", guestToken);
 
             Notification.show("Logged out successfully.", 2000, Position.TOP_CENTER);
+        });
         });
     }
 
@@ -145,6 +153,10 @@ public class HomePresenter extends AbstractPresenter {
     public void getRandomItems(int count, Consumer<List<ItemDTO>> onFinish) {
         // Step 1: pull whatever token is in localStorage
         getSessionToken(stored -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
             String token = stored;
 
             // Step 2: if it’s null/invalid/expired → grab a fresh **guest** token synchronously
@@ -152,13 +164,10 @@ public class HomePresenter extends AbstractPresenter {
                 Response<String> guestResp = userService.enterToSystem();
                 if (guestResp.isOk()) {
                     token = guestResp.getData();
-                    // update the browser storage so future calls see it
-                    UI.getCurrent()
-                    .getPage()
-                    .executeJs("localStorage.setItem('token', $0);", token);
+                    // update localStorage in browser
+                    ui.getPage().executeJs("localStorage.setItem('token', $0);", token);
                 } else {
-                    // if even guest fails, bail out
-                    onFinish.accept(Collections.emptyList());
+                    onFinish.accept(new ArrayList<>());
                     return;
                 }
             }
@@ -171,24 +180,24 @@ public class HomePresenter extends AbstractPresenter {
             Response<List<ShopDTO>> shopsResp = shopService.showAllShops(token);
             if (shopsResp.isOk()) {
                 List<ShopDTO> shops = shopsResp.getData();
-                if (shops.size() == 0)
-                    return;
-                Random rnd = new Random();
-                for (int i = 0; i < count; i++) {
-                    ShopDTO shop = shops.get(rnd.nextInt(shops.size()));
-                    Response<List<ItemDTO>> itemsResp = shopService.showShopItems(token, shop.getId());
-                    if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
-                        List<ItemDTO> items = itemsResp.getData();
-                        if (items.size() > 0)
-                            picked.add(items.get(rnd.nextInt(items.size())));
+                if (!shops.isEmpty()) {
+                    Random rnd = new Random();
+                    for (int i = 0; i < count; i++) {
+                        ShopDTO shop = shops.get(rnd.nextInt(shops.size()));
+                        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(token, shop.getId());
+                        if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
+                            List<ItemDTO> items = itemsResp.getData();
+                            if (items.size() > 0)
+                                picked.add(items.get(rnd.nextInt(items.size())));
+                        }
                     }
                 }
             }
 
-            // Step 4: pass them back
             onFinish.accept(picked);
         });
-    }
+    });
+}
 
 
     /**
@@ -197,24 +206,29 @@ public class HomePresenter extends AbstractPresenter {
      */
     public void saveInCart(ItemDTO item) {
         getSessionToken(token -> {
-            if (token == null) {
-            Notification.show("Please log in first", 2000, Position.MIDDLE);
-            return;
-            }
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
 
-            // build the nested map: { shopId → { itemId → qty } }
-            HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-            HashMap<Integer, Integer> itemsForShop = new HashMap<>();
-            itemsForShop.put(item.getItemID(), 1);
-            userItems.put(item.getShopId(), itemsForShop);
+            ui.access(() -> {
+                if (token == null) {
+                Notification.show("Please log in first", 2000, Position.MIDDLE);
+                return;
+                }
 
-            // call your batch‐add method
-            Response<Void> resp = orderService.addItemsToCart(token, userItems);
-            if (resp.isOk()) {
-            Notification.show("Added \"" + item.getName() + "\" to cart", 2000, Position.TOP_CENTER);
-            } else {
-            Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
-            }
+                // build the nested map: { shopId → { itemId → qty } }
+                HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+                HashMap<Integer, Integer> itemsForShop = new HashMap<>();
+                itemsForShop.put(item.getItemID(), 1);
+                userItems.put(item.getShopId(), itemsForShop);
+
+                // call your batch‐add method
+                Response<Void> resp = orderService.addItemsToCart(token, userItems);
+                if (resp.isOk()) {
+                Notification.show("Added \"" + item.getName() + "\" to cart", 2000, Position.TOP_CENTER);
+                } else {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                }
+            });
         });
     }
 }

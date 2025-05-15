@@ -4,12 +4,11 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
-
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 
 public class BidPresenter extends AbstractPresenter {
 
@@ -27,11 +26,16 @@ public class BidPresenter extends AbstractPresenter {
     
     public void answerBid(int auctionID, double bidAmount, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
+
             Response<Void> resp = shopService.answerBid(token, auctionID, auctionID, false);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -41,15 +45,21 @@ public class BidPresenter extends AbstractPresenter {
                 onFinish.accept(true);
             }
         });
-    }
+    });
+}
 
     public void submitCounterBid(int auctionID, double bidAmount, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
+
             Response<Void> resp = shopService.submitCounterBid(token, auctionID, auctionID, bidAmount);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -57,7 +67,8 @@ public class BidPresenter extends AbstractPresenter {
             } else {
                 Notification.show("Counter bid submitted successfully!", 2000, Position.MIDDLE);
                 onFinish.accept(true);
-            }
+           }
         });
-    }
+    });
+}
 }

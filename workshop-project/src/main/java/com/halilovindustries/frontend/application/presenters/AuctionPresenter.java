@@ -7,11 +7,9 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 public class AuctionPresenter extends AbstractPresenter {
 
     public AuctionPresenter(
@@ -28,11 +26,16 @@ public class AuctionPresenter extends AbstractPresenter {
 
     public void addAuctioneer(String sessionToken, int shopID, int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
+
             Response<Void> resp = shopService.openAuction(token, shopID, itemID, startingPrice, startDate, endDate);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
@@ -42,5 +45,6 @@ public class AuctionPresenter extends AbstractPresenter {
                 onFinish.accept(true);
             }
         });
-    }
+    });
+}
 }

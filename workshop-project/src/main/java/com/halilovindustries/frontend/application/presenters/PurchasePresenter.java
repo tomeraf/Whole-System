@@ -1,9 +1,6 @@
 package com.halilovindustries.frontend.application.presenters;
 
 import java.util.function.Consumer;
-
-import org.aspectj.weaver.ast.Not;
-
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.Order;

@@ -26,7 +26,7 @@ public class JWTAdapter implements IAuthentication {
     @Value("${jwt.secret}")
     private String secret;
     
-    private final long expirationTime = 24 * 3600000; // 24 hours
+    private final long expirationTime = 3600000; // 1 hour
     private SecretKey key;
 
     @PostConstruct
