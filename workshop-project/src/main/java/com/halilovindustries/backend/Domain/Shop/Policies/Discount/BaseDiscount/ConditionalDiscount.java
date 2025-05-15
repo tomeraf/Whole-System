@@ -2,10 +2,8 @@ package com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount
 
 import java.util.HashMap;
 
-import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.*;
-import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 
 public class ConditionalDiscount extends BaseDiscount {
     private Condition condition;

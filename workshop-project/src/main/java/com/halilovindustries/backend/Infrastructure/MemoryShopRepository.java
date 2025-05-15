@@ -48,5 +48,14 @@ public class MemoryShopRepository implements IShopRepository {
                 .toList();
         return userShops;
     }
+    @Override
+    public Shop getShopByName(String name) {
+        for (Shop shop : shops.values()) {
+            if (shop.getName().equals(name)) {
+                return shop;
+            }
+        }
+        throw new IllegalArgumentException("Shop with name " + name + " does not exist.");
+    }
 
 }

@@ -17,6 +17,8 @@ public class DiscountPolicy {
     
     public DiscountPolicy(){
         this.discountTypes = new ArrayList<>();
+        this.discountTypes.add(DiscountType.BASE);
+        this.discountTypes.add(DiscountType.CONDITIONAL);
         this.discounts = new CombinedDiscount();
     }
     public void updateDiscountType(DiscountType discountType) {
@@ -26,6 +28,7 @@ public class DiscountPolicy {
             this.discountTypes.add(discountType);
     }
     public void addDiscount(DiscountDTO discountDetails) {
+        validateDiscountDetails(discountDetails);
         Discount discount=DTOtoDomainFactory.convertDTO(discountDetails);
         if(discount!=null){
             discounts.addDiscount(discount);
@@ -33,6 +36,15 @@ public class DiscountPolicy {
         else{
             throw new IllegalArgumentException("Invalid discount details");
         }
+    }
+    private void validateDiscountDetails(DiscountDTO discountDetails) {
+        if(!discountTypes.contains(discountDetails.getDiscountType1())){
+            throw new IllegalArgumentException("Invalid discount type: " + discountDetails.getDiscountType1());
+        }
+        if(discountDetails.getDiscountType2()!=null && !discountTypes.contains(discountDetails.getDiscountType2())){
+            throw new IllegalArgumentException("Invalid discount type: " + discountDetails.getDiscountType2());
+        }
+        
     }
     public void removeDiscount(int discountId) {
         discounts.removeDiscount(discountId);

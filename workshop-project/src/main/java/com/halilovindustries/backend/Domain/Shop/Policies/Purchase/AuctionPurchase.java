@@ -12,7 +12,7 @@ public class AuctionPurchase extends Purchase {
 
     
     public AuctionPurchase(int id,double startingBid, int itemId, LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
-        super(id,startingBid, itemId, 0); // Assuming the buyerId is not set at this point
+        super(id,startingBid, itemId, -1); // Assuming the buyerId is not set at this point
         validateAuctionTimes(auctionStartTime, auctionEndTime);
         this.auctionStartTime = auctionStartTime;
         this.auctionEndTime = auctionEndTime;
