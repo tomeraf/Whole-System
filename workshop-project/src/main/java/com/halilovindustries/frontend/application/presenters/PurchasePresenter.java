@@ -39,18 +39,21 @@ public class PurchasePresenter extends AbstractPresenter {
 
     public void purchase(ShipmentDetailsDTO shipmentDetails, PaymentDetailsDTO paymentDetails, Consumer<Order> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-                );
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
                 return;
             }
+
             // 1) Validate
             if (!shipmentDetails.fullShipmentDetails() || !paymentDetails.fullDetails()) {
                 // Show a warning if the form isn’t fully filled
-                UI.getCurrent().access(() ->
-                    Notification.show("Please fill all the details", 2000, Position.MIDDLE)
-                );
+                    Notification.show("Please fill all the details", 2000, Position.MIDDLE);
+                    onFinish.accept(null);
                 return;
             }
 
@@ -58,7 +61,6 @@ public class PurchasePresenter extends AbstractPresenter {
             Response<Order> response = orderService.buyCartContent(token, paymentDetails, shipmentDetails);
 
             // 3) Notify the user, on the UI thread
-            UI.getCurrent().access(() -> {
                 if (response.isOk()) {
                     Notification success = Notification.show("Purchase successful");
                     success.setPosition(Position.MIDDLE);
@@ -70,7 +72,7 @@ public class PurchasePresenter extends AbstractPresenter {
                     failure.setDuration(3000);
                     onFinish.accept(null);
                 }
-            });
+        });
         });
     }
 }

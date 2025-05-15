@@ -85,7 +85,7 @@ public class HomePresenter extends AbstractPresenter {
             UI ui = UI.getCurrent();
             if (ui == null) return;
             ui.access(() -> {
-                if (token == null) {
+                if (token == null || !validateToken(token)) {
                     Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
                     onFinish.accept(null, false);
                     return;
@@ -210,8 +210,8 @@ public class HomePresenter extends AbstractPresenter {
             if (ui == null) return;
 
             ui.access(() -> {
-                if (token == null) {
-                Notification.show("Please log in first", 2000, Position.MIDDLE);
+                if (token == null || !validateToken(token)) {
+                Notification.show("No token was found.", 2000, Position.MIDDLE);
                 return;
                 }
 

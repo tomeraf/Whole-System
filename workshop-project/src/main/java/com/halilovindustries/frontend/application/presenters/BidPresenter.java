@@ -12,6 +12,7 @@ import com.vaadin.flow.component.notification.Notification.Position;
 
 public class BidPresenter extends AbstractPresenter {
 
+    // Bid class for the shop side logic 
     public BidPresenter(
         UserService userService,
         ShopService shopService,

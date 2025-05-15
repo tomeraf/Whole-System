@@ -3,6 +3,9 @@ package com.halilovindustries.frontend.application.presenters;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -31,33 +34,39 @@ public class ShopPresenter extends AbstractPresenter {
     }
     public void getItems(int shopId, String itemName, Consumer<List<ItemDTO>> onFinish) {
         getSessionToken(token -> {
-            if (token == null || !validateToken(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-                );
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
             // 2) Call the backend
             Response<List<ItemDTO>> response = shopService.showShopItems(token, shopId);
-
+            
             if (!response.isOk()) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
-                );
+                Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
+            else {
+                    Notification.show("Items loaded successfully!", 2000, Position.MIDDLE);
+            }
             onFinish.accept(response.getData());
+            });
         });
     }
 
     public void getItemByFilter(int shopId, String itemName, HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
         getSessionToken(token -> {
-            if (token == null || !validateToken(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-                );
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
             }
@@ -69,7 +78,185 @@ public class ShopPresenter extends AbstractPresenter {
                 onFinish.accept(null);
                 return;
             }
+            else {
+                    Notification.show("Items loaded successfully!", 2000, Position.MIDDLE);
+            }
             onFinish.accept(response.getData());
+            });
         });
     }
+
+    public void submitBidOffer(int shopId, int itemID, double offerPrice, Consumer<Boolean> onFinish) {
+       getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = orderService.submitBidOffer(token, shopId, itemID, offerPrice);
+            if (!response.isOk()) {
+                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            else {
+                    Notification.show("Bid offer submitted successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+
+    public void purchaseBidItem(int shopId, int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = orderService.purchaseBidItem(token, shopId, bidId, paymentDetalis, shipmentDetalis);
+            if (!response.isOk()) {
+                Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            else {
+                    Notification.show("Bid item purchased successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+      
+    public void submitAuctionOffer(int shopId, int auctionID, double offerPrice, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = orderService.submitAuctionOffer(token, shopId, auctionID, offerPrice);
+            if (!response.isOk()) {
+
+                Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+
+                onFinish.accept(false);
+            }
+            else {
+                    Notification.show("Auction offer submitted successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+    
+    public void purchaseAuctionItem(int shopId, int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+
+            Response<Void> resp = orderService.purchaseAuctionItem(token, shopId, auctionID, paymentDetalis, shipmentDetalis);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+            } else {
+                Notification.show("Auction item purchased successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(true);
+            }
+            });
+        });        
+    } 
+
+    public void addItemsToCart(HashMap<Integer, HashMap<Integer, Integer>> userItems, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = orderService.addItemsToCart(token, userItems);
+            if (!response.isOk()) {
+                Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            else {
+                    Notification.show("Items added to cart successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+
+    public void showShopItems(int shopId, Consumer<List<ItemDTO>> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+
+            Response<List<ItemDTO>> resp = shopService.showShopItems(token, shopId);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+            } else {
+                Notification.show("Items retrieved successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(resp.getData());
+            }
+            });
+        });        
+    }
+    
+     public void getShopInfo(int shopID, Consumer<ShopDTO> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+
+            Response<ShopDTO> resp = shopService.getShopInfo(token, shopID);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+            } else {
+                Notification.show("Shop retrieved successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(resp.getData());
+            }
+            });
+        });        
+    }
+    
 }

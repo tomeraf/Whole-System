@@ -2,7 +2,9 @@ package com.halilovindustries.frontend.application.presenters;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -82,5 +84,5 @@ public class MyShopPresenter extends AbstractPresenter {
             }
         });
     });
-}
+    } 
 }

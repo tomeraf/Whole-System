@@ -64,7 +64,7 @@ public class CartPresenter extends AbstractPresenter {
         if (ui == null) return;
 
         ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+            if (token == null || !validateToken(token)) {
                 Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;

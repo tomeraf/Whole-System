@@ -12,6 +12,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 public class AuctionPresenter extends AbstractPresenter {
 
+    // Auction class for the shop side logic 
     public AuctionPresenter(
         UserService userService,
         ShopService shopService,

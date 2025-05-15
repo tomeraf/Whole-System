@@ -33,19 +33,22 @@ public class ShopsPresenter extends AbstractPresenter {
 
     public void getNRandomShops(int n, Consumer<List<ShopDTO>> onFinish) {
         getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (token == null || !validateToken(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-                );
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
                 return;
             }
+
             // 2) Call the backend
             Response<List<ShopDTO>> response = shopService.showAllShops(token);
 
             if (!response.isOk()) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
-                );
+                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(null);
                 return;
             }
             List<ShopDTO> randomShops = response.getData();
@@ -55,27 +58,55 @@ public class ShopsPresenter extends AbstractPresenter {
             }
             onFinish.accept(randomShops);
         });
+        });
     }
 
-    // public void searchShop(String name, Consumer<ShopDTO> onFinish) {
-    //     getSessionToken(token -> {
-    //         if (token == null || !validateToken(token)) {
-    //             UI.getCurrent().access(() ->
-    //                 Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-    //             );
-    //             onFinish.accept(null);
-    //             return;
-    //         }
-    //         // 2) Call the backend
-    //         Response<ShopDTO> response = shopService.getShopInfo(name);
-    //         if (!response.isOk()) {
-    //             UI.getCurrent().access(() ->
-    //                 Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
-    //             );
-    //             onFinish.accept(null);
-    //             return;
-    //         }
-    //         onFinish.accept(response.getData());
-    //     });
-    // }
+    
+    public void getShopInfo(int shopID, Consumer<ShopDTO> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+
+            Response<ShopDTO> resp = shopService.getShopInfo(token, shopID);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+            } else {
+                Notification.show("Shop retrieved successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(resp.getData());
+            }
+            });
+        });        
+    }
+
+    public void showAllShops(Consumer<List<ShopDTO>> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+
+            Response<List<ShopDTO>> resp = shopService.showAllShops(token);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+            } else {
+                Notification.show("Shops retrieved successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(resp.getData());
+            }
+            });
+        });        
+    }
 }
