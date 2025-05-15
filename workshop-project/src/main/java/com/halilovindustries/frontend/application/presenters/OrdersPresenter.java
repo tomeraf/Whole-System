@@ -5,7 +5,6 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 
 public class OrdersPresenter extends AbstractPresenter {
-
     public OrdersPresenter(
         UserService userService,
         ShopService shopService,
