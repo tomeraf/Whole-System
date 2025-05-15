@@ -22,4 +22,6 @@ public interface IUserRepository {
     Registered getUserByName(String username);
 
     List<Registered> getAllRegisteredUsers();
+
+    List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission);
 }

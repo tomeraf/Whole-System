@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-import com.halilovindustries.backend.Domain.User.Guest;
 import com.halilovindustries.backend.Domain.User.Registered;
 
 import java.time.LocalDateTime;
@@ -100,16 +99,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @Test
     public void testWatchSuspension_SuspensionOver_ShouldSucceed(){
         fixtures.generateRegisteredUserSession("user", "password");
-        userService.suspendUser(managerToken, "user", Optional.of(LocalDateTime.now()), Optional.of(LocalDateTime.now().plusSeconds(3)));
+        userService.suspendUser(managerToken, "user",Optional.empty(),Optional.empty());
         Response<String> response = userService.watchSuspensions(managerToken);
         assertTrue(response.isOk(), "System Manager should be able to watch a user's suspension");
         String suspensionInfo = response.getData();
         assertTrue(suspensionInfo.contains("user:user"), "Suspension info should not contain the user's name");
-        try{
-        Thread.sleep(4000);
-        }catch (InterruptedException e){
-            e.printStackTrace();
-        }
+        //remove suspension
+        userService.unsuspendUser(managerToken, "user");
+        //check if suspension is over
         Response<String> response2 = userService.watchSuspensions(managerToken);
         assertTrue(response2.isOk(), "System Manager should be able to watch a user's suspension");
         String suspensionInfo2 = response2.getData();
@@ -122,14 +119,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @Test
     public void testCloseShop_AsSystemManager_ShouldSucceed() {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         Response<Void> closeResp = shopService.closeShop(managerToken, shop.getId());
         assertTrue(closeResp.isOk(), "closeShopBySystemManager should succeed");
     }
     @Test
     public void testCloseShop_NotAsSystemManager_ShouldFail() {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         String userToken = fixtures.generateRegisteredUserSession("user", "password");
         Response<Void> closeResp = shopService.closeShop(userToken, shop.getId());
         assertTrue(!closeResp.isOk(), "closeShopBySystemManager should fail");
@@ -138,5 +135,14 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     public void testCloseShop_ShopNotFound_ShouldFail() {
         Response<Void> closeResp = shopService.closeShop(managerToken, 999);
         assertTrue(!closeResp.isOk(), "closeShopBySystemManager should fail");
+    }
+
+    //try to to do an action while suspended
+    @Test
+    public void testActionWhileSuspended_ShouldFail() {
+        String token=fixtures.generateRegisteredUserSession("user", "password");
+        userService.suspendUser(managerToken, "user", Optional.empty(), Optional.empty());
+        Response<ShopDTO> response = shopService.createShop(token, "MyShop", "A shop for tests");
+        assertTrue(!response.isOk(), "ודקר should not be able to create a shop while suspended");
     }
 }

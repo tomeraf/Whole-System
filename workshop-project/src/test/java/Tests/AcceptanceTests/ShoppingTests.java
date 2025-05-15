@@ -42,7 +42,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         //  1) Owner setup 
         // Owner enters as guest
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");;
         
         Response<List<ShopDTO>> shops = shopService.showAllShops(ownerToken);
         assertNotNull(shops.getData(), "showAllShops should not return null");
@@ -124,7 +124,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     public void searchItemsWithoutFilters() {
         // Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");;
 
         // Guest enters the system
         Response<String> guestResp = userService.enterToSystem();
@@ -143,7 +143,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     public void emptySearchResults() {
         // Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // Guest enters
         userService.enterToSystem();
@@ -161,7 +161,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     public void searchItemsInSpecificShop() {
         // Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");;
 
         // Guest enters
         userService.enterToSystem();
@@ -201,7 +201,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         //  1) Owner setup 
         // Owner enters as guest
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         
         //  2) Buyer setup 
         // Buyer enters as guest
@@ -236,7 +236,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void checkCartContentTest() {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         // grab the first item from the shop
         List<ItemDTO> items = shopService.showShopItems(ownerToken,shop.getId()).getData();
         assertEquals(3, items.size(), "Shop should have 3 items");
@@ -279,7 +279,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
@@ -340,7 +340,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         fixtures.mockNegativePayment(p);
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
@@ -378,7 +378,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(0);
 
@@ -408,7 +408,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     public void changeCartContentTest() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
 
         // 2) Buyer setup: enter, register, login
@@ -494,7 +494,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         fixtures.mockPositiveShipment(s);
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Buyer setup: enter -> register -> login
         String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
@@ -534,7 +534,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     public void sendMessageToShopTest() {
         // 1) Owner creates a shop with items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shopDto.getId();
 
         // 2) A second user (sender) logs in
@@ -571,7 +571,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // 2) Owner creates shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
 
         // 3) Set the quantity of the first item to 0 (unavailable)
@@ -646,7 +646,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // --- 1) Owner creates shop with a single‐unit item ---
         String ownerToken = fixtures.generateRegisteredUserSession("owner", "pwdO");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
 
         // Pick the first item and force its stock to exactly 1
@@ -711,7 +711,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
         int appleId = shop.getItems().values().iterator().next().getItemID();
 
@@ -764,7 +764,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         fixtures.mockPositiveShipment(s);
 
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
         int appleId = shop.getItems().values().iterator().next().getItemID();
 
@@ -794,7 +794,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         fixtures.mockPositiveShipment(s);
 
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
         int appleId = shop.getItems().values().iterator().next().getItemID();
 
@@ -832,7 +832,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
 
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         int shopId = shop.getId();
         int appleId = shop.getItems().values().iterator().next().getItemID();
 
@@ -871,7 +871,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         for (int i = 0; i < 10; i++) {
             // 1) Owner creates shop with exactly 1 unit of “Apple”
             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
             // find the apple’s ID and set its stock to 1
             int shopId = shop.getId();
             int appleId = shop.getItems().values().stream()
@@ -934,7 +934,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         for (int i = 0; i < 10; i++) {
             // 1) Owner creates shop with exactly 1 unit of “Apple”
             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
             int shopId = shop.getId();
             int appleId = shop.getItems().values().stream()
                                 .filter(j -> j.getName().equals("Apple"))

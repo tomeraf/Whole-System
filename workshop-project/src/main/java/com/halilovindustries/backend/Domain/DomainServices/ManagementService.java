@@ -1,12 +1,14 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.User.*;
 
 public class ManagementService {
@@ -134,9 +136,13 @@ public class ManagementService {
         }
     }
 
-    public void updateDiscountType(Registered supplyManager, Shop shop, String discountType) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateDiscountType'");
+
+    public void updateDiscountType(Registered supplyManager, Shop shop, DiscountType discountType) {
+        if( supplyManager.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
+            shop.updateDiscountType(discountType);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to update discount type");
+        }
     }
 
     public void closeShop(Registered supplyManager, Shop shop) {
@@ -180,4 +186,33 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to open an auction");
         }
     }
+        public void addDiscount(Registered user, Shop shop, DiscountDTO discountDetails) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
+            shop.addDiscount(discountDetails);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to add discounts");
+        }
+    }
+    public void removeDiscount(Registered user, Shop shop, int discountID) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
+            shop.removeDiscount(discountID);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to remove discounts");
+        }
+    }
+    public void addPurchaseCondition(Registered user, Shop shop, ConditionDTO condition) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
+            shop.addPurchaseCondition(condition);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to add purchase conditions");
+        }
+    }
+    public void removePurchaseCondition(Registered user, Shop shop, int conditionID) {
+        if (user.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
+            shop.removePurchaseCondition(conditionID);
+        } else {
+            throw new IllegalArgumentException("You don't have permission to remove purchase conditions");
+        }
+    }
+
 }

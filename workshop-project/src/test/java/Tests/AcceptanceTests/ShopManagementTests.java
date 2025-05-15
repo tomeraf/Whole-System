@@ -33,7 +33,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testGetAllShopsAndItems_ShouldReturnCorrectCounts() {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");
         
         // Act
         Response<List<ShopDTO>> shops = shopService.showAllShops(ownerToken);
@@ -122,7 +122,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testSearchItemsWithoutFilters_ShouldReturnAllItems() {
         // Arrange - Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // Guest enters the system
         Response<String> guestResp = userService.enterToSystem();
@@ -143,7 +143,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testSearchItemsWithNoMatches_ShouldReturnEmptyList() {
         // Arrange - Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        fixtures.generateShopAndItems(ownerToken);
+        fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // Guest enters
         userService.enterToSystem();
@@ -162,7 +162,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testSearchItemsInSpecificShop_ShouldReturnMatchingItems() {
         // Arrange - Owner creates a shop with 3 items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // Guest enters
         userService.enterToSystem();
@@ -223,7 +223,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         fixtures.mockPositiveShipment(s);
         // 1) Owner creates a shop with items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
         
         String guestToken = userService.enterToSystem().getData();
         List<ItemDTO> items = shopService.showShopItems(ownerToken,shopDto.getId()).getData();
@@ -290,7 +290,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testAddItemToShop_AsNonOwner_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         String userToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd0");
         Response<ItemDTO> addA = shopService.addItemToShop(
@@ -304,7 +304,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testAddItemToShop_WithDuplicateItem_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         Response<ItemDTO> addA = shopService.addItemToShop(
             ownerToken, shopDto.getId(),
@@ -317,7 +317,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testRemoveItemFromShop_AsOwner_ShouldSucceed()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
         assertEquals(3, shopDto.getItems().size(), "Shop should contain exactly three items after removal");
 
         // 2) Owner removes an item
@@ -337,7 +337,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testRemoveItemFromShop_AsNonOwner_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         String userToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd0");
         Response<Void> removeResp = shopService.removeItemFromShop(
@@ -350,7 +350,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testRemoveItemFromShop_WithNonExistentItem_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         Response<Void> removeResp = shopService.removeItemFromShop(
             ownerToken, shopDto.getId(), 456 // Non-existent item ID
@@ -362,7 +362,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemDescription_AsOwner_ShouldSucceed()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Owner edits an item
         ItemDTO itemToEdit = shopDto.getItems().get(0);
@@ -383,7 +383,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemDescription_AsNonOwner_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         String userToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd0");
 
@@ -399,7 +399,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemPrice_WithNegativePrice_ShouldFail()
     {
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Owner edits an item
         ItemDTO itemToEdit = shopDto.getItems().get(0);
@@ -420,7 +420,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testAddShopManager_WithValidPermissions_ShouldSucceed() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner1", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String managerGuestToken = userService.enterToSystem().getData();
@@ -457,7 +457,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testSetManagerPermissions_AddNewPermission_ShouldSucceed() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String managerGuestToken = userService.enterToSystem().getData();
@@ -495,7 +495,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testRemoveManager_AsOwner_ShouldPreventManagerActions() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String managerGuestToken = userService.enterToSystem().getData();
@@ -534,7 +534,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testRemoveAppointee_WithNestedAppointees_ShouldRemoveAll() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String managerGuestToken = userService.enterToSystem().getData();
@@ -588,7 +588,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testAppoint_SameUserTwice_ShouldFail() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Owner adds the manager
         String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
@@ -626,7 +626,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testViewShopContent_ManagerWithViewPermission_ShouldSucceed() {
         // 1) Owner creates shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String mgrGuest = userService.enterToSystem().getData();
@@ -652,7 +652,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testViewShop_WithInvalidToken_ShouldFail() {
         // 1) Owner creates shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) User never logged in → use an invalid token
         String badToken = "not-a-valid-token";
@@ -667,7 +667,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testGetMemberPermissions_WithoutViewPermission_ShouldFail() {
         // 1) Owner creates shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String mgrGuest = userService.enterToSystem().getData();
@@ -688,7 +688,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemQuantity_ManagerWithPermission_ShouldSucceed() {
         // 1) Owner creates shop + items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup
         String mgrGuestToken = userService.enterToSystem().getData();
@@ -735,7 +735,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemQuantity_WithNonExistentItem_ShouldFail() {
         // 1) Owner setup
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Owner tries to edit a non-existent product
         int missingId = 9999;
@@ -749,7 +749,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testEditItemQuantity_WithoutPermission_ShouldFail() {
         // 1) Owner + shop + items
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager setup (no inventory permission)
         String mgrGuest = userService.enterToSystem().getData();
@@ -785,7 +785,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testUpdatePurchasePolicy_WithoutPermission_ShouldFail() {
         // 1) Owner + shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager without that permission
         String mgrGuest = userService.enterToSystem().getData();
@@ -804,7 +804,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testPurchasePolicyFormat_InvalidFormat_ShouldFail() {
         // 1) Owner + shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Manager with permission
         String mgrGuest = userService.enterToSystem().getData();
@@ -824,7 +824,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testCloseShop_ShouldSucceed() {
         // 1) System (owner) creates and opens a shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
         // 2) Owner closes it
         Response<Void> closeResp = shopService.closeShop(ownerToken, shop.getId());
@@ -839,7 +839,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testCloseShop_ClosedShop_ShouldFail() {
         // 1) Owner creates and closes a shop
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         assertTrue(shopService.closeShop(ownerToken, shop.getId()).isOk(),
                    "Initial close should succeed");
 
@@ -854,7 +854,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         for (int i = 0; i < 10; i++) {
             // 1) Owner creates shop
             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken);
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
             int shopId = shop.getId();
 
             // 2) Prepare candidate user

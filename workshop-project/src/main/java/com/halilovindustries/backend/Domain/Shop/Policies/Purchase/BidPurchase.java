@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Domain.Shop.Purchase;
+package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +90,7 @@ public class BidPurchase extends Purchase {
     private void setCounterBidID(int counterID) {
         this.CounterBidID = counterID;
     }
-    public Pair<Integer,Double> purchaseBidItem(int userID, Set<Integer> memberIds) {
+    public Pair<Integer,Double> purchaseBidItem(int userID, List<Integer> memberIds) {
         memberIds.add(userID); // Add the user ID to the set of member IDs
         if(!AcceptingMembers.containsAll(memberIds)){
             throw new IllegalArgumentException("Error: not all members accepted the bid.");
@@ -101,6 +101,13 @@ public class BidPurchase extends Purchase {
         isAccepted = 1;
         done = true; // Mark the bid as done
         return new Pair<>(getItemId(), getAmount()); // Return the item ID and bid amount as a pair
+    }
+    public void answerOnCounterBid(int userID, boolean accept) {
+        if(getBuyerId()!=userID)
+        {
+            throw new IllegalArgumentException("Error: user is not the buyer of the bid.");
+        }
+        receiveDecision(userID, accept);
     }
 
 

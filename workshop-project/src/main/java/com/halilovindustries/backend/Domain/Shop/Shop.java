@@ -6,10 +6,12 @@ import java.time.LocalDateTime;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-
-import com.halilovindustries.backend.Domain.Shop.Purchase.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +25,7 @@ public class Shop implements IMessageListener {
     private String name;
     private String description;
     private PurchasePolicy purchasePolicy;
+    private DiscountPolicy discountPolicy;
     private HashMap<Integer, Item> items; // itemId -> item
     private Set<Integer> ownerIDs;
     private Set<Integer> managerIDs;
@@ -42,6 +45,7 @@ public class Shop implements IMessageListener {
         this.name = name;
         this.description = description;
         this.purchasePolicy = new PurchasePolicy();
+        this.discountPolicy = new DiscountPolicy();
         this.items = new HashMap<>();
         this.ownerIDs = new HashSet<>();
         this.managerIDs = new HashSet<>();
@@ -62,6 +66,7 @@ public class Shop implements IMessageListener {
     public String getDescription() { return description; }
     public boolean isOpen() { return isOpen; }
     public PurchasePolicy getPurchasePolicy() { return purchasePolicy; }
+    public DiscountPolicy getDiscountPolicy() { return discountPolicy; }
     public HashMap<Integer, Item> getItems() { return items; }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
     public Set<Integer> getManagerIDs() { return managerIDs; }
@@ -71,6 +76,7 @@ public class Shop implements IMessageListener {
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
     public void setPurchasePolicy(PurchasePolicy purchasePolicy) { this.purchasePolicy = purchasePolicy; }
+    public void setDiscountPolicy(DiscountPolicy discountPolicy) { this.discountPolicy = discountPolicy; }
     public void setOpen(boolean isOpen) { this.isOpen = isOpen; }
 
     public Item addItem(String name, Category category, double price, String description){
@@ -207,7 +213,11 @@ public class Shop implements IMessageListener {
             throw new IllegalArgumentException("Shopping basket is empty. Cannot purchase items.");
         }
         boolean result = true;
-
+        HashMap<Item, Integer> allItems = new HashMap<>();
+        for (Integer itemId : itemsToPurchase.keySet()) {
+            allItems.put(items.get(itemId), itemsToPurchase.get(itemId));
+        }
+        purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
             if (!items.containsKey(id)) {
                 throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -218,15 +228,17 @@ public class Shop implements IMessageListener {
     }
 
     public double purchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //will need to be synchronized later on
-        List<Item> allItems = new ArrayList<Item>();
+        HashMap<Item,Integer> allItems = new HashMap<>(); //<Item,quantity>
         for(Integer itemId: itemsToPurchase.keySet()){
-            allItems.add(items.get(itemId)); 
+            allItems.put(items.get(itemId), itemsToPurchase.get(itemId)); 
         }
         double totalPrice =0;
-        for(Item item: allItems){
-            item.buyItem(itemsToPurchase.get(item.getId()));
+        for(Item item: allItems.keySet()){
+            item.buyItem(allItems.get(item));
             totalPrice = totalPrice + item.getPrice() * itemsToPurchase.get(item.getId()); 
         }
+        double discount = discountPolicy.calculateDiscount(allItems);
+        totalPrice = totalPrice - discount;
         return totalPrice; 
     }
 
@@ -236,16 +248,6 @@ public class Shop implements IMessageListener {
             bidPurchaseCounter++;
             bidPurchaseItems.put(bidPurchase.getId(), bidPurchase);
         } else {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
-    }
-    public void addAuctionPurchase(int itemId, double startingAmount, LocalDateTime startTime, LocalDateTime endTime){
-        if (items.containsKey(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
-            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseCounter, startingAmount, itemId, startTime, endTime);
-            auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);
-            auctionPurchaseCounter++;
-        } 
-        else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
         }
     }
@@ -355,6 +357,9 @@ public class Shop implements IMessageListener {
                 managerIDs.remove(id);
         }
     }
+    public boolean isShopMember(int userId) {
+        return ownerIDs.contains(userId) || managerIDs.contains(userId);
+    }
 
     public boolean canAddItemsToBasket(HashMap<Integer,Integer> itemsMap) {
         for (Integer itemId : itemsMap.keySet()) {
@@ -373,14 +378,14 @@ public class Shop implements IMessageListener {
         }
     }
 
-    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID) {
+    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID,List<Integer> memberIDs) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
             try{
                 if(!getItem(bidPurchase.getItemId()).quantityCheck(1)){
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
-                return bidPurchase.purchaseBidItem(userID, ownerIDs);
+                return bidPurchase.purchaseBidItem(userID, memberIDs);
             }
              catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
@@ -391,7 +396,7 @@ public class Shop implements IMessageListener {
     }
 
     public void openAuction(int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate) {
-        if (items.containsKey(itemID)) {
+        if (items.containsKey(itemID)&& purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
             AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseCounter, startingPrice, itemID, startDate, endDate);
             auctionPurchaseCounter++;
             auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);
@@ -424,6 +429,34 @@ public class Shop implements IMessageListener {
             throw new IllegalArgumentException("Auction ID does not exist in the shop.");
         }
 	}
+
+    public void updateDiscountType(DiscountType discountType) {
+        discountPolicy.updateDiscountType(discountType);
+    }
+
+    public void addDiscount(DiscountDTO discountDetails) {
+        discountPolicy.addDiscount(discountDetails);
+    }
+    public void removeDiscount(int discountId) {
+        discountPolicy.removeDiscount(discountId);
+    }
+
+    public void addPurchaseCondition(ConditionDTO condition) {
+        purchasePolicy.addCondition(condition);
+    }
+
+    public void removePurchaseCondition(int conditionID) {
+        purchasePolicy.removeCondition(conditionID);
+    }
+
+    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
+        if (bidPurchaseItems.containsKey(bidId)) {
+            BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
+            bidPurchase.answerOnCounterBid(userID, accept);
+        } else {
+            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
+        }
+    }
 }
 
 
