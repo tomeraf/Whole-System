@@ -72,17 +72,20 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         HorizontalLayout centerControls = new HorizontalLayout(createSearchBar());
         centerControls.setAlignItems(FlexComponent.Alignment.CENTER);
+        centerControls.setWidthFull();
         centerControls.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
         HorizontalLayout rightControls = createAuthButtons();
-        rightControls.setSpacing(true);
+        // rightControls.setSpacing(true);
         rightControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
         // Combine into header
         HorizontalLayout header = new HorizontalLayout(leftControls, centerControls, rightControls);
         header.setWidthFull();
         header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.expand(centerControls);
         header.setPadding(true);
+        header.getStyle().set("padding", "1rem");
         header.getStyle().set("gap", "1rem");
         
         return header;
@@ -127,7 +130,19 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("background-color", "#F7B05B")
                 .set("color", "black");
 
-        HorizontalLayout searchContainer = new HorizontalLayout(searchBar, searchBtn);
+        Button filterBtn = new Button("", VaadinIcon.FILTER.create());
+        filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        filterBtn.getStyle()
+                .set("height", "36px")
+                .set("min-width", "36px")
+                .set("padding", "0")
+                .set("border-radius", "4px 0 0 4px")       // round left corners
+                .set("border", "1px solid #ccc")
+                .set("border-right", "none")                // drop the right border
+                .set("background-color", "lightblue")
+                .set("color", "black");
+
+        HorizontalLayout searchContainer = new HorizontalLayout(filterBtn, searchBar, searchBtn);
         searchContainer.setSpacing(false);
         searchContainer.setPadding(false);
         searchContainer.setAlignItems(FlexComponent.Alignment.CENTER);
