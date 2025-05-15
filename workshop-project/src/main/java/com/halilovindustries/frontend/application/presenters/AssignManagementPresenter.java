@@ -24,14 +24,14 @@ public class AssignManagementPresenter extends AbstractPresenter {
         this.orderService  = orderService;  
     }
 
-    public void addShopOwner(String sessionToken, int shopID, String appointeeName, Consumer<Boolean> onFinish) {
+    public void addShopOwner(int shopID, String appointeeName, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null) {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
                 Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
-            Response<Void> resp = shopService.addShopOwner(sessionToken, shopID, appointeeName);
+            Response<Void> resp = shopService.addShopOwner(token, shopID, appointeeName);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);
@@ -42,14 +42,14 @@ public class AssignManagementPresenter extends AbstractPresenter {
         });
     }
 
-    public void removeShopOwner(String sessionToken, int shopID, String appointeeName, Consumer<Boolean> onFinish) {
+    public void removeShopOwner(int shopID, String appointeeName, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null) {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
                 Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
-            Response<Void> resp = shopService.removeAppointment(sessionToken, shopID, appointeeName);
+            Response<Void> resp = shopService.removeAppointment(token, shopID, appointeeName);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);
@@ -60,14 +60,14 @@ public class AssignManagementPresenter extends AbstractPresenter {
         });
     }
 
-    public void addShopManager(String sessionToken, int shopID, String appointeeName, Set<Permission> permissions, Consumer<Boolean> onFinish) {
+    public void addShopManager(int shopID, String appointeeName, Set<Permission> permissions, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null) {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
                 Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
                 onFinish.accept(false);
                 return;
             }
-            Response<Void> resp = shopService.addShopManager(sessionToken, shopID, appointeeName, permissions);
+            Response<Void> resp = shopService.addShopManager(token, shopID, appointeeName, permissions);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

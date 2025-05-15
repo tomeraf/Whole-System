@@ -1,7 +1,10 @@
 package com.halilovindustries.frontend.application.presenters;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -32,51 +35,44 @@ public class CartPresenter extends AbstractPresenter {
         this.userService   = userService;
         this.shopService   = shopService;
         this.jwtAdapter    = jwtAdapter;
-        this.orderService  = orderService;           // ← assign
+        this.orderService  = orderService;
     }
 
-    /** Extract the “username” (or user-id) from a valid JWT. */
-    public String extractUserId(String token) {
-        return jwtAdapter.getUsername(token);
+    // userItems = <shopID, list<itemID>>
+    // select all items from the cart you want to remove
+    public void removeItemsFromCart(HashMap<Integer, List<Integer>> userItems, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> resp = orderService.removeItemsFromCart(token, userItems);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+            } else {
+                Notification.show("Items removed from cart successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(true);
+            }
+        });
     }
 
-    public void removeFromCart(String sessionToken, ItemDTO item) {
-        // Convert ItemDTO to HashMap<Integer, List<Integer>> as required by removeItemsFromCart
-        java.util.HashMap<Integer, java.util.List<Integer>> itemsMap = new java.util.HashMap<>();
-        // Assuming ItemDTO has getId() and getQuantity() methods
-        java.util.List<Integer> quantities = new java.util.ArrayList<>();
-        quantities.add(item.getQuantity());
-        itemsMap.put(item.getItemID(), quantities);
-
-        Response<Void> resp = orderService.removeItemsFromCart(sessionToken, itemsMap);
-        if (resp.isOk()) {
-            Notification notification = Notification.show("Item removed from cart");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        } else {
-            Notification notification = Notification.show("Failed to remove item from cart");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        }
-    }
-    public void buyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
-        Response<Order> resp = orderService.buyCartContent(sessionToken, p, s);
-        if (resp.isOk()) {
-            Notification notification = Notification.show("Purchase successful");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        } else {
-            Notification notification = Notification.show("Failed to purchase items");
-            notification.setPosition(Position.MIDDLE);
-            notification.setDuration(3000);
-        }
-    }
-
-    public List<ItemDTO> getCartContent(String sessionToken) {
-        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
-        if (resp.isOk() && resp.getData() != null) {
-            return resp.getData();
-        }
-        return Collections.emptyList();
+    public List<ItemDTO> checkCartContent(Consumer<List<ItemDTO>> onFinish) {
+        getSessionToken(token -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+            Response<List<ItemDTO>> resp = orderService.checkCartContent(token);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+            } else {
+                onFinish.accept(resp.getData());
+            }
+        });
+        return null;
     }
 }
