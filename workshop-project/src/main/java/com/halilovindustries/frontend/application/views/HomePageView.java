@@ -6,13 +6,10 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.websocket.Broadcaster;
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.ClientCallable;
-import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -25,6 +22,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
@@ -39,6 +37,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @CssImport("./themes/my-app/shop-cards.css")
@@ -51,19 +50,25 @@ public class HomePageView extends Composite<VerticalLayout> {
     private Button loginButton, registerButton, logoutButton;
     private Button viewCart;
     private HorizontalLayout randomSection;
-
+    private HashMap<String, String> filters = new HashMap<>();
+    //private final FlexLayout itemsLayout = new FlexLayout();
+    private final FlexLayout cardsLayout;
+    private TextField searchBar;
+    private Button searchBtn;
+    private Button filterBtn;
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
 
         getContent().add(createHeader());
-
-        // create an _empty_ placeholder for our cards
-        randomSection = new HorizontalLayout();
-        randomSection.setWidthFull();
-        randomSection.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        randomSection.getStyle().set("gap", "1rem");
-        getContent().add(randomSection);
+        searchBar = new TextField();
+        cardsLayout = new FlexLayout();
+        cardsLayout.setWidthFull();
+        cardsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        cardsLayout.getStyle().set("gap", "1rem");
+        
+        getContent().add(cardsLayout);
     }
 
     private HorizontalLayout createHeader() {
@@ -111,7 +116,6 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private HorizontalLayout createSearchBar() {
-        TextField searchBar = new TextField();
         searchBar.setPlaceholder("Search");
         searchBar.setWidth("400px");
         searchBar.getStyle()
@@ -119,7 +123,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border-radius", "4px 0 0 4px")
                 .set("border-right", "none");
 
-        Button searchBtn = new Button(VaadinIcon.SEARCH.create());
+        searchBtn = new Button(VaadinIcon.SEARCH.create());
         searchBtn.getStyle()
                 .set("height", "38px")
                 .set("min-width", "38px")
@@ -129,8 +133,9 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border", "1px solid #ccc")
                 .set("background-color", "#F7B05B")
                 .set("color", "black");
+        searchBtn.addClickListener(e -> doSearch());
 
-        Button filterBtn = new Button("", VaadinIcon.FILTER.create());
+        filterBtn = new Button("", VaadinIcon.FILTER.create());
         filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         filterBtn.getStyle()
                 .set("height", "36px")
@@ -141,6 +146,8 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border-right", "none")                // drop the right border
                 .set("background-color", "lightblue")
                 .set("color", "black");
+
+        filterBtn.addClickListener(e -> openFilterDialog());
 
         HorizontalLayout searchContainer = new HorizontalLayout(filterBtn, searchBar, searchBtn);
         searchContainer.setSpacing(false);
@@ -171,17 +178,13 @@ public class HomePageView extends Composite<VerticalLayout> {
         return button;
     }
 
-    private void loadRandomItems(HorizontalLayout target) {
-        // clear any old cards
-        target.removeAll();
-
+    private void loadRandomItems() {
         // now fetch 3 items
         presenter.getRandomItems(3, items -> {
             // back on the UI thread, add their cards
             UI.getCurrent().access(() -> {
-                for (ItemDTO item : items) {
-                    target.add(createItemCard(item));
-                }
+                cardsLayout.removeAll();
+                items.forEach(item -> cardsLayout.add(createItemCard(item)));
             });
         });
     }
@@ -363,6 +366,15 @@ public class HomePageView extends Composite<VerticalLayout> {
         showGuestUI();          // switch back to guest view
     }
 
+    private void doSearch() {        
+        // presenter.showItemsByFilter(filters, items -> {
+        //     UI.getCurrent().access(() -> {
+        //         cardsLayout.removeAll();
+        //         items.forEach(item -> cardsLayout.add(createItemCard(item)));
+        //     });
+        // });
+    }
+
     /** Show login/register, hide logout */
     private void showGuestUI() {
         loginButton.setVisible(true);
@@ -396,12 +408,62 @@ public class HomePageView extends Composite<VerticalLayout> {
                 }
             });
         });
-        loadRandomItems(randomSection);
+        loadRandomItems();
     }
 
     @ClientCallable
     public void onBrowserUnload() {
         // fire your normal logout logic
         doLogout();
+    }
+
+    private void openFilterDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("300px");
+
+        NumberField minPrice = new NumberField("Min Price");
+        NumberField maxPrice = new NumberField("Max Price");
+
+        ComboBox<String> category = new ComboBox<>("Category");
+        category.setItems("All", "Electronics", "Clothing", "Books"); // example
+
+        ComboBox<Integer> ItemRating = new ComboBox<>("Item Rating");
+        ItemRating.setItems(1, 2, 3, 4, 5);
+
+        ComboBox<Integer> ShopRating = new ComboBox<>("Shop Rating");
+        ShopRating.setItems(1, 2, 3, 4, 5);
+
+        Button apply = new Button("Apply", e -> {
+            filters.put("name", searchBar.getValue());
+            filters.put("category", category.getValue());
+            filters.put("minPrice", String.valueOf(minPrice.getValue()));
+            filters.put("maxPrice", String.valueOf(minPrice.getValue()));
+            filters.put("minRating", String.valueOf(ItemRating.getValue()));
+            filters.put("shopRating", String.valueOf(ShopRating.getValue()));
+            // and pass them to your presenter
+            dialog.close();
+        });
+        apply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        VerticalLayout layout = new VerticalLayout(
+                new Text("Filter by:"),
+                minPrice,
+                maxPrice,
+                category,
+                ItemRating,
+                ShopRating,
+                apply
+        );
+        layout.setPadding(false);
+        layout.setSpacing(true);
+
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    @Override
+    protected void onDetach(DetachEvent event) {
+        doLogout();
+        // presenter.exitAsGuest();
     }
 }
