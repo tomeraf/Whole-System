@@ -44,12 +44,12 @@ public class MyShopsPresenter extends AbstractPresenter {
                 onFinish.accept(Collections.emptyList(), false);
                 return;
             }
-            // Response<List<ShopDTO>> resp = shopService.showUserShops(token);
-            // if (!resp.isOk()) {
-            //     onFinish.accept(Collections.emptyList(), false);
-            // } else {
-            //     onFinish.accept(resp.getData(), true);
-            // }
+            Response<List<ShopDTO>> resp = shopService.showUserShops(token);
+            if (!resp.isOk()) {
+                onFinish.accept(Collections.emptyList(), false);
+            } else {
+                onFinish.accept(resp.getData(), true);
+            }
         });
     }
 
