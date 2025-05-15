@@ -1,8 +1,19 @@
 package com.halilovindustries.frontend.application.presenters;
+import java.util.List;
+import java.util.function.Consumer;
+
+import com.halilovindustries.backend.Domain.Response;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.DTOs.Order;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 
 public class ShopInboxPresenter extends AbstractPresenter {
 
@@ -18,6 +29,56 @@ public class ShopInboxPresenter extends AbstractPresenter {
         this.orderService  = orderService;           // ← assign
     }
 
-    // Add any additional methods or logic specific to ShopInboxPresenter here
+    // public void getShopInbox(Consumer<List<MessageDTO>> onFinish) {
+    //     getSessionToken(token -> {
+    //         if (token == null && !validateToken(token) && !isLoggedIn(token)) {
+    //             UI.getCurrent().access(() ->
+    //                 Notification.show("User is not logged in - guest cannot watch shop details", 2000, Position.MIDDLE)
+    //             );
+    //             return;
+    //         }
+    //         // 2) Call the backend
+    //         //Response<List<IMessage>> messages = shopService.getInbox(0);
 
+    //         // 3) Notify the user, on the UI thread
+    //         // UI.getCurrent().access(() -> {
+    //         //     if (response.isOk()) {
+    //         //         Notification success = Notification.show("Purchase successful");
+    //         //         success.setPosition(Position.MIDDLE);
+    //         //         success.setDuration(3000);
+    //         //     } else {
+    //         //         Notification failure = Notification.show("Failed to purchase items");
+    //         //         failure.setPosition(Position.MIDDLE);
+    //         //         failure.setDuration(3000);
+    //         //     }
+    //         // });
+    //     });
+    // }
+
+    public void sendMessege(int shopID, String title, String content, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            if (token == null && !validateToken(token) && !isLoggedIn(token)) {
+                UI.getCurrent().access(() ->
+                    Notification.show("User is not logged in - guest cannot watch shop details", 2000, Position.MIDDLE)
+                    );
+                return;
+            }
+            Response<Void> response = shopService.sendMessage(token, shopID, title, content);
+            UI.getCurrent().access(() -> {
+                if (response.isOk()) {
+                    Notification success = Notification.show("Message Sent Successfully");
+                    success.setPosition(Position.MIDDLE);
+                    success.setDuration(3000);
+                } else {
+                    Notification failure = Notification.show("Failed to send message");
+                    failure.setPosition(Position.MIDDLE);
+                    failure.setDuration(3000);
+                }
+            });
+        });
+    }
+
+    // public void respondToMessage(MessageDTO m,) {
+
+    // }
 }

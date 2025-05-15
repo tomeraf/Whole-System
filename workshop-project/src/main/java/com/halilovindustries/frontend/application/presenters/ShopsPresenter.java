@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -27,12 +27,11 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.shared.Registration;
 
-import io.jsonwebtoken.lang.Collections;
 
 @Component
-public class ShopPresenter extends AbstractPresenter {
+public class ShopsPresenter extends AbstractPresenter {
     @Autowired
-    public ShopPresenter(
+    public ShopsPresenter(
         UserService userService,
         ShopService shopService,
         JWTAdapter jwtAdapter,
@@ -43,47 +42,52 @@ public class ShopPresenter extends AbstractPresenter {
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
     }
-    public void getItems(int shopId, String itemName, Consumer<List<ItemDTO>> onFinish) {
+
+    public void getNRandomShops(int n, Consumer<List<ShopDTO>> onFinish) {
         getSessionToken(token -> {
             if (token == null || !validateToken(token)) {
                 UI.getCurrent().access(() ->
                     Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
                 );
-                onFinish.accept(null);
                 return;
             }
             // 2) Call the backend
-            Response<List<ItemDTO>> response = shopService.showShopItems(token, shopId);
+            Response<List<ShopDTO>> response = shopService.showAllShops(token);
 
             if (!response.isOk()) {
                 UI.getCurrent().access(() ->
                     Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
                 );
-                onFinish.accept(null);
                 return;
             }
-            onFinish.accept(response.getData());
+            List<ShopDTO> randomShops = response.getData();
+            Collections.shuffle(randomShops);
+            if (randomShops.size() > n) {
+                randomShops = randomShops.subList(0, n);
+            }
+            onFinish.accept(randomShops);
         });
     }
 
-    public void getItemByFilter(int shopId, String itemName, HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
-        getSessionToken(token -> {
-            if (token == null || !validateToken(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
-                );
-                onFinish.accept(null);
-                return;
-            }
-            Response<List<ItemDTO>> response = shopService.filterItemsInShop(token, 0, filters);
-            if (!response.isOk()) {
-                UI.getCurrent().access(() ->
-                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
-                );
-                onFinish.accept(null);
-                return;
-            }
-            onFinish.accept(response.getData());
-        });
-    }
+    // public void searchShop(String name, Consumer<ShopDTO> onFinish) {
+    //     getSessionToken(token -> {
+    //         if (token == null || !validateToken(token)) {
+    //             UI.getCurrent().access(() ->
+    //                 Notification.show("Token is invalid, can't proceed the process.", 2000, Position.MIDDLE)
+    //             );
+    //             onFinish.accept(null);
+    //             return;
+    //         }
+    //         // 2) Call the backend
+    //         Response<ShopDTO> response = shopService.getShopInfo(name);
+    //         if (!response.isOk()) {
+    //             UI.getCurrent().access(() ->
+    //                 Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
+    //             );
+    //             onFinish.accept(null);
+    //             return;
+    //         }
+    //         onFinish.accept(response.getData());
+    //     });
+    // }
 }

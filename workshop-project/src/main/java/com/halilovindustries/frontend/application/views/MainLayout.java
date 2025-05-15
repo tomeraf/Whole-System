@@ -59,8 +59,7 @@ getStyle().setWidth("100%");
 
         nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.CART.create()));
         nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
-        nav.addItem(new SideNavItem("Categories", CategoriesView.class, VaadinIcon.LIST.create()));
-
+        nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
         List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
         menuEntries.forEach(entry -> {
             if (entry.icon() != null) {
