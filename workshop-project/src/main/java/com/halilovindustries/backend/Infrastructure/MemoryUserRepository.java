@@ -96,7 +96,7 @@ public class MemoryUserRepository implements IUserRepository {
                 return (Registered) user;
             }
         }
-        throw new RuntimeException("User with username: " + username + "does not exist");
+        return null;
     }
 
     @Override

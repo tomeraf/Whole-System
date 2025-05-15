@@ -1,6 +1,7 @@
 package com.halilovindustries.frontend.application.presenters;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -40,7 +41,7 @@ public class DiscountPresenter extends AbstractPresenter {
                 return;
             }
 
-            Response<Void> resp = shopService.updateDiscountType(token, shopID, discountType);
+            Response<Void> resp = shopService.updateDiscountType(token, shopID, DiscountType.valueOf(discountType));
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

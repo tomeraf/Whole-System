@@ -45,7 +45,7 @@ public class MyShopsView extends VerticalLayout {
         // a FlexLayout that will hold all the cards, wrapping as needed
         cardsLayout = new FlexLayout();
         cardsLayout.setWidthFull();
-        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
 
         // <<< ADD THESE TWO LINES TO ENABLE wrapping and 4-across modules >>>
         cardsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);

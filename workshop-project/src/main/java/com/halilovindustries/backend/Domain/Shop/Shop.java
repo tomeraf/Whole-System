@@ -194,6 +194,7 @@ public class Shop implements IMessageListener {
     }
 
     public boolean canAddItemToBasket(int itemId, int quantity) {
+        System.out.println("canAddItemToBasket called with itemId: " + itemId + " and quantity: " + quantity + ", this.quantity: " + items.get(itemId).getQuantity());
         if (items.containsKey(itemId) && items.get(itemId).quantityCheck(quantity)) {
             return true;
         }

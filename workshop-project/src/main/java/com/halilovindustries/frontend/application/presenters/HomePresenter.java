@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -192,30 +193,35 @@ public class HomePresenter extends AbstractPresenter {
                     return;
                 }
             }
-
-            // (Optional) debug
-            System.out.println("[getRandomItems] using token = " + token);
-
-            // Step 3: now safely call your shopService
-            List<ItemDTO> picked = new ArrayList<>();
-            Response<List<ShopDTO>> shopsResp = shopService.showAllShops(token);
-            if (shopsResp.isOk()) {
-                List<ShopDTO> shops = shopsResp.getData();
-                if (!shops.isEmpty()) {
-                    Random rnd = new Random();
-                    for (int i = 0; i < count; i++) {
-                        ShopDTO shop = shops.get(rnd.nextInt(shops.size()));
-                        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(token, shop.getId());
-                        if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
-                            List<ItemDTO> items = itemsResp.getData();
-                            if (items.size() > 0)
-                                picked.add(items.get(rnd.nextInt(items.size())));
-                        }
-                    }
-                }
+            Response<List<ItemDTO>> itemsResp = shopService.filterItemsAllShops(token, new HashMap<String, String>());
+            if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
+                List<ItemDTO> items = itemsResp.getData();
+                Collections.shuffle(items);
+                onFinish.accept(items.subList(0, Math.min(count, items.size())));
+                onFinish.accept(items);
+                return;
             }
 
-            onFinish.accept(picked);
+            // // Step 3: now safely call your shopService
+            // List<ItemDTO> picked = new ArrayList<>();
+            // Response<List<ShopDTO>> shopsResp = shopService.showAllShops(token);
+            // if (shopsResp.isOk()) {
+            //     List<ShopDTO> shops = shopsResp.getData();
+            //     if (!shops.isEmpty()) {
+            //         Random rnd = new Random();
+            //         for (int i = 0; i < count; i++) {
+            //             ShopDTO shop = shops.get(rnd.nextInt(shops.size()));
+            //             Response<List<ItemDTO>> itemsResp = shopService.showShopItems(token, shop.getId());
+            //             if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
+            //                 List<ItemDTO> items = itemsResp.getData();
+            //                 if (items.size() > 0)
+            //                     picked.add(items.get(rnd.nextInt(items.size())));
+            //             }
+            //         }
+            //     }
+            // }
+
+            // onFinish.accept(picked);
         });
     });
 }

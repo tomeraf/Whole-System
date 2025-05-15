@@ -170,6 +170,8 @@ public class UserService {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
+            if (userRepository.getUserByName(username) == null)
+                throw new Exception("Username: " + username + " does not exist");
 
             Registered registered = userRepository.getUserByName(username);
             
