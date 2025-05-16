@@ -6,7 +6,10 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
+import com.halilovindustries.websocket.INotifier;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -111,21 +114,28 @@ public class PurchaseService {
 
     // }
 
-    public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer)
+    public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer, INotifier notifier)
     {
         if(user instanceof Registered) {
             shop.addBidPurchase(itemId, offer,user.getUserID());
+            notifyBidOffer(shop, itemId, offer, notifier);
         }
         else {
             throw new IllegalArgumentException("Error: guest cannot submit bid.");
         }
     }
+    private void notifyBidOffer(Shop shop, int itemId, double offer, INotifier notifier) {
+        String message = "New bid offer for item " + shop.getItem(itemId).getName() + ",the offer is: " + offer;
+        for(int id:shop.getMembersIDs()) {
+            notifier.notifyUser(message,String.valueOf(id));
+        }
+    }
 
-	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails,List<Integer> memberIds) {
+	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
-		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID(), memberIds);
+		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID());
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
@@ -159,7 +169,24 @@ public class PurchaseService {
         return order;
     }
 
-    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
-        shop.answerOnCounterBid(bidId, accept, user.getUserID());
+    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members,INotifier notifier) {
+        shop.answerOnCounterBid(bidId, accept, user.getUserID(),members);
+        notifyCounterBid(shop, bidId,notifier);
+    }
+    private void notifyCounterBid(Shop shop, int bidId, INotifier notifier) {
+        BidPurchase bid = shop.getBidPurchase(bidId);
+        if(bid.isAccepted() ==1 ){
+            String message = "Bid offer for item " + shop.getItem(bid.getItemId()).getName() + " has been accepted.";
+            for(int id:shop.getMembersIDs()) {
+                notifier.notifyUser(message,String.valueOf(id));
+            }
+        }
+        else if(bid.isAccepted() == -1) {
+            String message = "Bid offer for item " + shop.getItem(bid.getItemId()).getName() + " has been rejected.";
+            for(int id:shop.getMembersIDs()) {
+                notifier.notifyUser(message,String.valueOf(id));
+            }
+        }
+
     }
 }

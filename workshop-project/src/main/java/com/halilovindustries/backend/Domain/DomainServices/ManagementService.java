@@ -9,7 +9,9 @@ import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
+import com.halilovindustries.websocket.INotifier;
 
 public class ManagementService {
     private static ManagementService instance = null;
@@ -145,14 +147,34 @@ public class ManagementService {
         }
     }
 
-    public void closeShop(Registered supplyManager, Shop shop) {
-        if (supplyManager.isSystemManager()|| supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP)) {
+    public void closeShop(Registered supplyManager, Shop shop, INotifier notifier,Registered founder) {
+        if(supplyManager.isSystemManager()){
+            closeShopAsSystemManager(supplyManager, shop, notifier,founder);     
+        } else if (supplyManager.getAppointer(shop.getId())==-1) {
             shop.closeShop();
+            notifyCloseShop(supplyManager, shop, notifier);
         } else {
             throw new IllegalArgumentException("You don't have permission to close the shop");
         }
     }
+    private void closeShopAsSystemManager(Registered systemManager, Shop shop, INotifier notifier,Registered founder) {;
+        shop.closeShop();
+        shop.clearRoles();
+        founder.getRoleInShop(shop.getId()).removeAllAppointments();
+        founder.removeRoleFromShop(shop.getId());
+        notifyCloseShop(systemManager, shop, notifier);
+    }
 
+    private void notifyCloseShop(Registered supplyManager, Shop shop,INotifier notifier) {
+        String message = "Shop " + shop.getName() + " has been closed by " + supplyManager.getUsername();
+        if(supplyManager.isSystemManager()){
+            message += ",you no longer have a role in this shop";
+        }
+        for (int id : shop.getMembersIDs()) {
+            notifier.notifyUser(message, String.valueOf(id));
+        }
+        
+    }
     public List<Integer> getMembersPermissions(Registered supplyManager, Shop shop) {
         List<Integer> permissions = new ArrayList<>();
         if(supplyManager.hasPermission(shop.getId(), Permission.VIEW)){
@@ -164,13 +186,23 @@ public class ManagementService {
         }
         return permissions;
     }
-	public void answerBid(Registered user, Shop shop, int bidID, boolean accept) {
+	public void answerBid(Registered user, Shop shop, int bidID, boolean accept,List<Integer> members, INotifier notifier) {
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            shop.addBidDecision(user.getUserID(),bidID, accept);
+            shop.addBidDecision(user.getUserID(),bidID, accept, members);
+            notifyBid(shop.getBidPurchase(bidID),notifier);
         } else {
             throw new IllegalArgumentException("You don't have permission to answer bids");
         }
 	}
+    private void notifyBid(BidPurchase bidPurchase, INotifier notifier) {
+        if(bidPurchase.isAccepted()==1){
+            String message = "Bid " + bidPurchase.getId() + " has been accepted by all members";
+            notifier.notifyUser(message, String.valueOf(bidPurchase.getBuyerId()));
+        } else if(bidPurchase.isAccepted()==-1){
+            String message = "Bid " + bidPurchase.getId() + " has been rejected by " + bidPurchase.getRejecterId();
+            notifier.notifyUser(message, String.valueOf(bidPurchase.getBuyerId()));
+        }
+    }
     public void submitCounterBid(Registered user, Shop shop, int bidID, double offerAmount) {
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
             shop.submitCounterBid(user.getUserID(), bidID, offerAmount);

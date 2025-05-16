@@ -13,7 +13,6 @@ public enum Permission {
     UPDATE_SUPPLY,
     UPDATE_ITEM_RATING, 
     APPOINTMENT,
-    CLOSE_SHOP,
     ANSWER_BID,
     OPEN_AUCTION,
 }

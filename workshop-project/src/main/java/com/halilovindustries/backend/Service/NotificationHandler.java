@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 import java.util.Queue;
 
 @Service
-public class NotificationService {
+public class NotificationHandler {
     private final INotificationRepository repo;
 
     @Autowired
-    public NotificationService(INotificationRepository repo) {
+    public NotificationHandler(INotificationRepository repo) {
         this.repo = repo;
     }
 
@@ -31,11 +31,6 @@ public class NotificationService {
 
         // 2) store it
         repo.addNotification(userId, dto);
-
-        // 3) broadcast it to any open UIs
-        //    Broadcaster is keyed by String UUID; 
-        //    here we just use the numeric ID as a string
-        Broadcaster.broadcast(Integer.toString(userId), message);
     }
 
     /**

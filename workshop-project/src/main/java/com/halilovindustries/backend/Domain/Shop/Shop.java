@@ -29,6 +29,7 @@ public class Shop implements IMessageListener {
     private HashMap<Integer, Item> items; // itemId -> item
     private Set<Integer> ownerIDs;
     private Set<Integer> managerIDs;
+    private int founderID;
     private boolean isOpen;
     private int counterItemId; // Counter for item IDs
     private double rating;
@@ -50,6 +51,7 @@ public class Shop implements IMessageListener {
         this.ownerIDs = new HashSet<>();
         this.managerIDs = new HashSet<>();
         ownerIDs.add(founderID); // Add the founder as an owner
+        this.founderID = founderID;
         this.isOpen = true;
         this.counterItemId = 0; // Initialize the item ID counter
         this.rating = 0.0;
@@ -72,6 +74,7 @@ public class Shop implements IMessageListener {
     public Set<Integer> getManagerIDs() { return managerIDs; }
     public double getRating() { return rating; }
     public int getRatingCount() { return ratingCount; }
+    public int getFounderID() { return founderID; }
 
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
@@ -285,13 +288,13 @@ public class Shop implements IMessageListener {
         }
     }
 
-    public void addBidDecision(int memberId, int bidId, boolean decision) {
+    public void addBidDecision(int memberId, int bidId, boolean decision,List<Integer> members) {
         if(!bidPurchaseItems.containsKey(bidId)) {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         } 
         else {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            bidPurchase.receiveDecision(memberId, decision);
+            bidPurchase.receiveDecision(memberId, decision,members);
         }
     }
 
@@ -378,14 +381,14 @@ public class Shop implements IMessageListener {
         }
     }
 
-    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID,List<Integer> memberIDs) {
+    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
             try{
                 if(!getItem(bidPurchase.getItemId()).quantityCheck(1)){
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
-                return bidPurchase.purchaseBidItem(userID, memberIDs);
+                return bidPurchase.purchaseBidItem(userID);
             }
              catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
@@ -449,13 +452,32 @@ public class Shop implements IMessageListener {
         purchasePolicy.removeCondition(conditionID);
     }
 
-    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
+    public void answerOnCounterBid(int bidId, boolean accept, int userID,List<Integer> members) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            bidPurchase.answerOnCounterBid(userID, accept);
+            bidPurchase.answerOnCounterBid(userID, accept, members);
         } else {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         }
+    }
+
+    public List<Integer> getMembersIDs() {
+        List<Integer> membersIDs = new ArrayList<>();
+        membersIDs.addAll(ownerIDs);
+        membersIDs.addAll(managerIDs);
+        return membersIDs;
+    }
+    public BidPurchase getBidPurchase(int bidId) {
+        if (bidPurchaseItems.containsKey(bidId)) {
+            return bidPurchaseItems.get(bidId);
+        } else {
+            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
+        }
+    }
+
+    public void clearRoles() {
+        ownerIDs.clear();
+        managerIDs.clear();
     }
 }
 

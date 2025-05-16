@@ -17,6 +17,7 @@ import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.User.*;
+import com.halilovindustries.websocket.INotifier;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
@@ -45,18 +46,20 @@ public class ShopService {
     private IAuthentication authenticationAdapter;
     private InteractionService interactionService = InteractionService.getInstance();
     private final ConcurrencyHandler concurrencyHandler;
+    private final INotifier notifier;
 
     private static final Logger logger = LoggerFactory.getLogger(ShopService.class);
 
     @Autowired
     public ShopService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository,
-            IAuthentication authenticationAdapter, ConcurrencyHandler concurrencyHandler) {
+            IAuthentication authenticationAdapter, ConcurrencyHandler concurrencyHandler, INotifier notifier) {
         this.userRepository = userRepository;
         this.shopRepository = shopRepository;
         this.orderRepository = orderRepository;
         this.authenticationAdapter = authenticationAdapter;
         this.shoppingService = new ShoppingService();
         this.concurrencyHandler = concurrencyHandler;
+        this.notifier = notifier;
     }
 
 
@@ -260,11 +263,12 @@ public class ShopService {
                 }
                 int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
                 Registered user = (Registered) this.userRepository.getUserById(userID);
+                Registered founder= (Registered) this.userRepository.getUserById(shopRepository.getShopById(shopID).getFounderID());
                 if(user.isSuspended()) {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopID);
-                managementService.closeShop(user, shop);
+                managementService.closeShop(user, shop,notifier,founder);
                 logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
                 return Response.ok();
             } finally {
@@ -275,6 +279,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+
 
 
     public Response<ItemDTO> addItemToShop(String sessionToken, int shopID, String itemName, Category category,
@@ -796,7 +801,8 @@ public class ShopService {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopID);
-                managementService.answerBid(user, shop, bidID, accept);
+                List<Integer> members = userRepository.getAllRegisteredsByShopAndPermission(shopID, Permission.ANSWER_BID);
+                managementService.answerBid(user, shop, bidID, accept,members ,notifier);
                 logger.info(() -> "Bid answered: " + bidID + " in shop: " + shop.getName() + " by user: " + userID);
                 return Response.ok();
             } finally {

@@ -32,6 +32,4 @@ public abstract class Purchase {
     }
 
 
-    public abstract boolean isAccepted();
-
 }

@@ -27,6 +27,8 @@ import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
+import com.halilovindustries.websocket.INotifier;
+import com.halilovindustries.websocket.VaadinNotifier;
 
 public abstract class BaseAcceptanceTests {
     protected IShopRepository shopRepository;
@@ -35,6 +37,7 @@ public abstract class BaseAcceptanceTests {
     protected IAuthentication jwtAdapter;
     protected IShipment shipment;
     protected IPayment payment;
+    protected INotifier notifier;
     protected UserService userService;
     protected ShopService shopService;
     protected OrderService orderService;
@@ -92,10 +95,11 @@ public abstract class BaseAcceptanceTests {
         concurrencyHandler = new ConcurrencyHandler();
         shipment         = mock(IShipment.class);
         payment          = mock(IPayment.class);
+        notifier         =new VaadinNotifier();
 
         userService  = new UserService(userRepository, jwtAdapter, concurrencyHandler);
-        shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler);
-        orderService = new OrderService(userRepository, shopRepository, orderRepository, jwtAdapter, payment, shipment, concurrencyHandler);
+        shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler,notifier);
+        orderService = new OrderService(userRepository, shopRepository, orderRepository, jwtAdapter, payment, shipment, concurrencyHandler,notifier);
         fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, payment, shipment);
     }
 }

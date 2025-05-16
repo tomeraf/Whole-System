@@ -19,6 +19,7 @@ import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Shop.Shop;
 import com.halilovindustries.backend.Domain.User.ShoppingBasket;
+import com.halilovindustries.websocket.INotifier;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
@@ -47,9 +48,11 @@ public class OrderService {
 
     private final ConcurrencyHandler ConcurrencyHandler;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+    private final INotifier notifier;
 
     @Autowired
-    public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter, IPayment payment, IShipment shipment,  ConcurrencyHandler concurrencyHandler) {
+    public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter,
+                         IPayment payment, IShipment shipment,  ConcurrencyHandler concurrencyHandler , INotifier notifier) {
         this.userRepository = userRepository;
         this.shopRepository = shopRepository;
         this.orderRepository = orderRepository;
@@ -57,6 +60,7 @@ public class OrderService {
         this.payment = payment;
         this.shipment = shipment;
         this.ConcurrencyHandler = concurrencyHandler;
+        this.notifier = notifier;
     }
 
     /**
@@ -294,7 +298,7 @@ public class OrderService {
                     throw new Exception("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice);
+                purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice, notifier);
     
                 logger.info(() -> "Bid offer submitted successfully for item ID: " + itemID);
                 return Response.ok();
@@ -336,7 +340,8 @@ public class OrderService {
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            purchaseService.answerOnCounterBid(user,shop,bidId,accept);
+            List<Integer> members=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
+            purchaseService.answerOnCounterBid(user,shop,bidId,accept,members,notifier);
     
             logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId);
             return Response.ok();
@@ -419,8 +424,7 @@ public class OrderService {
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            List<Integer> accepetingMembers=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
-            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis,accepetingMembers);
+            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();

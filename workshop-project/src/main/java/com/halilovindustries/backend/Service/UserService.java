@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.aspectj.weaver.Dump.INode;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
@@ -15,10 +16,10 @@ import com.halilovindustries.backend.Domain.User.*;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
+import com.halilovindustries.backend.Domain.Repositories.INotificationRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +27,7 @@ public class UserService {
 
     private IUserRepository userRepository;
     private IAuthentication jwtAdapter;
+    private INotificationRepository notificationRepository;
     private final ConcurrencyHandler concurrencyHandler;
 
     ObjectMapper objectMapper = new ObjectMapper();
@@ -33,10 +35,11 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
+    public UserService(IUserRepository userRepository,INotificationRepository notificationRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
         this.userRepository = userRepository;
         this.jwtAdapter = jwtAdapter;
         this.concurrencyHandler = concurrencyHandler;
+        this.notificationRepository = notificationRepository;
     }
 
     public String encodePassword(String password) {
