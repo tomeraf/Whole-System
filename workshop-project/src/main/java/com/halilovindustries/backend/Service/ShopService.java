@@ -800,7 +800,7 @@ public class ShopService {
         return Response.ok();
     }
 
-    public Response<List<Permission>> getMembersPermissions(String sessionToken, int shopID, String memberName) {
+    public Response<List<Permission>> getMemberPermissions(String sessionToken, int shopID, String memberName) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
