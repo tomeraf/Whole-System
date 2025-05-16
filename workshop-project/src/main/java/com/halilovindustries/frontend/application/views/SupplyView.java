@@ -3,7 +3,6 @@ package com.halilovindustries.frontend.application.views;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.frontend.application.presenters.MyShopPresenter;
-import com.halilovindustries.frontend.application.presenters.ShopPresenter;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -12,8 +11,6 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.*;
@@ -25,30 +22,28 @@ import com.vaadin.flow.router.*;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Route(value = "shop/", layout = MainLayout.class)
-@PageTitle("Shop Details")
-public class MyShopView extends Composite<VerticalLayout> implements HasUrlParameter<Integer> {
+@Route(value = "shop-supply/", layout = MainLayout.class)
+@PageTitle("Shop Supply")
+public class SupplyView extends Composite<VerticalLayout> implements HasUrlParameter<Integer> {
 
     private final MyShopPresenter presenter;
     private final FlexLayout itemsLayout = new FlexLayout();
+    private Button back = new Button("← Back");
     
     private final H3 shopTitle = new H3();
     private Button addItemButton;
     @Autowired
-    public MyShopView(MyShopPresenter presenter) {
+    public SupplyView(MyShopPresenter presenter) {
         this.presenter = presenter;
 
         addItemButton = new Button("Add Item", VaadinIcon.PLUS.create());
         addItemButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
         
-        HorizontalLayout header = new HorizontalLayout(shopTitle, addItemButton);
+        HorizontalLayout header = new HorizontalLayout(shopTitle, back, addItemButton);
         header.setWidthFull();
         header.expand(shopTitle);
         header.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -69,6 +64,8 @@ public class MyShopView extends Composite<VerticalLayout> implements HasUrlParam
     public void setParameter(BeforeEvent event, Integer shopID) {
         loadItems(shopID);
         addItemButton.addClickListener(e -> openAddItemDialog(shopID));  // open your “add item” dialog
+        back.addClickListener(e -> UI.getCurrent().navigate("manage-shop/" + shopID));
+
     }
 
     private void loadItems(int shopID) {
@@ -272,7 +269,8 @@ public class MyShopView extends Composite<VerticalLayout> implements HasUrlParam
 
         // 3) Editable fields
         NumberField qtyField = new NumberField("Quantity");
-        qtyField.setValue((double)item.getQuantity());
+        // qtyField.setValue((double)item.getQuantity());
+        qtyField.setPlaceholder("0");
         qtyField.setMin(0);
 
         NumberField priceField = new NumberField("Price");

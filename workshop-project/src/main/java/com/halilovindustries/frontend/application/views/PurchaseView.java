@@ -1,5 +1,6 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -8,6 +9,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -24,13 +26,21 @@ import java.util.stream.IntStream;
 @Route(value = "purchase", layout = MainLayout.class)
 @PageTitle("Checkout")
 public class PurchaseView extends VerticalLayout {
+    private final Button back = new Button("← Back",
+            e -> UI.getCurrent().navigate("cart"));
 
     public PurchaseView() {
         setPadding(true);
         setSpacing(true);
         setAlignItems(FlexComponent.Alignment.START);
 
-        add(new H2("Checkout"));
+        H2 title = new H2("Checkout");
+
+        HorizontalLayout header = new HorizontalLayout(title, back);
+        header.setWidthFull();
+        header.expand(title);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        add(header);
 
         // —— Shipment Details ——
         add(new H3("Shipment Details"));

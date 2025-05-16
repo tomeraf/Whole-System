@@ -1,6 +1,10 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.frontend.application.presenters.MyShopPresenter;
+import com.vaadin.flow.component.ClickNotifier;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -9,35 +13,44 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@Route(value = "manage-shop", layout = MainLayout.class)
+@Route(value = "manage-shop/", layout = MainLayout.class)
 @PageTitle("Manage Shop")
-public class ManagerShopView extends VerticalLayout {
+public class ManageShopView extends VerticalLayout implements HasUrlParameter<Integer> {
 
-    private final String shopName = "My Awesome Shop"; // replace with dynamic name
+    private Button editItemsBtn;
+    private Button membersBtn;
+    private MyShopPresenter presenter;
+    private String shopName;
+    H2 title;
 
-    public ManagerShopView() {
+    public ManageShopView(MyShopPresenter presenter) {
+        this.presenter = presenter;
+
         setPadding(true);
         setSpacing(true);
 
+
+
         // 1️⃣ Title + Controls Row
-        H2 title = new H2(shopName);
+        title = new H2(shopName);
 
         // — Shop Members —
-        Button membersBtn = new Button("Members", VaadinIcon.GROUP.create());
+        membersBtn = new Button("Members", VaadinIcon.GROUP.create());
         membersBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         membersBtn.getStyle().set("background-color", "white")
                             .set("border", "2px solid darkblue");
-        membersBtn.addClickListener(e -> openMembersDialog());
 
         // — Edit Items —
-        Button editItemsBtn = new Button("Edit Items", VaadinIcon.EDIT.create());
+        editItemsBtn = new Button("Edit Items", VaadinIcon.EDIT.create());
         editItemsBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         editItemsBtn.getStyle().set("background-color", "white")
                                .set("border", "2px solid darkblue");
-        editItemsBtn.addClickListener(e -> openEditItemsDialog());
+
 
         // — Inbox —
         Button inboxBtn = new Button("Inbox", VaadinIcon.ENVELOPE.create());
@@ -75,6 +88,21 @@ public class ManagerShopView extends VerticalLayout {
         // … put the rest of your manager UI below here …
     }
 
+    @Override
+    public void setParameter(BeforeEvent event, Integer shopID) {
+        editItemsBtn.addClickListener(e -> UI.getCurrent().navigate("shop-supply/" + shopID));
+        presenter.getShopInfo(shopID, shop -> {
+
+            UI.getCurrent().access(() -> {
+                title.setText(shop.getName());
+                shopName = shop.getName();
+            });
+        });
+
+        membersBtn.addClickListener(e -> UI.getCurrent().navigate("shop-members/" + shopID));
+
+    }
+
     private void openMembersDialog() {
         Dialog dlg = new Dialog();
         dlg.setWidth("400px");
@@ -83,20 +111,8 @@ public class ManagerShopView extends VerticalLayout {
         dlg.open();
     }
 
-    private void openEditItemsDialog() {
-        Dialog dlg = new Dialog();
-        dlg.setWidth("400px");
-        dlg.add(new H2("Edit Items"));
-        // TODO: your edit-items UI
-        dlg.open();
-    }
-
     private void openInboxDialog() {
-        Dialog dlg = new Dialog();
-        dlg.setWidth("400px");
-        dlg.add(new H2("Inbox Messages"));
-        // TODO: your inbox UI
-        dlg.open();
+
     }
 
     private void openCloseConfirmDialog() {

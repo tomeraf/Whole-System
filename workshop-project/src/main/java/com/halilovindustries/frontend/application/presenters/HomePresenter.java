@@ -149,6 +149,7 @@ public class HomePresenter extends AbstractPresenter {
             .executeJs("localStorage.setItem('token', $0);", guestToken);
 
             Notification.show("Logged out successfully.", 2000, Position.TOP_CENTER);
+            UI.getCurrent().getPage().reload();
         });
         });
     }

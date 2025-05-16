@@ -1,5 +1,7 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.frontend.application.presenters.SupplyPresenter;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Footer;
@@ -26,8 +28,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 public class MainLayout extends AppLayout {
 
     private H1 viewTitle;
+    private SupplyPresenter presenter;
 
-    public MainLayout() {
+    public MainLayout(SupplyPresenter presenter) {
+
+    this.presenter = presenter;
+
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
@@ -57,10 +63,22 @@ getStyle().setWidth("100%");
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
 
+        nav.addItem(new SideNavItem("Home", HomePageView.class, VaadinIcon.HOME.create()));
         nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.CART.create()));
-        nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
-        nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
-        nav.addItem(new SideNavItem("Inbox", InboxView.class, VaadinIcon.ENVELOPE.create()));
+
+
+        presenter.getSessionToken(token -> {
+            if (token != null
+                    && presenter.validateToken(token)
+                    && presenter.isLoggedIn(token)) {
+
+                nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
+                nav.addItem(new SideNavItem("Inbox",   InboxView.class,   VaadinIcon.ENVELOPE.create()));
+                nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
+            }
+        });
+
+
         List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
         menuEntries.forEach(entry -> {
             if (entry.icon() != null) {

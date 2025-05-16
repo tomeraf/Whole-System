@@ -43,7 +43,18 @@ public class CartView extends Composite<VerticalLayout>
 
         Button checkout = new Button("Checkout", VaadinIcon.CREDIT_CARD.create());
         checkout.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        checkout.addClickListener(e -> UI.getCurrent().navigate("purchase"));
+        // if checkout has been clicked
+        checkout.addClickListener(e -> {
+            presenter.checkCartContent(items -> {
+                if (items.isEmpty()) {
+                    Notification.show("Your cart is empty", 2000, Position.MIDDLE);
+                } else {
+                    UI.getCurrent().navigate("purchase");
+                }
+            });
+        });
+
+
         
         HorizontalLayout toolbar = new HorizontalLayout(back, checkout);
         toolbar.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -140,11 +151,6 @@ public class CartView extends Composite<VerticalLayout>
             presenter.checkCartContent(items -> {
             UI.getCurrent().access(() -> {
                 grid.setItems(items);
-                if (items.isEmpty()) {
-                Notification.show(
-                    "Your cart is empty", 2000, Position.MIDDLE
-                );
-                }
             });
             });
         });

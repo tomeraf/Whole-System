@@ -128,7 +128,7 @@ public class MyShopsView extends VerticalLayout {
 
         // click anywhere
         card.addClickListener(e ->
-            UI.getCurrent().navigate("shop/" + shop.getId())
+            UI.getCurrent().navigate("manage-shop/" + shop.getId())
         );
 
         // 1) Title

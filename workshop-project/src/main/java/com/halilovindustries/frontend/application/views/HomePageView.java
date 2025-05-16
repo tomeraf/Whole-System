@@ -45,8 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @CssImport("./themes/my-app/shop-cards.css")
 @PageTitle("Home Page")
-@Route("")
-@Menu(order = 0, icon = LineAwesomeIconUrl.PENCIL_RULER_SOLID)
+@Route(value = "", layout = MainLayout.class)
+//@Menu(order = 0, icon = LineAwesomeIconUrl.PENCIL_RULER_SOLID)
 public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
     private Registration myBroadcastRegistration;
@@ -144,6 +144,9 @@ public class HomePageView extends Composite<VerticalLayout> {
             }
             doSearch();
         });
+
+        searchBar.addKeyDownListener(Key.ENTER, (KeyDownEvent e) -> searchBtn.click());
+
         Button filterBtn = new Button("", VaadinIcon.FILTER.create());
         filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         filterBtn.getStyle()
@@ -361,8 +364,9 @@ public class HomePageView extends Composite<VerticalLayout> {
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
                     // we already set localStorage & showed a welcome toast in presenter
-                    showLoggedInUI();  
+                    showLoggedInUI();
                     dialog.close();
+                    UI.getCurrent().getPage().reload();
                 } else {
                     // nothing to do—errors already surfaced in presenter
                 }
@@ -429,7 +433,8 @@ public class HomePageView extends Composite<VerticalLayout> {
                     });
                 });
 
-                showLoggedInUI(); // hide login, show logout
+                showLoggedInUI();
+                UI.getCurrent().getPage().reload();
             }
         });
     }
@@ -441,6 +446,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         }
         presenter.logoutUser(); // performs backend logout and gets new guest token
         showGuestUI();          // switch back to guest view
+
     }
 
     private void doSearch() {
