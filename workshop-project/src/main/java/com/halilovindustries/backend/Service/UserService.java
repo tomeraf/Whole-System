@@ -27,7 +27,6 @@ public class UserService {
 
     private IUserRepository userRepository;
     private IAuthentication jwtAdapter;
-    private INotificationRepository notificationRepository;
     private final ConcurrencyHandler concurrencyHandler;
 
     ObjectMapper objectMapper = new ObjectMapper();
@@ -35,11 +34,10 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserService(IUserRepository userRepository,INotificationRepository notificationRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
+    public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
         this.userRepository = userRepository;
         this.jwtAdapter = jwtAdapter;
         this.concurrencyHandler = concurrencyHandler;
-        this.notificationRepository = notificationRepository;
     }
 
     public String encodePassword(String password) {
