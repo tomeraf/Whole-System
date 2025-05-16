@@ -343,6 +343,43 @@ public class ShopService {
         }
     }
 
+    public Response<Void> changeItemName(String sessionToken, int shopID, int itemID, String newName) {
+        // Check if the user is logged in
+        // If not, prompt to log in or register
+        // If logged in, change the item name in the shop with the provided details
+        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
+
+        shopRead.lock();
+        try {
+            itemLock.lockInterruptibly();
+            try {
+                if (!authenticationAdapter.validateToken(sessionToken)) {
+                    throw new Exception("User is not logged in");
+                }
+                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+                Registered user = (Registered) this.userRepository.getUserById(userID);
+                if(user.isSuspended()) {
+                    return Response.error("User is suspended");
+                }
+                Shop shop = this.shopRepository.getShopById(shopID);
+                managementService.updateItemName(user, shop, itemID, newName);
+                logger.info(() -> "Item name changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
+                        + userID);
+                return Response.ok();
+            } catch (Exception e) {
+                logger.error(() -> "Error changing item name in shop: " + e.getMessage());
+                return Response.error("Error: " + e.getMessage());
+            } finally {
+                itemLock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Response.error("Operation interrupted while locking item.");
+        } finally {
+            shopRead.unlock();
+        }
+    }
     public Response<Void> changeItemQuantityInShop(String sessionToken, int shopID, int itemID, int newQuantity) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -754,7 +791,7 @@ public class ShopService {
         return Response.ok();
     }
 
-    public Response<String> getMembersPermissions(String sessionToken, int shopID) {
+    public Response<List<Permission>> getMembersPermissions(String sessionToken, int shopID,String memberName) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
@@ -765,15 +802,10 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopID);
-            List<Integer> membersUserIds = managementService.getMembersPermissions(user, shop);
-            StringBuilder permissions = new StringBuilder();
-            for (int memberId : membersUserIds) {
-                Registered member = (Registered) userRepository.getUserById(memberId);
-                permissions.append(member.getUsername()).append(": ");
-                permissions.append(member.getPermissions(shopID)).append("\n");
-            }
+            Registered member = userRepository.getUserByName(memberName);
+            List<Permission> permissions = managementService.getMembersPermissions(user, shop,member);
             logger.info(() -> "Members permissions retrieved in shop: " + shop.getName() + " by user: " + userID);
-            return Response.ok(permissions.toString());
+            return Response.ok(permissions);
         } catch (Exception e) {
             logger.error(() -> "Error retrieving members permissions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());

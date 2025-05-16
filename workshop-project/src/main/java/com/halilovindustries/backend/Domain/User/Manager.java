@@ -1,6 +1,7 @@
 package com.halilovindustries.backend.Domain.User;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,8 +42,8 @@ public class Manager extends IRole {
         return appointments;
     }
 
-    public Set<Permission> getPermissions() {
-        return permission;
+    public List<Permission> getPermissions() {
+        return permission.stream().toList();
     }
 
     public String getPermissionsString() {

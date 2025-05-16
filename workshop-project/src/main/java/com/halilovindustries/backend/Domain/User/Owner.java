@@ -1,6 +1,7 @@
 package com.halilovindustries.backend.Domain.User;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -40,6 +41,9 @@ public class Owner extends IRole {
 
     public String getPermissionsString() {
         return "Owner - has all permissions";
+    }
+    public List<Permission> getPermissions(){
+        return List.of(Permission.OWNER);
     }
 }
 

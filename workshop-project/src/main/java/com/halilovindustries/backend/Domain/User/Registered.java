@@ -147,9 +147,9 @@ public class Registered extends Guest implements IMessageListener {
         return dateOfBirth;
     }
     
-    public String getPermissions(int shopID) {
+    public List<Permission> getPermissions(int shopID) {
         if(roleInShops.containsKey(shopID)) {
-            return roleInShops.get(shopID).getPermissionsString();
+            return roleInShops.get(shopID).getPermissions();
         } else {
             throw new IllegalArgumentException("No role found for shop ID: " + shopID);
         }

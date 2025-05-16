@@ -445,11 +445,11 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         
 
         // 4) Now verify that manager was actually added to the shop
-        Response<String> permsResp = shopService.getMembersPermissions(ownerToken, shop.getId());
+        Response<List<Permission>> permsResp = shopService.getMembersPermissions(ownerToken, shop.getId(),"manager");
         assertTrue(permsResp.isOk(), "getMembersPermissions should succeed");
-        String permsData = permsResp.getData();
+        
 
-        assertTrue(permsData.contains(Permission.APPOINTMENT.name()));
+        assertTrue(permsResp.getData().contains(Permission.APPOINTMENT), "Manager should have APPOINTMENT permission");
         
     }
 
@@ -480,14 +480,14 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         );
         assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
 
-        Response<String> res = shopService.getMembersPermissions(ownerToken, shop.getId());
+        Response<List<Permission>> res = shopService.getMembersPermissions(ownerToken, shop.getId(),"manager");
         
         Response<Void> setPermissionsResp = shopService.addShopManagerPermission
         (
             ownerToken, shop.getId(), "manager", Permission.UPDATE_ITEM_PRICE
         );
         assertTrue(setPermissionsResp.isOk(), "setPermissions should succeed");
-        assertNotEquals(res.getData(), shopService.getMembersPermissions(ownerToken, shop.getId()).getData());
+        assertNotEquals(res.getData(), shopService.getMembersPermissions(ownerToken, shop.getId(),"manager").getData());
         
     }
 
@@ -680,7 +680,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(addMgr.isOk(), "addShopManager should succeed");
 
         // 4) Manager tries to view
-        Response<String> resp = shopService.getMembersPermissions(mgrToken, shop.getId());
+        Response<List<Permission>> resp = shopService.getMembersPermissions(mgrToken, shop.getId(), "mgr2");
         assertFalse(resp.isOk(), "Should fail when lacking VIEW permission");
     }
 
