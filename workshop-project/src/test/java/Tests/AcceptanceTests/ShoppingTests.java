@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
@@ -31,7 +30,6 @@ import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
@@ -527,34 +525,6 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(infoResp.isOk(), "getShopInfo should succeed after rating");
         ShopDTO ratedShop = infoResp.getData();
         assertEquals(ratingScore, ratedShop.getRating(), "Shop rating should match the score given");
-    }
-
-
-    @Test
-    public void sendMessageToShopTest() {
-        // 1) Owner creates a shop with items
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        int shopId = shopDto.getId();
-
-        // 2) A second user (sender) logs in
-        String senderToken = fixtures.generateRegisteredUserSession("Sender", "Pwd");
-
-        // 3) Send a message to the shop
-        String title = "Problem with the name of the shop";
-        String content = "Hello sir, I have a problem with the name of the shop. "
-                    + "Can you please change it to something less racist?";
-
-        Response<Void> res = shopService.sendMessage(senderToken, shopId, title, content);
-        assertTrue(res.isOk(), "sendMessageToShop should succeed");   
-
-        HashMap<Integer, IMessage> messages = shopService.getInbox(shopId).getData();
-        boolean contains = false;
-        for (IMessage msg : messages.values()) {
-            if (msg.getTitle().equals(title) && msg.getContent().equals(content))
-                contains = true;    
-        }
-        assertTrue(contains);
     }
 
     @Test

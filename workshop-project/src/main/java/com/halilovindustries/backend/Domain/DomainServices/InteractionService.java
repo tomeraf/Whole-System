@@ -1,12 +1,12 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.User.Registered;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
+import com.halilovindustries.backend.Domain.Shop.Shop;
 
 public class InteractionService {
     
@@ -22,34 +22,34 @@ public class InteractionService {
         }
         return instance;
     }
-    public IMessage createMessage(int id, int senderId, String senderName, int receiverId, String title, String content) {
-        IMessage message = new Message(id, senderId, senderName, receiverId, new Date(), title, content);
-        return message;
+    public void sendMessage(Registered sender,Shop shop,String title,String content) {
+        if(title == null || content == null||title.isEmpty() || content.isEmpty()) {
+            throw new IllegalArgumentException("Title and content cannot be null");
+        }
+        Message message = new Message(shop.getNextMessageId(),sender.getUsername(),shop.getName(),LocalDateTime.now(),title,content);
+        shop.addMessage(message);
+        sender.addMessage(message);
     }
 
-    public void sendMessage(IMessageListener receiver, IMessage message) {
-        if(receiver == null || message == null) {
-            throw new IllegalArgumentException("Receiver and message cannot be null");
+    public Message respondToMessage(Registered member, Shop shop, int messageId,String title ,String content) {
+        if(content == null|| title == null||title.isEmpty() || content.isEmpty()) {
+            throw new IllegalArgumentException("Content cannot be null");
         }
-        if(!message.canSend()){
-            throw new IllegalStateException("Message cannot be sent");
+        if(!member.hasPermission(shop.getId(),Permission.ANSWER_MESSAGE)) {
+            throw new IllegalArgumentException("You do not have permission to respond to messages");
         }
-        message.send(receiver);
-    }
-
-    public void respondToMessage(Registered sender, IMessage parentMessage, IMessage responseMessage) {
-        if(parentMessage == null || responseMessage == null) {
-            throw new IllegalArgumentException("Parent message and response message cannot be null");
+        if(!shop.hasMessage(messageId)) {
+            throw new IllegalArgumentException("Message with ID " + messageId + " does not exist.");
         }
-        if(!responseMessage.canSend()){
-            throw new IllegalStateException("Response message cannot be sent");
+        Message message = shop.getMessage(messageId);
+        if(!message.needResponse()) {
+            throw new IllegalArgumentException("This message has already been responded to.");
         }
-        if(sender.hasPermission(responseMessage.getReceiverId(), Permission.OWNER)){
-            responseMessage.respond(parentMessage);
-        }
-        else {
-            throw new IllegalStateException("Non owner does not have permission to respond to this message");
-        }
+        Message response = new Message(shop.getNextMessageId(),message.getUserName(),shop.getName(),LocalDateTime.now(),"Re: " + title,content);
+        message.setRespondId(response.getId());
+        shop.addMessage(response);
+        message.setRespondId(response.getId());
+        return response;
     }
 
 
