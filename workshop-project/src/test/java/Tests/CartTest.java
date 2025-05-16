@@ -25,12 +25,12 @@ public class CartTest {
     @BeforeEach
     public void setUp() {
         // Create ItemDTO objects
-        item1 = new ItemDTO("Item 1", Category.BEAUTY, 10.0, -1, 101, 5, 4.5, "Description 1");
-        item2 = new ItemDTO("Item 2", Category.BEAUTY, 10.0, -1, 102, 5, 4.5, "Description 2");
-        item3 = new ItemDTO("Item 3", Category.BEAUTY, 10.0, -1, 103, 5, 4.5,   "Description 3");
-        item4 = new ItemDTO("Item 4", Category.BEAUTY, 10.0, -2, 201, 5, 4.5,   "Description 4");
-        item5 = new ItemDTO("Item 5", Category.BEAUTY, 10.0, -2, 202, 5, 4.5,  "Description 5");
-        item6 = new ItemDTO("Item 6", Category.BEAUTY, 10.0, -2, 203, 5, 4.5, "Description 6");
+        item1 = new ItemDTO("Item 1", Category.BEAUTY, 10.0, -1, 101, 5, 4.5, "Description 1",1);
+        item2 = new ItemDTO("Item 2", Category.BEAUTY, 10.0, -1, 102, 5, 4.5, "Description 2",1);
+        item3 = new ItemDTO("Item 3", Category.BEAUTY, 10.0, -1, 103, 5, 4.5,   "Description 3",1);
+        item4 = new ItemDTO("Item 4", Category.BEAUTY, 10.0, -2, 201, 5, 4.5,   "Description 4",1);
+        item5 = new ItemDTO("Item 5", Category.BEAUTY, 10.0, -2, 202, 5, 4.5,  "Description 5",1);
+        item6 = new ItemDTO("Item 6", Category.BEAUTY, 10.0, -2, 203, 5, 4.5, "Description 6",1);
         
         // Create ShoppingBasket objects with shopIDs
         // and initialize them with empty item lists
