@@ -137,6 +137,7 @@ public class ShopService {
             int minRating = filters.get("minRating") != null ? Integer.parseInt(filters.get("minRating")) : 0;
             double shopRating = filters.get("shopRating") != null ? Double.parseDouble(filters.get("shopRating")) : 0;
             List<Item> filteredItems = new ArrayList<>();
+            System.out.println("Max price is: " + maxPrice);
             for (Shop shop : shopRepository.getAllShops().values()) {
                 filteredItems.addAll(shop.filter(name, category, minPrice, maxPrice, minRating, shopRating));
             }

@@ -4,6 +4,7 @@ package com.halilovindustries.frontend.application.views;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.*;
@@ -37,8 +38,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @CssImport("./themes/my-app/shop-cards.css")
 @PageTitle("Home Page")
@@ -131,8 +134,16 @@ public class HomePageView extends Composite<VerticalLayout> {
                 .set("border", "1px solid #ccc")
                 .set("background-color", "#F7B05B")
                 .set("color", "black");
-        searchBtn.addClickListener(e -> doSearch());
 
+        // Populate filters here, then trigger search
+        searchBtn.addClickListener(e -> {
+            filters.clear();
+            String q = searchBar.getValue().trim();
+            if (!q.isEmpty()) {
+                filters.put("name", q);
+            }
+            doSearch();
+        });
         Button filterBtn = new Button("", VaadinIcon.FILTER.create());
         filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         filterBtn.getStyle()
@@ -234,34 +245,102 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private VerticalLayout createItemCard(ItemDTO item) {
+        // 1) Card container
         VerticalLayout card = new VerticalLayout();
         card.setAlignItems(FlexComponent.Alignment.CENTER);
         card.getStyle()
             .set("border", "1px solid #ddd")
             .set("border-radius", "8px")
             .set("padding", "1rem")
-            .set("width", "200px");        // or “30%” if you prefer fluid sizing
+            .set("width", "200px");
 
-        // image
-        String q = URLEncoder.encode(item.getName(), StandardCharsets.UTF_8);
-        Image img = new Image("https://source.unsplash.com/100x100/?" + q, item.getName());
-        img.setWidth("80px");
-        img.setHeight("80px");
-
-        // name & price
+        // 2) Name & price
         Span name = new Span(item.getName());
         name.getStyle().set("font-size", "0.9em");
         Span price = new Span("$" + item.getPrice());
         price.getStyle().set("font-weight", "bold");
 
-        // Save In Cart
-        Button save = new Button("Save In Cart", evt -> presenter.saveInCart(item));
-        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        save.getStyle().set("width", "100%");
+        // 3) Quantity selector
+        AtomicInteger qty = new AtomicInteger(1);
+        Span qtyLabel = new Span(String.valueOf(qty.get()));
+        Button minus = new Button("–", e -> {
+            if (qty.get() > 1) {
+                qty.decrementAndGet();
+                qtyLabel.setText(String.valueOf(qty.get()));
+            }
+        });
+        Button plus = new Button("+", e -> {
+            qty.incrementAndGet();
+            qtyLabel.setText(String.valueOf(qty.get()));
+        });
+        // prevent qty buttons from triggering the card click
+        minus.getElement().addEventListener("click", domEvent -> {}).addEventData("event.stopPropagation()");
+        plus.getElement().addEventListener("click", domEvent -> {}).addEventData("event.stopPropagation()");
 
-        card.add(img, name, price, save);
+        HorizontalLayout qtyControls = new HorizontalLayout(minus, qtyLabel, plus);
+        qtyControls.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        // 4) “Add to Cart” button
+        Button add = new Button("Add to Cart", e -> {
+            presenter.saveInCart(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(), item.getItemID(), qty.get(),item.getRating(), item.getDescription()));
+        });
+        add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        add.setWidthFull();
+        // stop it from firing the card‐click
+        add.getElement().addEventListener("click", e -> {}).addEventData("event.stopPropagation()");
+
+        // 5) Put it all together
+        card.add(name, price, qtyControls, add);
+
+        // 6) Click on the card → show details dialog
+        card.addClickListener(e -> {
+            Dialog details = new Dialog();
+            details.setWidth("400px");
+            details.add(
+                new H3(item.getName()),
+                new Paragraph("Category: " + item.getCategory().name()),
+                new Paragraph("Description: " + item.getDescription()),
+                new Paragraph("Price: $" + item.getPrice()),
+                new Paragraph("Rating: ⭐ " + item.getRating()),
+                new Paragraph("Available Quantity: " + item.getQuantity()),
+                new Button("Close", ev -> details.close())
+            );
+            details.open();
+        });
+
         return card;
     }
+
+
+    // private VerticalLayout createItemCard(ItemDTO item) {
+    //     VerticalLayout card = new VerticalLayout();
+    //     card.setAlignItems(FlexComponent.Alignment.CENTER);
+    //     card.getStyle()
+    //         .set("border", "1px solid #ddd")
+    //         .set("border-radius", "8px")
+    //         .set("padding", "1rem")
+    //         .set("width", "200px");        // or “30%” if you prefer fluid sizing
+
+    //     // image
+    //     // String q = URLEncoder.encode(item.getName(), StandardCharsets.UTF_8);
+    //     // Image img = new Image("https://source.unsplash.com/100x100/?" + q, item.getName());
+    //     // img.setWidth("80px");
+    //     // img.setHeight("80px");
+
+    //     // name & price
+    //     Span name = new Span(item.getName());
+    //     name.getStyle().set("font-size", "0.9em");
+    //     Span price = new Span("$" + item.getPrice());
+    //     price.getStyle().set("font-weight", "bold");
+
+    //     // Save In Cart
+    //     Button save = new Button("Save In Cart", evt -> presenter.saveInCart(item));
+    //     save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    //     save.getStyle().set("width", "100%");
+
+    //     card.add(name, price, save);
+    //     return card;
+    // }
 
     private void openRegisterDialog() {
         // create the dialog
@@ -364,14 +443,41 @@ public class HomePageView extends Composite<VerticalLayout> {
         showGuestUI();          // switch back to guest view
     }
 
-    private void doSearch() {        
-        // presenter.showItemsByFilter(filters, items -> {
-        //     UI.getCurrent().access(() -> {
-        //         cardsLayout.removeAll();
-        //         items.forEach(item -> cardsLayout.add(createItemCard(item)));
-        //     });
-        // });
+    private void doSearch() {
+        presenter.showItemsByFilter(filters, items -> {
+            UI.getCurrent().access(() -> {
+                cardsLayout.removeAll();
+
+                System.out.println("Removed all previous items");
+                if (items.isEmpty()) {
+                    // show a “no results” message in the cards area
+                    Span none = new Span("No items found");
+                    none.getStyle().set("font-style", "italic")
+                                    .set("color", "#666")
+                                    .set("padding", "2rem");
+                    cardsLayout.add(none);
+                } else {
+                    // otherwise build one card per item
+                    items.forEach(item -> cardsLayout.add(createItemCard(item)));
+                }
+            });
+        });
     }
+
+
+//     private void createSearchLogic() {
+//         // whenever you click the search icon:
+//         searchBtn.addClickListener(e -> {
+//         filters.clear();
+//         // you can choose which filters you want — here we always set “name”
+//         String name = searchBar.getValue().trim();
+//         if (!name.isEmpty()) {
+//             filters.put("name", name);
+//         }
+//         doSearch();
+//     });
+// }
+    
 
     /** Show login/register, hide logout */
     private void showGuestUI() {
@@ -424,8 +530,11 @@ public class HomePageView extends Composite<VerticalLayout> {
         NumberField maxPrice = new NumberField("Max Price");
 
         ComboBox<String> category = new ComboBox<>("Category");
-        category.setItems("All", "Electronics", "Clothing", "Books"); // example
-
+        category.setItems(
+        Arrays.stream(Category.values())
+                .map(Category::name)
+                .toArray(String[]::new)
+        );
         ComboBox<Integer> ItemRating = new ComboBox<>("Item Rating");
         ItemRating.setItems(1, 2, 3, 4, 5);
 
@@ -433,15 +542,48 @@ public class HomePageView extends Composite<VerticalLayout> {
         ShopRating.setItems(1, 2, 3, 4, 5);
 
         Button apply = new Button("Apply", e -> {
-            filters.put("name", searchBar.getValue());
-            filters.put("category", category.getValue());
-            filters.put("minPrice", String.valueOf(minPrice.getValue()));
-            filters.put("maxPrice", String.valueOf(minPrice.getValue()));
-            filters.put("minRating", String.valueOf(ItemRating.getValue()));
-            filters.put("shopRating", String.valueOf(ShopRating.getValue()));
-            // and pass them to your presenter
+            filters.clear();
+
+            // name filter
+            String name = searchBar.getValue().trim();
+            if (!name.isEmpty()) {
+                filters.put("name", name);
+            }
+
+            // category filter
+            String cat = category.getValue();
+            if (cat != null && !cat.equals("All")) {
+                filters.put("category", cat);
+            }
+
+            // minPrice filter
+            Double min = minPrice.getValue();
+            if (min != null) {
+                filters.put("minPrice", min.toString());
+            }
+
+            // maxPrice filter — fixed!
+            Double max = maxPrice.getValue();
+            if (max != null) {
+                filters.put("maxPrice", max.toString());
+            }
+
+            // item rating filter
+            Integer ir = ItemRating.getValue();
+            if (ir != null) {
+                filters.put("minRating", ir.toString());
+            }
+
+            // shop rating filter
+            Integer sr = ShopRating.getValue();
+            if (sr != null) {
+                filters.put("shopRating", sr.toString());
+            }
+
             dialog.close();
+            doSearch();
         });
+
         apply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         VerticalLayout layout = new VerticalLayout(

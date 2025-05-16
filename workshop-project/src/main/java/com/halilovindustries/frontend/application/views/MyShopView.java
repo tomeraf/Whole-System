@@ -20,6 +20,7 @@ import com.vaadin.flow.component.orderedlayout.*;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
@@ -88,31 +89,98 @@ public class MyShopView extends Composite<VerticalLayout> implements HasUrlParam
         });
     }
 
+    // private void openAddItemDialog1(int shopID) {
+    //     Dialog dlg = new Dialog();
+    //     dlg.setWidth("400px");
+
+    //     TextField name = new TextField("Name");
+    //     ComboBox<String> category = new ComboBox<>("Category");
+    //     category.setItems(Arrays.asList(Category.values()).stream().map(Category::name).toArray(String[]::new));
+    //     TextArea desc = new TextArea("Description");
+    //     NumberField price = new NumberField("Price");
+    //     price.setMin(0);
+
+    //     Button save = new Button("Add", e -> {
+    //         presenter.addItemToShop(shopID, name.getValue(), Category.valueOf(category.getValue()), price.getValue(), desc.getValue(),  item -> {
+    //             if (item == null) {
+    //                 UI.getCurrent().access(() ->
+    //                     Notification.show("Failed to add item", 2000, Position.MIDDLE)
+    //                 );
+    //                 return;
+    //             }
+    //             createItemCard(item);
+    //             loadItems(shopID);
+    //             dlg.close();
+    //         });
+    //     });
+    //     save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    //     Button cancel = new Button("Cancel", e -> dlg.close());
+    //     cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+    //     HorizontalLayout actions = new HorizontalLayout(save, cancel);
+    //     actions.setSpacing(true);
+
+    //     dlg.add(new VerticalLayout(name, category, desc, price, actions));
+    //     dlg.open();
+    // }
+
     private void openAddItemDialog(int shopID) {
         Dialog dlg = new Dialog();
         dlg.setWidth("400px");
 
         TextField name = new TextField("Name");
+        name.setRequiredIndicatorVisible(true);
         ComboBox<String> category = new ComboBox<>("Category");
-        category.setItems(Arrays.asList(Category.values()).stream().map(Category::name).toArray(String[]::new));
+        category.setItems(
+        Arrays.stream(Category.values())
+                .map(Category::name)
+                .toArray(String[]::new)
+        );
+        category.setRequiredIndicatorVisible(true);
         TextArea desc = new TextArea("Description");
+        
         NumberField price = new NumberField("Price");
         price.setMin(0);
-        NumberField qty = new NumberField("Quantity");
-        qty.setMin(0);
+        price.setRequiredIndicatorVisible(true);
+
+        // —— Binder<Void> for validation only ——
+        Binder<Void> validator = new Binder<>();
+        validator.forField(name)
+                .asRequired("Name is required")
+                .bind(v -> null, (bean, v) -> {});
+        validator.forField(category)
+                .asRequired("Category is required")
+                .bind(v -> null, (bean, v) -> {});
+        validator.forField(price)
+                .asRequired("Price is required")
+                .bind(v -> null, (bean, v) -> {});
 
         Button save = new Button("Add", e -> {
-            presenter.addItemToShop(shopID, name.getValue(), Category.valueOf(category.getValue()), price.getValue(), desc.getValue(),  item -> {
-                if (item == null) {
-                    UI.getCurrent().access(() ->
-                        Notification.show("Failed to add item", 2000, Position.MIDDLE)
-                    );
-                    return;
+            // run all the asRequired() checks:
+            if (validator.validate().hasErrors()) {
+                // any empty field will now show its error message underneath
+                return;
+            }
+            // since DTO is untouched, manually pull values:
+            presenter.addItemToShop(
+                shopID,
+                name.getValue(),
+                Category.valueOf(category.getValue()),
+                price.getValue(),
+                desc.getValue(),
+                item -> {
+                    if (item == null) {
+                        UI.getCurrent().access(() ->
+                            Notification.show("Failed to add item", 2000, Position.MIDDLE)
+                        );
+                        return;
+                    }
+                    createItemCard(item);
+                    loadItems(shopID);
+                    dlg.close();
                 }
-                createItemCard(item);
-                loadItems(shopID);
-                dlg.close();
-            });
+            );
         });
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
@@ -122,63 +190,10 @@ public class MyShopView extends Composite<VerticalLayout> implements HasUrlParam
         HorizontalLayout actions = new HorizontalLayout(save, cancel);
         actions.setSpacing(true);
 
-        dlg.add(new VerticalLayout(name, category, desc, price, qty, actions));
+        dlg.add(new VerticalLayout(name, category, desc, price, actions));
         dlg.open();
     }
 
-
-    private Div createItemCard1(ItemDTO item) {
-        // 1) card wrapper
-        Div card = new Div();
-        card.setWidth("200px");
-        card.setHeight("200px");
-        card.getStyle()
-            .set("display", "flex")
-            .set("flex-direction", "column")
-            .set("padding", "0.5rem")
-            .set("background-color", "white")
-            .set("border", "1px solid #ddd")
-            .set("border-radius", "8px")
-            .set("box-shadow", "0 2px 4px rgba(0,0,0,0.05)")
-            .set("cursor", "pointer");
-
-        // 4) title
-        H3 title = new H3(item.getName());
-        title.getStyle().set("margin", "0 0 0.25rem 0");
-
-    Div desc = new Div();
-        desc.setText(item.getDescription());
-        desc.getStyle()
-            .set("flex-grow", "1")                // fill the middle area
-            .set("font-size", "0.9em")
-            .set("color", "#555")
-            .set("overflow", "hidden")            // hide anything beyond our clamp
-            .set("display", "-webkit-box")        // use WebKit’s box model
-            .set("-webkit-box-orient", "vertical")
-            .set("-webkit-line-clamp", "2");      // show up to 2 lines
-            
-        // 6) price & rating row
-        Div price = new Div();
-        price.getStyle()
-            .set("font-size", "0.85em")
-            .set("color", "#333");
-        price.setText("$" + item.getPrice());
-
-        Div rating = new Div();
-        rating.getStyle()
-            .set("font-size", "0.85em")
-            .set("color", "#333");
-        rating.setText("⭐" + item.getRating());
-
-    
-        card.addClickListener(e ->
-            editItemDetails(item)
-        );
-
-        // 7) Acti
-        card.add(title, price, rating);
-        return card;
-    }
 
     private VerticalLayout createItemCard(ItemDTO item) {
         VerticalLayout card = new VerticalLayout();

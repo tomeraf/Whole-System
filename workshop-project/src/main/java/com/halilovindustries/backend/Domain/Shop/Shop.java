@@ -307,6 +307,7 @@ public class Shop implements IMessageListener {
                 && (itemMinRating <= 0 || item.getRating() >= itemMinRating) &&
                 (shopMinRating <= 0 || this.rating >= shopMinRating)) {
                 filteredItems.add(item);
+                System.out.println("Item added to filtered list: " + item.getName());
             }
         }
         return filteredItems;
