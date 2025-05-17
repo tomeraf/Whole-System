@@ -32,5 +32,12 @@ public class ConditionalDiscount extends BaseDiscount {
         }
         return 0;
     }
+    @Override
+    public HashMap<Item, Double> getPercentagePerItem(HashMap<Item, Integer> allItems) {
+        if (condition.checkCondition(allItems)) {
+            return super.getPercentagePerItem(allItems);
+        }
+        return new HashMap<>();
+    }
 
 }
