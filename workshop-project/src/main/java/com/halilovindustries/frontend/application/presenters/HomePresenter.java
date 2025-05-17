@@ -9,6 +9,8 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
+
+import org.aspectj.weaver.ast.Not;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
@@ -43,13 +45,16 @@ public class HomePresenter extends AbstractPresenter {
     }
 
     public void saveSessionToken() {
+        System.out.println("Saving session token...");
         Response<String> response = userService.enterToSystem();
         if (!response.isOk()) {
             System.out.println("Error: " + response.getError());
         } else {
             String token = response.getData();
             // Store in localStorage using JS
-            UI.getCurrent().getPage().executeJs("localStorage.setItem('token', $0);", token);
+            UI.getCurrent().getPage()
+                .executeJs("sessionStorage.setItem('token', $0);", token);
+            System.out.println("Token saved: " + token);
         }
     }
 
@@ -104,6 +109,8 @@ public class HomePresenter extends AbstractPresenter {
 
                     // Save the new token in localStorage
                     UI.getCurrent().getPage()
+                        .executeJs("sessionStorage.setItem('token', $0);", newToken);
+                    UI.getCurrent().getPage()
                         .executeJs("localStorage.setItem('token', $0);", newToken);
 
                     Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
@@ -141,12 +148,15 @@ public class HomePresenter extends AbstractPresenter {
                 Notification.show("Logout failed: " + resp.getError(), 3000, Position.MIDDLE);
                 return;
             }
+            UI.getCurrent().getPage()
+                .executeJs("localStorage.removeItem('token');");
+
             String guestToken = resp.getData();
 
             // 4) overwrite with new guest token
             ui
             .getPage()
-            .executeJs("localStorage.setItem('token', $0);", guestToken);
+            .executeJs("sessionStorage.setItem('token', $0);", guestToken);
 
             Notification.show("Logged out successfully.", 2000, Position.TOP_CENTER);
             UI.getCurrent().getPage().reload();
@@ -171,6 +181,8 @@ public class HomePresenter extends AbstractPresenter {
                 Notification.show("Logout failed: " + resp.getError(), 3000, Position.MIDDLE);
                 return;
             }
+            //UI.getCurrent().getPage()
+            //    .executeJs("localStorage.removeItem('token');");
         });
         });
     }
@@ -186,16 +198,8 @@ public class HomePresenter extends AbstractPresenter {
                 String token = stored;
 
                 // Step 2: if it’s null/invalid/expired → grab a fresh **guest** token synchronously
-                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                    Response<String> guestResp = userService.enterToSystem();
-                    if (guestResp.isOk()) {
-                        token = guestResp.getData();
-                        // update localStorage in browser
-                        ui.getPage().executeJs("localStorage.setItem('token', $0);", token);
-                    } else {
-                        onFinish.accept(new ArrayList<>());
-                        return;
-                    }
+                if (token == null || !validateToken(token)) {
+                    Notification.show("Please reload the page", 2000, Position.MIDDLE);
                 }
                 Response<List<ItemDTO>> itemsResp = shopService.filterItemsAllShops(token, new HashMap<String, String>());
                 if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {

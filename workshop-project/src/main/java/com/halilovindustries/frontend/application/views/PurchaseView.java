@@ -1,5 +1,8 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.frontend.application.presenters.PurchasePresenter;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -7,6 +10,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -26,16 +31,19 @@ import java.util.stream.IntStream;
 @Route(value = "purchase", layout = MainLayout.class)
 @PageTitle("Checkout")
 public class PurchaseView extends VerticalLayout {
-    private final Button back = new Button("← Back",
-            e -> UI.getCurrent().navigate("cart"));
 
-    public PurchaseView() {
+    private final PurchasePresenter presenter;
+
+    public PurchaseView(PurchasePresenter presenter) {
+        this.presenter = presenter;            // ① store the injected presenter
+
         setPadding(true);
         setSpacing(true);
         setAlignItems(FlexComponent.Alignment.START);
 
+        // —— Header ——
         H2 title = new H2("Checkout");
-
+        Button back = new Button("← Back", e -> UI.getCurrent().navigate("cart"));
         HorizontalLayout header = new HorizontalLayout(title, back);
         header.setWidthFull();
         header.expand(title);
@@ -52,20 +60,12 @@ public class PurchaseView extends VerticalLayout {
         shipForm.getElement().setAttribute("autocomplete", "off");
 
         TextField fullName = new TextField("Full Name");
-        fullName.getElement().setAttribute("name", "ship-fullName");
-        fullName.getElement().setAttribute("autocomplete", "off");
-
-        TextField address = new TextField("Address");
-        address.getElement().setAttribute("name", "ship-address");
-        address.getElement().setAttribute("autocomplete", "off");
-
-        TextField city = new TextField("City");
-        city.getElement().setAttribute("name", "ship-city");
-        city.getElement().setAttribute("autocomplete", "off");
-
+        TextField email    = new TextField("Email");
+        TextField phone    = new TextField("Phone");
+        TextField address  = new TextField("Address");
+        TextField city     = new TextField("City");
+        TextField zipCode  = new TextField("Zip Code");
         ComboBox<String> country = new ComboBox<>("Country");
-        country.getElement().setAttribute("name", "ship-country");
-        country.getElement().setAttribute("autocomplete", "off");
         country.setItems(
             Arrays.stream(Locale.getISOCountries())
                   .map(c -> new Locale("",c).getDisplayCountry())
@@ -73,7 +73,7 @@ public class PurchaseView extends VerticalLayout {
                   .collect(Collectors.toList())
         );
 
-        shipForm.add(fullName, address, city, country);
+        shipForm.add(fullName, email, phone, address, city, country, zipCode);
         add(shipForm);
 
         // —— Payment Details ——
@@ -83,40 +83,81 @@ public class PurchaseView extends VerticalLayout {
             new FormLayout.ResponsiveStep("0", 1),
             new FormLayout.ResponsiveStep("600px", 2)
         );
+        payForm.getElement().setAttribute("autocomplete", "off");
 
-        // Card number — allow proper CC autofill
-        TextField cardNumber = new TextField("Card Number");
-        cardNumber.getElement().setAttribute("name", "cc-number");
-        cardNumber.getElement().setAttribute("autocomplete", "cc-number");
-
-        // Exp month/year
+        TextField cardHolderName = new TextField("Card Holder Name");
+        TextField holderId       = new TextField("Card Holder ID");
+        TextField cardNumber     = new TextField("Card Number");
         ComboBox<String> expMonth = new ComboBox<>("Exp. Month");
-        expMonth.getElement().setAttribute("name", "cc-exp-month");
-        expMonth.getElement().setAttribute("autocomplete", "cc-exp-month");
         expMonth.setItems("01","02","03","04","05","06","07","08","09","10","11","12");
-
-        ComboBox<String> expYear = new ComboBox<>("Exp. Year");
-        expYear.getElement().setAttribute("name", "cc-exp-year");
-        expYear.getElement().setAttribute("autocomplete", "cc-exp-year");
+        ComboBox<String> expYear  = new ComboBox<>("Exp. Year");
         int currentYear = Year.now().getValue();
-        List<String> years = IntStream.range(currentYear, currentYear+41)
-                                      .mapToObj(String::valueOf)
-                                      .collect(Collectors.toList());
+        List<String> years = IntStream
+            .range(currentYear, currentYear + 41)
+            .mapToObj(String::valueOf)
+            .collect(Collectors.toList());
         expYear.setItems(years);
+        expYear.getElement().setAttribute("autocomplete", "new-password");
 
-        // CVV — credit‐card security code
-        PasswordField cvv = new PasswordField("CVV");
-        cvv.getElement().setAttribute("name", "cc-csc");
-        cvv.getElement().setAttribute("autocomplete", "cc-csc");
+        PasswordField cvv        = new PasswordField("CVV");
+        cvv.getElement().setAttribute("autocomplete", "new-password");
 
-        payForm.add(cardNumber, expMonth, expYear, cvv);
+
+        payForm.add(cardHolderName, holderId, cardNumber, expMonth, expYear, cvv);
         add(payForm);
 
-        // —— Place Order Button ——
+        // —— Place Order ——
         Button placeOrder = new Button("Place Order", VaadinIcon.CART.create());
         placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         placeOrder.getStyle().set("margin-top", "1rem");
+        placeOrder.addClickListener(e -> {
+            // asynchronously grab the token, extract userId, then build DTOs
+            presenter.getSessionToken(token -> {
+                UI ui = UI.getCurrent();
+                if (ui == null) return;
+                ui.access(() -> {
+                    if (token == null || !presenter.validateToken(token)) {
+                        Notification.show("Session expired, please log in again", 2000, Notification.Position.MIDDLE);
+                        return;
+                    }
+
+
+                    // build our two DTOs
+                    ShipmentDetailsDTO shipDto = new ShipmentDetailsDTO(
+                        holderId.getValue(),
+                        fullName.getValue(),
+                        email.getValue(),
+                        phone.getValue(),
+                        country.getValue(),
+                        city.getValue(),
+                        address.getValue(),
+                        zipCode.getValue()
+                    );
+
+                    PaymentDetailsDTO payDto = new PaymentDetailsDTO(
+                        cardNumber.getValue(),
+                        cardHolderName.getValue(),
+                        holderId.getValue(),
+                        expMonth.getValue() + "/" + expYear.getValue(),
+                        cvv.getValue()
+                    );
+
+                    // hand off to the presenter
+                    presenter.purchase(shipDto, payDto, order -> {
+                        ui.access(() -> {
+                            if (order != null) {
+                                Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
+                                UI.getCurrent().navigate("");
+                            } else {
+                                Notification.show("Failed to place order", 2000, Position.MIDDLE);
+                            }
+                        });
+                    });
+                });
+            });
+        });
         add(placeOrder);
+
         setHorizontalComponentAlignment(FlexComponent.Alignment.CENTER, placeOrder);
     }
 }

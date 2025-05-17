@@ -17,7 +17,8 @@ import com.halilovindustries.backend.Domain.User.Guest;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.Shop.Shop;
+import com.halilovindustries.backend.Domain.Shop.*;
+
 import com.halilovindustries.backend.Domain.User.ShoppingBasket;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
@@ -74,6 +75,12 @@ public class OrderService {
             
             Guest guest = userRepository.getUserById(userID);
             List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest);
+            itemDTOs.removeIf(item -> {
+            Shop shop = shopRepository.getShopById(item.getShopId());
+                Item underlying = shop.getItems().get(item.getItemID());
+                // if the shop has no such item, or it's out of stock, drop it
+                return underlying == null || underlying.getQuantity() <= 0;
+            });
             // List<ItemDTO> itemDTOs = items.stream()
             //         .map(item -> new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(), item.getId(), item.getQuantity(), item.getRating()))
             //         .toList(); // Convert Item to ItemDTO

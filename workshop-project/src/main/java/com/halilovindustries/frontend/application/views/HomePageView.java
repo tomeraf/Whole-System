@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @CssImport("./themes/my-app/shop-cards.css")
 @PageTitle("Home Page")
 @Route(value = "", layout = MainLayout.class)
-//@Menu(order = 0, icon = LineAwesomeIconUrl.PENCIL_RULER_SOLID)
 public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
     private Registration myBroadcastRegistration;
@@ -144,9 +143,6 @@ public class HomePageView extends Composite<VerticalLayout> {
             }
             doSearch();
         });
-
-        searchBar.addKeyDownListener(Key.ENTER, (KeyDownEvent e) -> searchBtn.click());
-
         Button filterBtn = new Button("", VaadinIcon.FILTER.create());
         filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         filterBtn.getStyle()
@@ -364,7 +360,7 @@ public class HomePageView extends Composite<VerticalLayout> {
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
                     // we already set localStorage & showed a welcome toast in presenter
-                    showLoggedInUI();
+                    showLoggedInUI();  
                     dialog.close();
                     UI.getCurrent().getPage().reload();
                 } else {
@@ -433,7 +429,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                     });
                 });
 
-                showLoggedInUI();
+                showLoggedInUI(); // hide login, show logout
                 UI.getCurrent().getPage().reload();
             }
         });
@@ -446,7 +442,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         }
         presenter.logoutUser(); // performs backend logout and gets new guest token
         showGuestUI();          // switch back to guest view
-
     }
 
     private void doSearch() {
@@ -470,21 +465,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         });
     }
 
-
-//     private void createSearchLogic() {
-//         // whenever you click the search icon:
-//         searchBtn.addClickListener(e -> {
-//         filters.clear();
-//         // you can choose which filters you want — here we always set “name”
-//         String name = searchBar.getValue().trim();
-//         if (!name.isEmpty()) {
-//             filters.put("name", name);
-//         }
-//         doSearch();
-//     });
-// }
-    
-
     /** Show login/register, hide logout */
     private void showGuestUI() {
         loginButton.setVisible(true);
@@ -499,21 +479,77 @@ public class HomePageView extends Composite<VerticalLayout> {
         logoutButton.setVisible(true);
     }
 
-    @Override
-    protected void onAttach(AttachEvent event) {
+
+@Override
+protected void onAttach(AttachEvent event) {
+    super.onAttach(event);
+
+    presenter.getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            boolean valid = token != null && presenter.validateToken(token);
+            boolean loggedIn = valid && presenter.isLoggedIn(token);
+
+            if (!valid) {
+                // Token is null or corrupted → get a new guest
+                clearStorage();
+                presenter.saveSessionToken();
+                showGuestUI();
+
+            } else if (loggedIn) {
+                // Everything is fine
+                showLoggedInUI();
+
+            } else {
+                // Token is valid JWT but not logged in
+                // → if in localStorage → logged-in user lost
+                // → if in sessionStorage → returning guest, keep it
+
+                UI.getCurrent().getPage()
+                    .executeJs("return localStorage.getItem('token') === $0;", token)
+                    .then(Boolean.class, isPersistent -> {
+                        if (Boolean.TRUE.equals(isPersistent)) {
+                            // stale localStorage token → replace with new guest
+                            clearStorage();
+                            presenter.saveSessionToken();
+                        }
+                        // In both cases → show guest UI
+                        showGuestUI();
+                    });
+            }
+        });
+    });
+
+    loadRandomItems();
+}
+
+private void clearStorage() {
+    UI.getCurrent().getPage().executeJs(
+        "localStorage.removeItem('token'); sessionStorage.removeItem('token');"
+    );
+}
+
+
+    //@Override
+    protected void onAttach1(AttachEvent event) {
         super.onAttach(event);
-        // Grab the token from localStorage:
+        
         presenter.getSessionToken(token -> {
-            // Vaadin callbacks already run on the UI thread, but to be safe:
-            UI.getCurrent().access(() -> {
-                System.out.println("Token: " + token);
-                // If there's no token, or it's expired/invalid:
-                if (token == null || !presenter.validateToken(token) || !presenter.isLoggedIn(token)) {
-                    // create a fresh guest token
+            UI ui = UI.getCurrent();
+            if (ui == null) 
+                return;
+            ui.access(() -> {
+                if (token == null || !presenter.validateToken(token)) {
+                    // brand-new tab with NO guest token → fetch one
                     presenter.saveSessionToken();
                     showGuestUI();
-                } else {
-                    // leave the existing user token in place
+                } 
+                else if (!presenter.isLoggedIn(token)) {
+                    showGuestUI();
+                }
+                else {
                     showLoggedInUI();
                 }
             });
@@ -521,12 +557,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         loadRandomItems();
     }
 
-    @ClientCallable
-    public void onBrowserUnload() {
-        // fire your normal logout logic
-        doLogout();
-        presenter.exitAsGuest();
-    }
 
     private void openFilterDialog() {
         Dialog dialog = new Dialog();

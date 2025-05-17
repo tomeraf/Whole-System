@@ -36,9 +36,8 @@ public class PurchasePresenter extends AbstractPresenter {
         return new ShipmentDetailsDTO(ID, name, email, phone, contry, city, address, zipcode);
     }
 
-    public PaymentDetailsDTO fillPaymentDetails(String ID, String cardNumber, String cardHolderName, String expirationDate,
-            String cvv) {
-        return new PaymentDetailsDTO(ID, cardNumber, cardHolderName, expirationDate, cvv);
+    public PaymentDetailsDTO fillPaymentDetails(String cardNumber, String cardHolderName, String holderID, String expirationDate, String cvv) {
+        return new PaymentDetailsDTO(cardNumber, cardHolderName, holderID, expirationDate, cvv);
     }
 
     public void purchase(ShipmentDetailsDTO shipmentDetails, PaymentDetailsDTO paymentDetails, Consumer<Order> onFinish) {
@@ -54,12 +53,12 @@ public class PurchasePresenter extends AbstractPresenter {
             }
 
             // 1) Validate
-            if (!shipmentDetails.fullShipmentDetails() || !paymentDetails.fullDetails()) {
-                // Show a warning if the form isn’t fully filled
-                    Notification.show("Please fill all the details", 2000, Position.MIDDLE);
-                    onFinish.accept(null);
-                return;
-            }
+            // if (!shipmentDetails.fullShipmentDetails() || !paymentDetails.fullDetails()) {
+            //     // Show a warning if the form isn’t fully filled
+            //         Notification.show("Please fill all the details", 2000, Position.MIDDLE);
+            //         onFinish.accept(null);
+            //     return;
+            // }
 
             // 2) Call the backend
             Response<Order> response = orderService.buyCartContent(token, paymentDetails, shipmentDetails);

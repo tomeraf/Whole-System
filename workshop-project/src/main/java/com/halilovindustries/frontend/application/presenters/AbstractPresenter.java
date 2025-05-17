@@ -16,7 +16,7 @@ public abstract class AbstractPresenter {
 
     public void getSessionToken(Consumer<String> callback) {
         UI.getCurrent().getPage()
-            .executeJs("return localStorage.getItem('token');")
+            .executeJs("return localStorage.getItem('token') || sessionStorage.getItem('token');")
             .then(String.class, token -> {
                 if (token != null) {
                     callback.accept(token); // Pass it back to whoever called
@@ -27,7 +27,7 @@ public abstract class AbstractPresenter {
     }
     /** Validate the JWT before trusting it. */
     public boolean validateToken(String token) {
-        return jwtAdapter.validateToken(token);
+        return jwtAdapter.validateToken(token);// && !userService.invalidToken(token);
     }
     
     public boolean isLoggedIn(String sessionToken) {
