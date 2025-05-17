@@ -135,6 +135,41 @@ public class DiscountsTests extends BaseAcceptanceTests {
         Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
         assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
     }
+    @Test
+    public void testCombinedDiscountAppliedToBasket_ShouldSucceed(){
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1","12/25", "123"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        DiscountDTO discount = new DiscountDTO(DiscountKind.COMBINE,-1, Category.ELECTRONICS, 10, null,-1,null,50,null ,DiscountType.BASE,DiscountType.BASE);
+        // Act
+        Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
+        assertTrue(response.isOk(), "Owner should be able to add a discount");
+
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(2);
+        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
+        HashMap<Integer, Integer> itemMap = new HashMap<>();
+        itemMap.put(List.of(toBuy).get(0).getItemID(), 1);
+        itemsMap.put(shop.getId(), itemMap);
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
+
+        // 3) Add to cart
+        Response<Void> addResp = orderService.addItemsToCart(
+            customerToken,
+            itemsMap
+        );
+        assertTrue(addResp.isOk(), "Adding items to cart should succeed");
+        // 4) Checkout
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
+        System.out.println("Total price: " + created.getTotalPrice());
+        System.out.println("Item price: " + toBuy.getPrice());
+        assertTrue(created.getTotalPrice()==toBuy.getPrice()*0.45, "Discount should be applied to the total price");
+    }
 
 
 
@@ -149,7 +184,6 @@ public class DiscountsTests extends BaseAcceptanceTests {
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
         assertTrue(response.isOk(), "Owner should be able to add a discount");
         
-        System.out.println(shopRepository.getShopById(shop.getId()).getDiscountPolicy().getDiscountIds().get(0));
         Response<Void> removeResponse = shopService.removeDiscount(ownerToken, shop.getId(),shopRepository.getShopById(shop.getId()).getDiscountPolicy().getDiscountIds().get(0));
         // Assert
         assertTrue(removeResponse.isOk(), "Owner should be able to remove a discount");

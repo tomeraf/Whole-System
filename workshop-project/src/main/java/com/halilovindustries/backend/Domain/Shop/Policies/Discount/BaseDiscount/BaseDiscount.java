@@ -64,7 +64,44 @@ public class BaseDiscount extends Discount {
                 return 0;
         }
     }
+    public HashMap<Item, Double> getPercentagePerItem(HashMap<Item,Integer> allItems) {
+        switch (getType()) {
+            case "Item":
+                return getItemPercentagePerItem(allItems);
+            case "Category":
+                return getCategoryPercentagePerItem(allItems);
+            case "Shop":
+                return getShopPercentagePerItem(allItems);
+            default:
+                return null;
+        }
+    }
     
+    private HashMap<Item, Double> getItemPercentagePerItem(HashMap<Item,Integer> allItems) {
+        HashMap<Item, Double> itemPercentage = new HashMap<>();
+        for (Item item : allItems.keySet()) {
+            if (item.getId() == getItemId()) {
+                itemPercentage.put(item, (double) (100-getPercentage())/100);
+            }
+        }
+        return itemPercentage;
+    }
+    private HashMap<Item, Double> getCategoryPercentagePerItem(HashMap<Item,Integer> allItems) {
+        HashMap<Item, Double> itemPercentage = new HashMap<>();
+        for (Item item : allItems.keySet()) {
+            if (item.getCategory().equals(getCategory())) {
+                itemPercentage.put(item, (double) (100-getPercentage())/100);
+            }
+        }
+        return itemPercentage;
+    }
+    private HashMap<Item, Double> getShopPercentagePerItem(HashMap<Item,Integer> allItems) {
+        HashMap<Item, Double> itemPercentage = new HashMap<>();
+        for (Item item : allItems.keySet()) {
+            itemPercentage.put(item, (double) (100-getPercentage())/100);
+        }
+        return itemPercentage;
+    }
     protected double calculateShopDiscount(HashMap<Item, Integer> allItems) {
         double totalDiscount = 0;
         for (Item item : allItems.keySet()) {
@@ -90,5 +127,6 @@ public class BaseDiscount extends Discount {
         }
         return totalDiscount;
     }
+    
 
 }

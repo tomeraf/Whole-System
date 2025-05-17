@@ -21,5 +21,15 @@ public class MaxDiscount extends CompositeDiscount {
         }
         return maxDiscount;
     }
+    @Override
+    public HashMap<Item, Double> getPercentagePerItem(HashMap<Item, Integer> allItems) {
+        Discount maxDiscount = null;
+        for(Discount discount : getDiscounts().values()) {
+            if (maxDiscount == null || discount.calculateDiscount(allItems) > maxDiscount.calculateDiscount(allItems)) {
+                maxDiscount = discount;
+            }
+        }
+        return maxDiscount.getPercentagePerItem(allItems);
+    }
 
 }
