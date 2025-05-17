@@ -16,4 +16,5 @@ public enum Permission {
     CLOSE_SHOP,
     ANSWER_BID,
     OPEN_AUCTION,
+    ANSWER_MESSAGE,
 }

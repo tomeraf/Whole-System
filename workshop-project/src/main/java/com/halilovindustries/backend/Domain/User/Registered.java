@@ -9,17 +9,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.cglib.core.Local;
 
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.Message;
 
-public class Registered extends Guest implements IMessageListener {
+
+public class Registered extends Guest  {
     private Map<Integer, IRole> roleInShops; //<shopID, role>
     private String username;
     private String password;
-    private HashMap<Integer, IMessage> inbox = new HashMap<>();
+    private HashMap<Integer, Message> inbox = new HashMap<>();
     private boolean isSystemManager = false;
     private Suspension suspension = null;
 
@@ -147,16 +145,12 @@ public class Registered extends Guest implements IMessageListener {
         return dateOfBirth;
     }
     
-    public String getPermissions(int shopID) {
+    public List<Permission> getPermissions(int shopID) {
         if(roleInShops.containsKey(shopID)) {
-            return roleInShops.get(shopID).getPermissionsString();
+            return roleInShops.get(shopID).getPermissions();
         } else {
             throw new IllegalArgumentException("No role found for shop ID: " + shopID);
         }
-    }
-    @Override  
-    public void acceptMessage(IMessage message) {
-        inbox.put(message.getId(), message);
     }
 
     public boolean isSystemManager() {
@@ -187,6 +181,14 @@ public class Registered extends Guest implements IMessageListener {
             return "user:"+username +","+suspension.toString()+"\n";
         }
         return "";
+    }
+    
+    public void addMessage(Message message) {
+        inbox.put(message.getId(), message);
+    }
+
+    public List<Message> getInbox() {
+        return inbox.values().stream().sorted((m1, m2) -> m2.getDateTime().compareTo(m1.getDateTime())).toList();
     }
 
 

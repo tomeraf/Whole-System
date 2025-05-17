@@ -16,6 +16,10 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
+import com.halilovindustries.backend.Domain.Shop.Shop;
+import com.halilovindustries.backend.Domain.Message;
+
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -265,6 +269,21 @@ public class UserService {
         } catch (Exception e) {
             logger.error(() -> "Error checking login status: " + e.getMessage());
             return false;
+        }
+    }
+
+    public Response<List<Message>> getInbox(String sessionToken,int shopID) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            List<Message> inbox = user.getInbox();
+            return Response.ok(inbox);
+        } catch (Exception e) {
+            logger.error(() -> "Error getting inbox: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
     }
 }

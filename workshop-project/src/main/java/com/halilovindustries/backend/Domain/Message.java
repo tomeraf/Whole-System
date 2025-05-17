@@ -1,47 +1,40 @@
 package com.halilovindustries.backend.Domain;
 
-import java.util.Date;
 
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
 
-public class Message implements IMessage {
+import java.time.LocalDateTime;
+
+public class Message {
 
     private int id;
-    private int senderId;
-    private String senderName;
-    private int receiverId;
-    private Date dateTime;
+    private String userName;
+    private String shopName;
+    private LocalDateTime dateTime;
     private String title;
     private String content;
-    private IMessage previous;
-    private IMessage next;
+    private int respondId;// id of the message that this message is responding to
 
     
-    public Message(int id, int senderId, String senderName, int receiverId, Date dateTime, String title, String content) {
+    public Message(int id, String userName, String shopName, LocalDateTime dateTime, String title, String content) {
         this.id = id;
-        this.senderId = senderId;
-        this.senderName = senderName;
-        this.receiverId = receiverId;
+        this.userName = userName;
+        this.shopName = shopName;
         this.dateTime = dateTime;
+        this.title = title;
         this.content = content;
-        this.title = title == null ? "" : title;
-        this.previous = null;
-        this.next = null;
+        this.respondId = -1; // default value for respondId
     }
     public int getId() {
         return id;
     }
-    public int getSenderId() {
-        return senderId;
+    
+    public String getUserName() {
+        return userName;
     }
-    public String getSenderName() {
-        return senderName;
+    public String getShopName() {
+        return shopName;
     }
-    public int getReceiverId() {
-        return receiverId;
-    }
-    public Date getDateTime() {
+    public LocalDateTime getDateTime() {
         return dateTime;
     }
     public String getTitle() {
@@ -50,39 +43,14 @@ public class Message implements IMessage {
     public String getContent() {
         return content;
     }
-    public IMessage getPrevious() {
-        return previous;
+    public int getRespondId() {
+        return respondId;
     }
-    public IMessage getNext() {
-        return next;
+    public void setRespondId(int respondId) {
+        this.respondId = respondId;
     }
-    public void setSenderName(String senderName) {
-        this.senderName = senderName;
-    }
-    public void setContent(String content) {
-        this.content = content;
-    }
-    public void setPrevious(IMessage previous) {
-        this.previous = previous;
-    }
-    public void setNext(IMessage next) {
-        this.next = next;
-    }    
-    
-    @Override
-    public void send(IMessageListener receiver) {
-        receiver.acceptMessage(this);
-    }
-    
-    @Override
-    public void respond(IMessage respondTo) {
-        //will need to send real time notification to the receiver
-        respondTo.setNext(this);
-        this.setPrevious(respondTo);
+    public boolean needResponse() {
+        return respondId == -1;
     }
 
-    @Override
-    public boolean canSend() {
-        return senderId >= 0 && receiverId >= 0 && content != null;
-    }
 }
