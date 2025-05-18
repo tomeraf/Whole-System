@@ -170,7 +170,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
         Button add = new Button("Add to Cart", e -> 
             presenter.saveInCart(new ItemDTO(
                 item.getName(), item.getCategory(), item.getPrice(),
-                item.getShopId(), item.getItemID(), qty.get(), item.getRating(), item.getDescription()
+                item.getShopId(), item.getItemID(), qty.get(), item.getRating(), item.getDescription(), item.getNumOfOrders()
             ))
         );
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

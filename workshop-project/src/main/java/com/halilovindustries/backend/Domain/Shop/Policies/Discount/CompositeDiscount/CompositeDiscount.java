@@ -21,6 +21,9 @@ public abstract class CompositeDiscount extends Discount {
     public HashMap<Integer, Discount> getDiscounts() {
         return discounts;
     }
+    public List<Discount> getDiscountsList() {
+        return new ArrayList<>(discounts.values());
+    }
     public void addDiscount(Discount discount) {
         if(discounts.containsKey(discount.getDiscountId())){
             throw new IllegalArgumentException("Discount already exists");

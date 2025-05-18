@@ -20,10 +20,10 @@ public class BasketTest {
     @BeforeEach
     public void setUp() {
         // Create ItemDTO objects
-        item1 = new ItemDTO("Item 1", Category.BEAUTY, 10.0, -1, 101, 5, 4.5, "Description 1");
-        item2 = new ItemDTO("Item 2", Category.BEAUTY, 10.0, -1, 102, 5, 4.5,   "Description 2");
-        item3 = new ItemDTO("Item 3", Category.BEAUTY, 10.0, -1, 103, 5, 4.5,   "Description 3");
-        itemNotInBasket = new ItemDTO("Item 4", Category.BEAUTY, 10.0, -1, 104, 5, 4.5, "Description 4");
+        item1 = new ItemDTO("Item 1", Category.BEAUTY, 10.0, -1, 101, 5, 4.5, "Description 1",1);
+        item2 = new ItemDTO("Item 2", Category.BEAUTY, 10.0, -1, 102, 5, 4.5,   "Description 2",1);
+        item3 = new ItemDTO("Item 3", Category.BEAUTY, 10.0, -1, 103, 5, 4.5,   "Description 3",1);
+        itemNotInBasket = new ItemDTO("Item 4", Category.BEAUTY, 10.0, -1, 104, 5, 4.5, "Description 4",1);
         
         // Initialize the ShoppingBasket with a shop ID and items
          basket = new ShoppingBasket(-1);

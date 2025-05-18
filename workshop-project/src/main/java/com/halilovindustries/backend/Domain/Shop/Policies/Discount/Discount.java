@@ -14,6 +14,7 @@ public abstract class Discount {
         return discountId;
     }
     public abstract double calculateDiscount(HashMap<Item,Integer> allItems);
+    public abstract HashMap<Item,Double> getPercentagePerItem(HashMap<Item,Integer> allItems);
 
 
 }

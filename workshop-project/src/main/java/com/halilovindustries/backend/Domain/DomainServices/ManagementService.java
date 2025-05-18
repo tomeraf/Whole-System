@@ -153,16 +153,13 @@ public class ManagementService {
         }
     }
 
-    public List<Integer> getMembersPermissions(Registered supplyManager, Shop shop) {
-        List<Integer> permissions = new ArrayList<>();
+    public List<Permission> getMembersPermissions(Registered supplyManager, Shop shop,Registered member) {
         if(supplyManager.hasPermission(shop.getId(), Permission.VIEW)){
-            permissions.addAll(shop.getManagerIDs());
-            permissions.addAll(shop.getOwnerIDs());
+            return member.getPermissions(shop.getId());
         }
         else {
             throw new IllegalArgumentException("You don't have permission to view members permissions");
         }
-        return permissions;
     }
 	public void answerBid(Registered user, Shop shop, int bidID, boolean accept) {
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {

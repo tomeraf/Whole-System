@@ -3,9 +3,7 @@ package com.halilovindustries.backend.Domain.Shop;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessage;
-import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IMessageListener;
+import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -19,7 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Shop implements IMessageListener {
+public class Shop {
 
     private int id;
     private String name;
@@ -37,7 +35,7 @@ public class Shop implements IMessageListener {
     private HashMap<Integer, AuctionPurchase> auctionPurchaseItems; // <AuctionId, AuctionPurchase>
     private int bidPurchaseCounter; // Counter for bid purchases
     private int auctionPurchaseCounter; // Counter for auction purchases
-    private HashMap<Integer, IMessage> inbox; // 
+    private HashMap<Integer, Message> inbox; // 
     int messageIdCounter = 1; // Counter for message IDs
 
     public Shop(int id,int founderID, String name, String description) {
@@ -327,32 +325,9 @@ public class Shop implements IMessageListener {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         }
     }
- 
-    @Override
-    public void acceptMessage(IMessage message) {
-        inbox.put(message.getId(), message);
-        //will need to update all owners.
-    }
-
-    public IMessage getMessage(int messageId) {
-        if (inbox.containsKey(messageId)) {
-            return inbox.get(messageId);
-        }
-        else {
-            throw new IllegalArgumentException("Message ID does not exist in the inbox.");
-        }
-    }
-
-    public HashMap<Integer, IMessage> getAllMessages() {
-        return inbox;
-    }
-
-    public int getNextMessageId() {
-        return messageIdCounter++;
-    }
 
     public void removeAppointment(List<Integer> idsToRemove) {
-        for (Integer id : idsToRemove) {
+        for ( Integer id : idsToRemove) {
             if (ownerIDs.contains(id))
                 ownerIDs.remove(id);
             if (managerIDs.contains(id))
@@ -364,7 +339,7 @@ public class Shop implements IMessageListener {
     }
 
     public boolean canAddItemsToBasket(HashMap<Integer,Integer> itemsMap) {
-        for (Integer itemId : itemsMap.keySet()) {
+        for ( Integer itemId : itemsMap.keySet()) {
             if(canAddItemToBasket(itemId, itemsMap.get(itemId)) == false) {
                 return false; // Item cannot be added to the basket
             }
@@ -459,6 +434,37 @@ public class Shop implements IMessageListener {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         }
     }
+
+    public Message getMessage(int messageId) {
+        if (inbox.containsKey(messageId)) {
+            return inbox.get(messageId);
+        }
+        else {
+            throw new IllegalArgumentException("Message ID does not exist in the inbox.");
+        }
+    }
+
+    public HashMap<Integer, Message> getAllMessages() {
+        return inbox;
+    }
+
+    public int getNextMessageId() {
+        return messageIdCounter++;
+    }
+    
+    public void addMessage(Message message) {
+        inbox.put(message.getId(), message);
+    }
+
+	public boolean hasMessage(int messageId) {
+		return inbox.containsKey(messageId);
+	}
+
+	public List<Message> getInbox() {
+		return inbox.values().stream()
+			.sorted((m1, m2) -> m1.getDateTime().compareTo(m2.getDateTime()))
+			.toList();
+	}
 }
 
 
