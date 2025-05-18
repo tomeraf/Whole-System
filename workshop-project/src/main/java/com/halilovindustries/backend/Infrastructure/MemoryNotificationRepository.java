@@ -15,15 +15,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class MemoryNotificationRepository implements INotificationRepository {
     private int counterId = 0;
     private List<Integer> removedIds = new ArrayList<>(); // List of removed IDs
-    private final Map<Integer, Queue<NotificationDTO>> userNotifications = new ConcurrentHashMap<>();
+    private final Map<String, Queue<NotificationDTO>> userNotifications = new ConcurrentHashMap<>();
 
-    public void addNotification(int userId, NotificationDTO notification) {
+    public void addNotification(String userId, NotificationDTO notification) {
         // Implement logic to add notification to the user's queue
         userNotifications.computeIfAbsent(userId, k -> new ConcurrentLinkedQueue<>()).add(notification);
     }
 
     @Override
-    public Queue<NotificationDTO> getUserNotifications(int userId) {
+    public Queue<NotificationDTO> getUserNotifications(String userId) {
         // Implement logic to find notifications by user ID
         Queue<NotificationDTO> notifications = this.userNotifications.get(userId);
         if (notifications == null) {
@@ -33,7 +33,7 @@ public class MemoryNotificationRepository implements INotificationRepository {
     }
 
     @Override
-    public void deleteNotification(int userId, int notificationId) {
+    public void deleteNotification(String userId, int notificationId) {
         // Implement logic to delete a notification by user ID and notification ID
         Queue<NotificationDTO> notifications = this.userNotifications.get(userId);
         if (notifications == null) {

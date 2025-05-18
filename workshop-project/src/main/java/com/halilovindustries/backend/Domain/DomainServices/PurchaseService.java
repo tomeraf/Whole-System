@@ -1,6 +1,5 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
-import com.halilovindustries.backend.Domain.*;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -8,7 +7,6 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
-import com.halilovindustries.websocket.INotifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -114,20 +112,13 @@ public class PurchaseService {
 
     // }
 
-    public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer, INotifier notifier)
+    public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer)
     {
         if(user instanceof Registered) {
             shop.addBidPurchase(itemId, offer,user.getUserID());
-            notifyBidOffer(shop, itemId, offer, notifier);
         }
         else {
             throw new IllegalArgumentException("Error: guest cannot submit bid.");
-        }
-    }
-    private void notifyBidOffer(Shop shop, int itemId, double offer, INotifier notifier) {
-        String message = "New bid offer for item " + shop.getItem(itemId).getName() + ",the offer is: " + offer;
-        for(int id:shop.getMembersIDs()) {
-            notifier.notifyUser(message,String.valueOf(id));
         }
     }
 
@@ -169,24 +160,17 @@ public class PurchaseService {
         return order;
     }
 
-    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members,INotifier notifier) {
+    public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members) {
         shop.answerOnCounterBid(bidId, accept, user.getUserID(),members);
-        notifyCounterBid(shop, bidId,notifier);
+        return notifyBid(shop.getBidPurchase(bidId));
     }
-    private void notifyCounterBid(Shop shop, int bidId, INotifier notifier) {
-        BidPurchase bid = shop.getBidPurchase(bidId);
-        if(bid.isAccepted() ==1 ){
-            String message = "Bid offer for item " + shop.getItem(bid.getItemId()).getName() + " has been accepted.";
-            for(int id:shop.getMembersIDs()) {
-                notifier.notifyUser(message,String.valueOf(id));
-            }
+    private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {
+        Pair<Integer,String> notificationPair= null;
+        if(bidPurchase.isAccepted()==1){
+            notificationPair= new Pair(bidPurchase.getBuyerId() ,"Bid " + bidPurchase.getId() + " has been accepted by all members");
+        } else if(bidPurchase.isAccepted()==-1){
+            notificationPair =new Pair(bidPurchase.getBuyerId(), "Bid " + bidPurchase.getId() + " has been rejected");
         }
-        else if(bid.isAccepted() == -1) {
-            String message = "Bid offer for item " + shop.getItem(bid.getItemId()).getName() + " has been rejected.";
-            for(int id:shop.getMembersIDs()) {
-                notifier.notifyUser(message,String.valueOf(id));
-            }
-        }
-
+        return notificationPair;
     }
 }
