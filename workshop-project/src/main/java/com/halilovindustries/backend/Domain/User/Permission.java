@@ -15,4 +15,5 @@ public enum Permission {
     APPOINTMENT,
     ANSWER_BID,
     OPEN_AUCTION,
+    ANSWER_MESSAGE,
 }

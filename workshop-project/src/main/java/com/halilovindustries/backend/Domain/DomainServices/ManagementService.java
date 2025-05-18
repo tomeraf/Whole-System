@@ -165,6 +165,7 @@ public class ManagementService {
         notifyCloseShop(systemManager, shop, notifier);
     }
 
+
     private void notifyCloseShop(Registered supplyManager, Shop shop,INotifier notifier) {
         String message = "Shop " + shop.getName() + " has been closed by " + supplyManager.getUsername();
         if(supplyManager.isSystemManager()){
@@ -175,16 +176,14 @@ public class ManagementService {
         }
         
     }
-    public List<Integer> getMembersPermissions(Registered supplyManager, Shop shop) {
-        List<Integer> permissions = new ArrayList<>();
+    public List<Permission> getMembersPermissions(Registered supplyManager, Shop shop,Registered member) {
+
         if(supplyManager.hasPermission(shop.getId(), Permission.VIEW)){
-            permissions.addAll(shop.getManagerIDs());
-            permissions.addAll(shop.getOwnerIDs());
+            return member.getPermissions(shop.getId());
         }
         else {
             throw new IllegalArgumentException("You don't have permission to view members permissions");
         }
-        return permissions;
     }
 	public void answerBid(Registered user, Shop shop, int bidID, boolean accept,List<Integer> members, INotifier notifier) {
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {

@@ -30,7 +30,7 @@ public class PurchaseService {
                 for(Integer itemId : itemsMap.keySet()) {
                     Item item = shop.getItem(itemId);
                     int quantity = itemsMap.get(itemId);
-                    itemDTOs.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, quantity, item.getRating(), item.getDescription()));
+                    itemDTOs.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, quantity, item.getRating(), item.getDescription(),item.getNumOfOrders()));
                 }
             }
             else {
@@ -90,7 +90,7 @@ public class PurchaseService {
             List<ItemDTO> itemsList = new ArrayList<>();
             for(Integer itemId : itemsMap.keySet()) {
                 Item item = shop.getItem(itemId);
-                itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription()));
+                itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription(), item.getNumOfOrders()));
             }
             itemsToShip.put(shop.getId(), itemsList);
         }
@@ -139,7 +139,7 @@ public class PurchaseService {
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription()));
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
         itemsToShip.put(shop.getId(), itemsList);
         pay.processPayment(offer.getValue(), paymentDetails);
         ship.processShipment(offer.getValue()*0.1, shipmentDetails);
@@ -161,7 +161,7 @@ public class PurchaseService {
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription()));
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
         itemsToShip.put(shop.getId(), itemsList);
         payment.processPayment(offer.getValue(), paymentDetails);
         shipment.processShipment(offer.getValue()*0.1, shipmentDetails);

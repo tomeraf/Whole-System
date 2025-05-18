@@ -16,8 +16,9 @@ public class ItemDTO {
     // quantity in the basket
     private int quantity;
     private double rating;
+    private int numOfOrders;
 
-    public ItemDTO(String name,Category category, double price, int shopId, int itemID, int quantity, double rating, String description) {
+    public ItemDTO(String name,Category category, double price, int shopId, int itemID, int quantity, double rating, String description, int numOfOrders) {
         this.name = name;
         this.category = category;
         this.price = price;
@@ -26,6 +27,7 @@ public class ItemDTO {
         this.quantity = quantity;
         this.rating = rating;
         this.description = description;
+        this.numOfOrders = numOfOrders;
     }
     public String getName() {
         return name;
@@ -50,5 +52,8 @@ public class ItemDTO {
     }
     public String getDescription(){
         return description;
+    }
+    public int getNumOfOrders() {
+        return numOfOrders;
     }
 }

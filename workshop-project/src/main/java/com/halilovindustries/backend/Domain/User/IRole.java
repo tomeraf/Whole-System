@@ -64,6 +64,7 @@ public abstract class IRole {
         return appointerID;
     }
     abstract String getPermissionsString();
+    abstract List<Permission> getPermissions();
     public Registered getUser() {
         return user;
     }
