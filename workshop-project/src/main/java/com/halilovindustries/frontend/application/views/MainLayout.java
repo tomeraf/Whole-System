@@ -51,13 +51,22 @@ getStyle().setWidth("100%");
     }
 
     private void addDrawerContent() {
-        Span appName = new Span("Hello, sign in");
-        appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
-        Header header = new Header(appName);
+        presenter.getSessionToken(token -> {
+            if (token != null && presenter.validateToken(token)) {
+                 Span appName;
+                if (presenter.isLoggedIn(token)) {
+                    appName = new Span("Hello, " + presenter.getUsername(token));
+                } else {
+                    appName = new Span("Hello, sign in");
+                }
+                appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+                Header header = new Header(appName);
 
-        Scroller scroller = new Scroller(createNavigation());
+                Scroller scroller = new Scroller(createNavigation());
 
-        addToDrawer(header, scroller, createFooter());
+                addToDrawer(header, scroller, createFooter());   
+            }
+        });
     }
 
     private SideNav createNavigation() {

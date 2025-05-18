@@ -8,11 +8,11 @@ import com.halilovindustries.backend.Domain.DTOs.Order;
 
 public class ShoppingService {
 
-    public boolean RateItem(Shop shop, int itemId, List<Order> allUserOrders, int rating) {
+    public boolean RateItem(Shop shop, int raterId, int itemId, List<Order> allUserOrders, int rating) {
         for (Order order : allUserOrders) {
             for (ItemDTO orderItem : order.getItems()) {
                 if (orderItem.getItemID() == itemId && orderItem.getShopId() == shop.getId()) {
-                    shop.updateItemRating(itemId, rating);
+                    shop.updateItemRating(raterId, itemId, rating);
                     return true; // Item found and rating updated
                 }
             }
@@ -20,12 +20,12 @@ public class ShoppingService {
         throw new IllegalArgumentException("Item not found in user's orders.");
     }
 
-    public boolean RateShop(Shop shop, List<Order> allUserOrders, int rating) {
+    public boolean RateShop(Shop shop, List<Order> allUserOrders, int raterId, int rating) {
         int shopId = shop.getId();
         for (Order order : allUserOrders) {
             for (ItemDTO orderItem : order.getItems()) {
                 if (orderItem.getShopId() == shopId) {
-                    shop.updateRating(rating);
+                    shop.updateRating(raterId, rating);
                     return true; // Shop found and rating updated
                 }
             }

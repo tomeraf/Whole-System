@@ -19,7 +19,7 @@ public class ItemTest {
     @Test
     public void testRatingupdate() {
         item.setNumOfOrders(1);
-        item.updateRating(4.5); // Update the rating with a new value no orders yet
+        item.updateRating(1, 4.5); // Update the rating with a new value no orders yet
         assertEquals(4.5, item.getRating(), 0.01); // Check if the rating is updated correctly
     }
     @Test

@@ -111,13 +111,13 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to update item quantity");
         }
     }
-    public void updateItemRating(Registered supplyManager, Shop shop, int itemID, double rating) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_RATING)) {
-            shop.updateItemRating(itemID, rating);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item rating");
-        }
-    }
+    // public void updateItemRating(Registered supplyManager, Shop shop, int itemID, double rating) {
+    //     if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_RATING)) {
+    //         shop.updateItemRating(supplyManager.getUserID(), itemID, rating);
+    //     } else {
+    //         throw new IllegalArgumentException("You don't have permission to update item rating");
+    //     }
+    // }
     public void updateItemCategory(Registered supplyManager, Shop shop, int itemID, Category category) {
         if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
             shop.updateItemCategory(itemID, category);
