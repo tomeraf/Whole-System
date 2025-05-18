@@ -533,29 +533,29 @@ private void clearStorage() {
 
 
     //@Override
-    protected void onAttach1(AttachEvent event) {
-        super.onAttach(event);
+    // protected void onAttach1(AttachEvent event) {
+    //     super.onAttach(event);
         
-        presenter.getSessionToken(token -> {
-            UI ui = UI.getCurrent();
-            if (ui == null) 
-                return;
-            ui.access(() -> {
-                if (token == null || !presenter.validateToken(token)) {
-                    // brand-new tab with NO guest token → fetch one
-                    presenter.saveSessionToken();
-                    showGuestUI();
-                } 
-                else if (!presenter.isLoggedIn(token)) {
-                    showGuestUI();
-                }
-                else {
-                    showLoggedInUI();
-                }
-            });
-        });
-        loadRandomItems();
-    }
+    //     presenter.getSessionToken(token -> {
+    //         UI ui = UI.getCurrent();
+    //         if (ui == null) 
+    //             return;
+    //         ui.access(() -> {
+    //             if (token == null || !presenter.validateToken(token)) {
+    //                 // brand-new tab with NO guest token → fetch one
+    //                 presenter.saveSessionToken();
+    //                 showGuestUI();
+    //             } 
+    //             else if (!presenter.isLoggedIn(token)) {
+    //                 showGuestUI();
+    //             }
+    //             else {
+    //                 showLoggedInUI();
+    //             }
+    //         });
+    //     });
+    //     loadRandomItems();
+    // }
 
 
     private void openFilterDialog() {
