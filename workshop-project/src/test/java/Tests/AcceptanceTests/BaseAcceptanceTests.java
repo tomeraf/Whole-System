@@ -18,27 +18,35 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthenticat
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.Repositories.INotificationRepository;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
+import com.halilovindustries.backend.Infrastructure.MemoryNotificationRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
+import com.halilovindustries.backend.Service.NotificationHandler;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
+import com.halilovindustries.websocket.INotifier;
+import com.halilovindustries.websocket.VaadinNotifier;
 
 public abstract class BaseAcceptanceTests {
     protected IShopRepository shopRepository;
     protected IUserRepository userRepository;
     protected IOrderRepository orderRepository;
+    protected INotificationRepository notificationRepository;
     protected IAuthentication jwtAdapter;
     protected IShipment shipment;
     protected IPayment payment;
+    protected INotifier notifier;
     protected UserService userService;
     protected ShopService shopService;
     protected OrderService orderService;
     protected ConcurrencyHandler concurrencyHandler;
+    protected NotificationHandler notificationHandler;
     protected AcceptanceTestFixtures fixtures;
 
 
@@ -81,6 +89,8 @@ public abstract class BaseAcceptanceTests {
         shopRepository   = new MemoryShopRepository();
         userRepository   = new MemoryUserRepository();
         orderRepository  = new MemoryOrderRepository();
+        notificationRepository= new MemoryNotificationRepository();
+        
         JWTAdapter adapter = new JWTAdapter();
 
         // mimic what Spring would inject and call
@@ -92,10 +102,13 @@ public abstract class BaseAcceptanceTests {
         concurrencyHandler = new ConcurrencyHandler();
         shipment         = mock(IShipment.class);
         payment          = mock(IPayment.class);
+        notifier         =new VaadinNotifier();
+        notificationHandler = new NotificationHandler(notificationRepository,notifier);
 
-        userService  = new UserService(userRepository, jwtAdapter, concurrencyHandler);
-        shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler);
-        orderService = new OrderService(userRepository, shopRepository, orderRepository, jwtAdapter, payment, shipment, concurrencyHandler);
+
+        userService  = new UserService(userRepository, jwtAdapter, concurrencyHandler, notificationHandler);
+        shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler,notificationHandler);
+        orderService = new OrderService(userRepository, shopRepository, orderRepository,jwtAdapter, payment, shipment, concurrencyHandler, notificationHandler);
         fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, payment, shipment);
     }
 }

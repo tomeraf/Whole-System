@@ -1,14 +1,15 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
+import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
 
 public class ManagementService {
@@ -145,15 +146,24 @@ public class ManagementService {
         }
     }
 
-    public void closeShop(Registered supplyManager, Shop shop) {
-        if (supplyManager.isSystemManager()|| supplyManager.hasPermission(shop.getId(), Permission.CLOSE_SHOP)) {
+    public void closeShop(Registered supplyManager, Shop shop,Registered founder) {
+        if(supplyManager.isSystemManager()){
+            closeShopAsSystemManager(supplyManager, shop,founder);     
+        } else if (supplyManager.getAppointer(shop.getId())==-1) {
             shop.closeShop();
         } else {
             throw new IllegalArgumentException("You don't have permission to close the shop");
         }
     }
+    private void closeShopAsSystemManager(Registered systemManager, Shop shop,Registered founder) {;
+        shop.closeShop();
+        shop.clearRoles();
+        founder.getRoleInShop(shop.getId()).removeAllAppointments();
+        founder.removeRoleFromShop(shop.getId());
+    }
 
     public List<Permission> getMembersPermissions(Registered supplyManager, Shop shop,Registered member) {
+
         if(supplyManager.hasPermission(shop.getId(), Permission.VIEW)){
             return member.getPermissions(shop.getId());
         }
@@ -161,13 +171,24 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to view members permissions");
         }
     }
-	public void answerBid(Registered user, Shop shop, int bidID, boolean accept) {
+	public Pair<Integer,String> answerBid(Registered user, Shop shop, int bidID, boolean accept,List<Integer> members) {//Pair<Integer,String> is used to return the id of the buyer the bid and the message
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            shop.addBidDecision(user.getUserID(),bidID, accept);
+            shop.addBidDecision(user.getUserID(),bidID, accept, members);
+            BidPurchase bidPurchase = shop.getBidPurchase(bidID);
+            return notifyBid(bidPurchase);
         } else {
             throw new IllegalArgumentException("You don't have permission to answer bids");
         }
 	}
+    private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {
+        Pair<Integer,String> notificationPair= null;
+        if(bidPurchase.isAccepted()==1){
+            notificationPair= new Pair(bidPurchase.getBuyerId() ,"Bid " + bidPurchase.getId() + " has been accepted by all members");
+        } else if(bidPurchase.isAccepted()==-1){
+            notificationPair =new Pair(bidPurchase.getId(), "Bid " + bidPurchase.getId() + " has been rejected by " + bidPurchase.getRejecterId());
+        }
+        return notificationPair;
+    }
     public void submitCounterBid(Registered user, Shop shop, int bidID, double offerAmount) {
         if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
             shop.submitCounterBid(user.getUserID(), bidID, offerAmount);

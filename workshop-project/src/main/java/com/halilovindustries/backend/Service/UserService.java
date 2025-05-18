@@ -12,17 +12,18 @@ import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.User.*;
+import com.halilovindustries.websocket.INotifier;
+
+
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
-import com.halilovindustries.backend.Domain.Shop.Shop;
 import com.halilovindustries.backend.Domain.Message;
 
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,16 +32,19 @@ public class UserService {
     private IUserRepository userRepository;
     private IAuthentication jwtAdapter;
     private final ConcurrencyHandler concurrencyHandler;
+    private NotificationHandler notificationHandler;
 
     ObjectMapper objectMapper = new ObjectMapper();
     
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler) {
+    public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler,
+            NotificationHandler notificationHandler) {
         this.userRepository = userRepository;
         this.jwtAdapter = jwtAdapter;
         this.concurrencyHandler = concurrencyHandler;
+        this.notificationHandler = notificationHandler;
     }
 
     public String encodePassword(String password) {
@@ -189,7 +193,6 @@ public class UserService {
             Guest maybeOld = userRepository.getUserById(guestUserID);
             if (registered.getUserID() != maybeOld.getUserID())    // only true Guests return null
                 userRepository.removeGuestById(guestUserID);
-            
             logger.info(() -> "User logged in successfully");
             return Response.ok(newSessionToken);
         } catch (Exception e) {
@@ -197,6 +200,20 @@ public class UserService {
             return Response.error("Error logging in user: " + e.getMessage());
         }
     }
+    public Response<Void> loginNotify(String sessionToken){
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
+            notificationHandler.notifyUser(userID+"");// delayed notifications
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error notifying login: " + e.getMessage());
+            return Response.error("Error notifying login: " + e.getMessage());
+        }
+    }
+    
 
     //SystemManager only(need to decide how to implement system manager)
     //requirement:2.6.6

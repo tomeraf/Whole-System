@@ -8,7 +8,6 @@ public class AuctionPurchase extends Purchase {
     private double highestBid=0;
     private LocalDateTime auctionStartTime; 
     private LocalDateTime auctionEndTime; 
-    private boolean isAccepted = false;
 
     
     public AuctionPurchase(int id,double startingBid, int itemId, LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
@@ -55,10 +54,6 @@ public class AuctionPurchase extends Purchase {
     }
     public boolean isAuctionStarted() {
         return auctionStartTime.isBefore(LocalDateTime.now());
-    }
-    
-    public boolean isAccepted() {
-        return isAccepted;
     }
     public Pair<Integer, Double> purchaseAuctionItem(int userID) {
         if (!isAuctionEnded()) {

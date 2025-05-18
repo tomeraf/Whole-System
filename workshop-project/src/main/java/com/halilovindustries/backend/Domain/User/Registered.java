@@ -116,7 +116,7 @@ public class Registered extends Guest  {
     
     public List<Integer> removeAppointment(int shopID, int appointeeID) {
         if (!roleInShops.containsKey(shopID)) {
-            throw new IllegalArgumentException("No role found for shop ID: " + shopID);
+           throw new IllegalArgumentException("No role found for shop ID: " + shopID);
         }
         if (!roleInShops.get(shopID).hasPermission(Permission.APPOINTMENT)) {
             throw new IllegalArgumentException("No permission to remove appointment in shop ID: " + shopID);
@@ -135,7 +135,7 @@ public class Registered extends Guest  {
         if(roleInShops.containsKey(shopID)) {
             return roleInShops.get(shopID).getAppointer();
         } else {
-            return -1;
+            throw new IllegalArgumentException("No role found for shop ID: " + shopID);
         }
     }
     public int getAge() {

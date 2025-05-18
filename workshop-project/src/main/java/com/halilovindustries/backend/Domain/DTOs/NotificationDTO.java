@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 public class NotificationDTO {
 
     private int id;
-    private int userId;
+    private String userId;
     private String message;
     private LocalDateTime timestamp;
-    public NotificationDTO(int id, int userId, String message, LocalDateTime timestamp) {
+    public NotificationDTO(int id, String userId, String message, LocalDateTime timestamp) {
         this.id = id;
         this.userId = userId;
         this.message = message;
@@ -18,7 +18,7 @@ public class NotificationDTO {
     public int getId() {
         return id;
     }
-    public int getUserId() {
+    public String getUserId() {
         return userId;
     }
     public String getMessage() {

@@ -41,6 +41,7 @@ public class OrderService {
     private IUserRepository userRepository;
     private IShopRepository shopRepository;
     private IOrderRepository orderRepository;
+    private NotificationHandler notificationHandler;
     private IAuthentication authenticationAdapter;
     private IPayment payment;
     private IShipment shipment;
@@ -49,7 +50,8 @@ public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
-    public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter, IPayment payment, IShipment shipment,  ConcurrencyHandler concurrencyHandler) {
+    public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter,
+                         IPayment payment, IShipment shipment,  ConcurrencyHandler concurrencyHandler , NotificationHandler notificationHandler) {
         this.userRepository = userRepository;
         this.shopRepository = shopRepository;
         this.orderRepository = orderRepository;
@@ -57,6 +59,7 @@ public class OrderService {
         this.payment = payment;
         this.shipment = shipment;
         this.ConcurrencyHandler = concurrencyHandler;
+        this.notificationHandler = notificationHandler;
     }
 
     /**
@@ -74,10 +77,6 @@ public class OrderService {
             
             Guest guest = userRepository.getUserById(userID);
             List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest);
-            // List<ItemDTO> itemDTOs = items.stream()
-            //         .map(item -> new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(), item.getId(), item.getQuantity(), item.getRating()))
-            //         .toList(); // Convert Item to ItemDTO
-
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
         } 
@@ -295,7 +294,7 @@ public class OrderService {
                 }
                 Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
                 purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice);
-    
+                notificationHandler.notifyUsers(shop.getMembersIDs(),"New bid offer for item " + shop.getItem(itemID).getName() + ",the offer is: " + offerPrice);
                 logger.info(() -> "Bid offer submitted successfully for item ID: " + itemID);
                 return Response.ok();
 
@@ -336,8 +335,11 @@ public class OrderService {
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            purchaseService.answerOnCounterBid(user,shop,bidId,accept);
-    
+            List<Integer> members=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
+            Pair<Integer,String> notification=purchaseService.answerOnCounterBid(user,shop,bidId,accept,members);
+            if(notification!=null) {
+                notificationHandler.notifyUsers(Collections.singletonList(notification.getKey()),notification.getValue());
+            }
             logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId);
             return Response.ok();
         } catch (Exception e) {
@@ -345,47 +347,6 @@ public class OrderService {
             return Response.error("Error answering on counter bid: " + e.getMessage());
         }
     }
-
-    /**
-     * Performs a direct purchase of a single item.
-     *
-     * @param sessionToken current session token
-     * @param itemID the item to purchase
-     */
-    // public Response<Void> directPurchase(String sessionToken, int shopId, int itemID) {
-    //     Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
-    //     ReentrantLock itemLock = ConcurrencyHandler.getItemLock(shopId, itemID);
-
-    //     shopRead.lock();     
-    //     try {
-    //         itemLock.lockInterruptibly();
-    //         try {
-    //             if (!authenticationAdapter.validateToken(sessionToken)) {
-    //                 throw new Exception("User not logged in");
-    //             }
-    //             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-    //             Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
-    //             purchaseService.directPurchase(guest, itemID);
-    
-    //             logger.info(() -> "Direct purchase completed successfully for item ID: " + itemID);
-    //             return Response.ok();
-    //         } catch (Exception e) {
-    //             logger.error(() -> "Error completing direct purchase: " + e.getMessage());
-    //             return Response.error("Error completing direct purchase: " + e.getMessage());
-    //         }
-    //         finally {
-    //             itemLock.unlock();
-    //         }
-    //     } 
-    //     catch (InterruptedException ie) {
-    //         Thread.currentThread().interrupt();
-    //         logger.error(() -> "Thread was interrupted during direct purchase");
-    //         return Response.error("Thread was interrupted during direct purchase");
-    //     }
-    //     finally {
-    //         shopRead.unlock();
-    //     }
-    // }
 
      /**
      * Retrieves the personal order history for the user.
@@ -419,8 +380,7 @@ public class OrderService {
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            List<Integer> accepetingMembers=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
-            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis,accepetingMembers);
+            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
