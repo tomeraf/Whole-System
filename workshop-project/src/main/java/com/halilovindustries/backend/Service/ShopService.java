@@ -222,15 +222,22 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
-            List<UserDTO> members = new ArrayList<>(
-                shop.getManagerIDs().stream()
+            List<UserDTO> members = new ArrayList<>();
+            List<Integer> ownerIDs = new ArrayList<>(shop.getOwnerIDs());
+            ownerIDs.removeIf(id -> (((Registered)userRepository.getUserById(id)).getAppointer(shopID) != -1));
+            int founderID = ownerIDs.get(0); //should be the only one
+            members.add(new UserDTO(founderID, userRepository.getUserById(founderID).getUsername()));
+            
+            members.addAll(
+                shop.getOwnerIDs().stream()
                     .map(userRepository::getUserById)
+                    .filter(u -> (((Registered)u).getAppointer(shopID) != -1))
                     .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
                     .toList()
             );
 
             members.addAll(
-                shop.getOwnerIDs().stream()
+                shop.getManagerIDs().stream()
                     .map(userRepository::getUserById)
                     .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
                     .toList()
@@ -551,7 +558,7 @@ public class ShopService {
             }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
-            shoppingService.RateShop(shop, orders, rating);
+            shoppingService.RateShop(shop, orders, userID, rating);
             logger.info(() -> "Shop rated: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
             logger.error(() -> "Error rating shop: " + e.getMessage());
@@ -575,7 +582,7 @@ public class ShopService {
             }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
-            shoppingService.RateItem(shop, itemID, orders, rating);
+            shoppingService.RateItem(shop, userID, itemID, orders, rating);
             logger.info(() -> "Item rated: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
             logger.error(() -> "Error rating item: " + e.getMessage());

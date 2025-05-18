@@ -1,5 +1,7 @@
 package com.halilovindustries.backend.Domain.Shop;
 
+import java.util.HashMap;
+
 public class Item {
     private String name;
     private Category category;
@@ -8,9 +10,10 @@ public class Item {
     private String description;
     private int shopId;
     private int id;
-    private double rating;
+    //private double rating;
     private int numOfOrders;
-    
+    private HashMap<Integer, Double> ratedIds;
+
 
     public Item(String name,Category category, double price, int shopId, int id, String description) {
         this.name = name;
@@ -20,18 +23,19 @@ public class Item {
         this.id = id;
         this.description=description;
         this.quantity = 0;
-        this.rating = 0.0;
+        //this.rating = 0.0;
         this.numOfOrders = 0;
+        this.ratedIds = new HashMap<>();
     }
 
-    public void updateRating(double newRating) {
+    public void updateRating(int id, double newRating) {
         if (newRating < 0 || newRating > 5) {
             throw new IllegalArgumentException("Rating must be between 0 and 5.");
         }
         if (numOfOrders == 0) {
             throw new IllegalStateException("No orders have been made yet. Cannot update rating.");
         } 
-        this.rating = (this.rating * (numOfOrders-1) + newRating) / (numOfOrders);
+        ratedIds.put(id, newRating);
     }
     public void updateQuantity(int quantity) {
         if (quantity >= 0) {
@@ -81,11 +85,15 @@ public class Item {
     }
 
     public double getRating() {
-        return rating;
+        double rating = 0.0;
+        for (double r : ratedIds.values()) {
+            rating += r;
+        }
+        return rating / ratedIds.size();
     }
-    public void setRating(double rating) {
-        this.rating = rating;
-    }
+    // public void setRating(double rating) {
+    //     this.rating = rating;
+    // }
     public int getNumOfOrders(){
         return numOfOrders;
     }
@@ -113,7 +121,7 @@ public class Item {
                 ", quantity=" + quantity +
                 ", shopId=" + shopId +
                 ", id=" + id +
-                ", rating=" + rating +
+                ", rating=" + getRating() +
                 ", numOfOrders=" + numOfOrders +
                 '}';
     }

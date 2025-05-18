@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
@@ -25,6 +26,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -74,12 +76,25 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
         dialog.setCloseOnEsc(true);
         dialog.setCloseOnOutsideClick(true);
 
+        // 1) Username field
         TextField nameField = new TextField("Username");
         nameField.setWidthFull();
+
+        // 2) Permissions picker
+        MultiSelectComboBox<String> permsCombo = new MultiSelectComboBox<>("Permissions");
+        List<Permission> allPerms = new ArrayList<>(java.util.Arrays.asList(Permission.values()));
+        allPerms.remove(Permission.OWNER);
+        allPerms.remove(Permission.FOUNDER);
+        permsCombo.setItems(allPerms.stream().map(Permission::name).collect(Collectors.toList()));
+        permsCombo.setWidthFull();
+
+        // 3) Confirm button
         Button confirm = new Button("Add", ev -> {
             String username = nameField.getValue();
+            Set<Permission> selectedPerms = permsCombo.getValue().stream().map(Permission::valueOf).collect(Collectors.toSet());  // the chosen permissions
+
             if (username != null && !username.isEmpty()) {
-                presenter.addShopManager(shopID, username, Set.of(), success -> {
+                presenter.addShopManager(shopID, username, selectedPerms, success -> {
                     if (Boolean.TRUE.equals(success)) {
                         reloadMembers();
                     }
@@ -89,17 +104,25 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
         });
         confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
+        // 4) Cancel button
         Button cancel = new Button("Cancel", ev -> dialog.close());
 
+        // 5) Layout everything
         HorizontalLayout actions = new HorizontalLayout(confirm, cancel);
         actions.setSpacing(true);
 
-        VerticalLayout layout = new VerticalLayout(nameField, actions);
+        VerticalLayout layout = new VerticalLayout(
+            nameField,
+            permsCombo,
+            actions
+        );
         layout.setPadding(false);
         layout.setSpacing(true);
+
         dialog.add(layout);
         dialog.open();
     }
+
 
     private void openAddOwnerDialog() {
         Dialog dialog = new Dialog();
@@ -159,89 +182,68 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
                 if (members == null || members.isEmpty()) {
                     add(new H4("No members found."));
                 } else {
-                    HorizontalLayout cards = new HorizontalLayout();
-                    cards.setPadding(true);
-                    cards.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-                    cards.setAlignItems(FlexComponent.Alignment.START);
-                    cards.getStyle().set("gap", "2rem");
-                    cards.setWidthFull();
+                    // HorizontalLayout cards = new HorizontalLayout();
+                    // cards.setPadding(true);
+                    // cards.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+                    // cards.setAlignItems(FlexComponent.Alignment.START);
+                    // cards.getStyle().set("gap", "2rem");
+                    // cards.setWidthFull();
+                    Div cardContainer = new Div();
+                    cardContainer.getStyle()
+                        .set("display", "flex")
+                        .set("flex-wrap", "wrap")
+                        .set("gap", "2rem")
+                        // line up each row at the left:
+                        .set("justify-content", "flex-start")
+                        // if rows wrap, align them at the top:
+                        .set("align-content",   "flex-start")
+                        // let it span the full width so wrapping only cares about the viewport:
+                        .set("width",           "100%")
+                        // if you really want a max-width, keep it, but ditch the auto-margin:
+                        .set("max-width",      "1100px")
+                        .set("margin",          "0");  
+
 
                     for (UserDTO user : members) {
                         // Fetch permissions per user
                         presenter.checkMemberPermissions(user.getUsername(), shopID, permsList -> {
                             UI.getCurrent().access(() -> {
                                 Set<Permission> currentPerms = permsList != null ? new HashSet<>(permsList) : new HashSet<>();
-                                if (currentPerms.contains(Permission.OWNER)) {
-                                    cards.add(createMemberCard(user.getUsername(), null));
+                                if (currentPerms.contains(Permission.FOUNDER)) {
+                                    cardContainer.add(createFounderCard(user.getUsername()));
+                                }
+                                else if (currentPerms.contains(Permission.OWNER)) {
+                                    cardContainer.add(createMemberCard(user.getUsername(), null));
                                 } else {
                                     Set<String> readablePerms = currentPerms.stream()
                                             .map(Permission::toString)
                                             .collect(Collectors.toSet());
-                                    cards.add(createMemberCard(user.getUsername(), readablePerms));
+                                    cardContainer.add(createMemberCard(user.getUsername(), readablePerms));
                                 }
 
                             });
                         });
                     }
-                    add(cards);
+                    add(cardContainer);
                 }
             });
         });
     }
 
-    /**
-     * An “owner” card gets a gold accent, a big OWNER label, and no extra buttons.
-     */
-    private VerticalLayout createOwnerCard1(String username) {
+    private VerticalLayout createFounderCard(String memberName) {
         VerticalLayout card = new VerticalLayout();
-        card.setAlignItems(FlexComponent.Alignment.CENTER);
         card.getStyle()
-            .set("border", "2px solid gold")
-            .set("border-radius", "8px")
-            .set("padding", "1rem")
-            .set("background-color", "#FFF8E1");
+                .set("border", "1px solid #ddd")
+                .set("border-radius", "8px")
+                .set("padding", "1rem")
+                .set("width", "250px");
 
-        Span role = new Span("OWNER");
-        role.getStyle()
-            .set("color", "goldenrod")
-            .set("font-weight", "bold")
-            .set("font-size", "0.9em");
+        H4 name = new H4(memberName);
+        card.add(name);
+        Span founderLabel = new Span("FOUNDER");
+        founderLabel.getStyle().set("color", "FORESTGREEN").set("font-weight", "bold");
+        card.add(founderLabel);
 
-        H4 name = new H4(username);
-
-        card.add(role, name);
-        return card;
-    }
-
-    /**
-     * A “manager” card gets a cool blue accent, a MANAGER label,
-     * and a little list of their permissions.
-     */
-    private VerticalLayout createManagerCard1(String username, Set<Permission> perms) {
-        VerticalLayout card = new VerticalLayout();
-        card.setAlignItems(FlexComponent.Alignment.CENTER);
-        card.getStyle()
-            .set("border", "2px solid cornflowerblue")
-            .set("border-radius", "8px")
-            .set("padding", "1rem")
-            .set("background-color", "#E3F2FD");
-
-        Span role = new Span("MANAGER");
-        role.getStyle()
-            .set("color", "steelblue")
-            .set("font-weight", "bold")
-            .set("font-size", "0.9em");
-
-        H4 name = new H4(username);
-
-        // turn the enum set into a comma-separated list:
-        String permsLine = perms.stream()
-                                .map(Enum::name)
-                                .collect(Collectors.joining(", "));
-        Span permsSpan = new Span("Permissions: " + permsLine);
-        permsSpan.getStyle().set("font-size", "0.8em").set("color", "#555");
-
-        card.add(role, name, permsSpan);
         return card;
     }
 
@@ -261,9 +263,12 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
             List<Permission> allPerms = new ArrayList<>(java.util.Arrays.asList(Permission.values()));
             allPerms.remove(Permission.OWNER);
             allPerms.remove(Permission.FOUNDER);
+            perms.setItems(allPerms.stream().map(Permission::name).collect(Collectors.toList()));
             perms.select(currentPerms);
             perms.setWidthFull();
-            card.add(perms);
+            Span managerLabel = new Span("MANAGER");
+            managerLabel.getStyle().set("color", "blue").set("font-weight", "bold");
+            card.add(managerLabel, perms);
         } else {
             Span ownerLabel = new Span("OWNER");
             ownerLabel.getStyle().set("color", "goldenrod").set("font-weight", "bold");

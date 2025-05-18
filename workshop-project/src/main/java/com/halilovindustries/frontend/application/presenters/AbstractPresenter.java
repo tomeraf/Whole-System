@@ -43,6 +43,9 @@ public abstract class AbstractPresenter {
         return userService.inSystem(sessionToken);
     }
 
+    public String getUsername(String sessionToken) {
+        return userService.getUsername(sessionToken);
+    }
     
 
     /**

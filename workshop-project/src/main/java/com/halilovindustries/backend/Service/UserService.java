@@ -301,4 +301,17 @@ public class UserService {
             return false;
         }
     }
+
+    public String getUsername(String sessionToken) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
+            return userRepository.getUserById(userID).getUsername();
+        } catch (Exception e) {
+            logger.error(() -> "Error getting username: " + e.getMessage());
+            return null;
+        }
+    }
 }

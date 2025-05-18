@@ -37,6 +37,7 @@ public class Shop {
     private int auctionPurchaseCounter; // Counter for auction purchases
     private HashMap<Integer, Message> inbox; // 
     int messageIdCounter = 1; // Counter for message IDs
+    private HashMap<Integer, Double> ratedIds;
 
     public Shop(int id,int founderID, String name, String description) {
         this.id = id;
@@ -57,6 +58,7 @@ public class Shop {
         this.bidPurchaseCounter = 1; 
         this.auctionPurchaseCounter = 1; 
         this.inbox = new HashMap<>();
+        this.ratedIds = new HashMap<>();
     }
 
     public int getId() { return id; }
@@ -68,7 +70,17 @@ public class Shop {
     public HashMap<Integer, Item> getItems() { return items; }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
     public Set<Integer> getManagerIDs() { return managerIDs; }
-    public double getRating() { return rating; }
+    public double getRating() { 
+        if (ratedIds.isEmpty()) {
+            return 0.0; // No ratings yet
+        }
+        double totalRating = 0;
+        for (double rating : ratedIds.values()) {
+            totalRating += rating;
+        }
+        this.rating = totalRating / ratedIds.size(); // Calculate the average rating
+        return this.rating;
+    }
     public int getRatingCount() { return ratingCount; }
 
     public void setName(String name) { this.name = name; }
@@ -138,10 +150,10 @@ public class Shop {
         }
     }
 
-    public void updateItemRating(int itemId, double rating) {
+    public void updateItemRating(int raterId, int itemId, double rating) {
         if (items.containsKey(itemId)) {
             Item item = items.get(itemId);
-            item.updateRating(rating);
+            item.updateRating(raterId, rating);
         } 
         else{
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -167,16 +179,19 @@ public class Shop {
         }
     }
 
-    public void updateRating(double rating) {
+    public void updateRating(int raterId, double rating) {
         if (rating < 0 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 0 and 5.");
         }
         else {
-            ratingCount++;
-            this.rating = (rating + this.rating) / ratingCount; // Update the shop's rating based on the new rating
+            // if (!ratedIds.containsKey(raterId)) {
+            //     ratingCount++;
+            // }
+            ratedIds.put(raterId, rating); // Mark the user as having rated the shop
+            //this.rating = (rating + this.rating) / ratingCount; // Update the shop's rating based on the new rating
         }
     }
-
+    
     public void openShop(){ //must fix later on using synchronized methods
         if (isOpen) {
             throw new RuntimeException("Shop is already open.");
