@@ -68,7 +68,7 @@ public class ShopsPresenter extends AbstractPresenter {
         if (ui == null) return;
 
         ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+            if (token == null || !validateToken(token)) {
                 Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
@@ -92,7 +92,7 @@ public class ShopsPresenter extends AbstractPresenter {
         if (ui == null) return;
 
         ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+            if (token == null || !validateToken(token)) {
                 Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
@@ -104,7 +104,14 @@ public class ShopsPresenter extends AbstractPresenter {
                 onFinish.accept(null);
             } else {
                 Notification.show("Shops retrieved successfully!", 2000, Position.MIDDLE);
-                onFinish.accept(resp.getData());
+
+                // I want to return the list of shops most rated:
+                List<ShopDTO> shops = resp.getData();
+                Collections.sort(shops, (s1, s2) -> {
+                    return Double.compare(s2.getRating(), s1.getRating());
+                });
+
+                onFinish.accept(shops);
             }
             });
         });        

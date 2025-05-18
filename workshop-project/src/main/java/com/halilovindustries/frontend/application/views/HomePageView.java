@@ -510,11 +510,13 @@ protected void onAttach(AttachEvent event) {
                 UI.getCurrent().getPage()
                     .executeJs("return localStorage.getItem('token') === $0;", token)
                     .then(Boolean.class, isPersistent -> {
-                        if (Boolean.TRUE.equals(isPersistent)) {
+                        System.out.println("Token is in localStorage: " + (isPersistent ? token : 0));
+                        if (Boolean.TRUE.equals(isPersistent) || !presenter.isInSystem(token)) {
                             // stale localStorage token → replace with new guest
                             clearStorage();
                             presenter.saveSessionToken();
                         }
+                        
                         // In both cases → show guest UI
                         showGuestUI();
                     });

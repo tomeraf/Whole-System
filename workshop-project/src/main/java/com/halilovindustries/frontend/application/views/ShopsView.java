@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.frontend.application.presenters.ShopsPresenter;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -43,12 +44,18 @@ public class ShopsView extends VerticalLayout {
 
         cardsLayout.setWidthFull();
         cardsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
-        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
         cardsLayout.getStyle().set("gap", "1rem");
         add(cardsLayout);
 
         // Fetch and display some shops on load
         presenter.getNRandomShops(5, this::displayShops);
+    }
+
+    @Override
+    protected void onAttach(AttachEvent event) {
+        super.onAttach(event);
+        presenter.showAllShops(this::displayShops);
     }
 
     private HorizontalLayout createSearchBar() {

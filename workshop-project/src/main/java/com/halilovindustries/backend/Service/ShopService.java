@@ -186,10 +186,7 @@ public class ShopService {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if(user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
+            Guest user = this.userRepository.getUserById(userID);
             Shop shop = this.shopRepository.getShopById(shopID);
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : shop.getItems().values()) {

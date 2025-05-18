@@ -6,6 +6,7 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
@@ -217,7 +219,7 @@ public class ShopPresenter extends AbstractPresenter {
         if (ui == null) return;
 
         ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+            if (token == null || !validateToken(token)) {
                 Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
                 onFinish.accept(null);
                 return;
@@ -235,28 +237,99 @@ public class ShopPresenter extends AbstractPresenter {
         });        
     }
     
-     public void getShopInfo(int shopID, Consumer<ShopDTO> onFinish) {
+    public void getShopInfo(int shopID, Consumer<ShopDTO> onFinish) {
         getSessionToken(token -> {
-        UI ui = UI.getCurrent();
-        if (ui == null) return;
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
 
-        ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
-                onFinish.accept(null);
-                return;
-            }
+            ui.access(() -> {
+                if (token == null || !validateToken(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(null);
+                    return;
+                }
 
-            Response<ShopDTO> resp = shopService.getShopInfo(token, shopID);
-            if (!resp.isOk()) {
-                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
-                onFinish.accept(null);
-            } else {
-                Notification.show("Shop retrieved successfully!", 2000, Position.MIDDLE);
-                onFinish.accept(resp.getData());
-            }
+                Response<ShopDTO> resp = shopService.getShopInfo(token, shopID);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(null);
+                } else {
+                    Notification.show("Shop retrieved successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(resp.getData());
+                }
             });
         });        
     }
     
+    public void addShopOwner(int shopID, String appointeeName, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+
+                Response<Void> resp = shopService.addShopOwner(token, shopID, appointeeName);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                } else {
+                    Notification.show("Shop owner added successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+
+    public void removeShopOwner(int shopID, String appointeeName, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+
+                Response<Void> resp = shopService.removeAppointment(token, shopID, appointeeName);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                } else {
+                    Notification.show("Shop owner removed successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+                }
+            });
+        });
+    }
+
+    public void addShopManager(int shopID, String appointeeName, Set<Permission> permissions, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+
+                Response<Void> resp = shopService.addShopManager(token, shopID, appointeeName, permissions);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                } else {
+                    Notification.show("Shop manager added successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+                }
+            });
+        });
+    }
 }

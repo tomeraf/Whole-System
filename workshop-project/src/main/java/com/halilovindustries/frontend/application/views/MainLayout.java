@@ -64,8 +64,8 @@ getStyle().setWidth("100%");
         SideNav nav = new SideNav();
 
         nav.addItem(new SideNavItem("Home", HomePageView.class, VaadinIcon.HOME.create()));
-        nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.CART.create()));
-
+        nav.addItem(new SideNavItem("My Cart", CartView.class, VaadinIcon.CART.create()));
+        nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.SHOP.create()));
 
         presenter.getSessionToken(token -> {
             if (token != null

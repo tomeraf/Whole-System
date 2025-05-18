@@ -104,29 +104,28 @@ public class OrdersView extends VerticalLayout {
 
             HorizontalLayout ratingRow = new HorizontalLayout(ratingSelect, submitRating);
             layout.add(ratingRow);
+            
+            // Rating for shop
+            Select<Integer> shopRating = new Select<>();
+            shopRating.setItems(1, 2, 3, 4, 5);
+            shopRating.setPlaceholder("Rate the shop");
+    
+            Button rateShopBtn = new Button("Submit");
+            rateShopBtn.addClickListener(ev -> {
+                Integer rating = shopRating.getValue();
+                if (rating != null && !order.getItems().isEmpty()) {
+                    int shopId = item.getShopId(); // Assumes all items from same shop
+                    presenter.rateShop(shopId, rating, success -> {
+                        if (success) {
+                            shopRating.setEnabled(false);
+                            rateShopBtn.setEnabled(false);
+                        }
+                    });
+                }
+            });
+            rateShopBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            layout.add(new HorizontalLayout(shopRating, rateShopBtn));
         }
-
-        // Rating for shop
-        layout.add(new H3("Rate Shop"));
-        Select<Integer> shopRating = new Select<>();
-        shopRating.setItems(1, 2, 3, 4, 5);
-        shopRating.setPlaceholder("Rate the shop");
-
-        Button rateShopBtn = new Button("Submit");
-        rateShopBtn.addClickListener(ev -> {
-            Integer rating = shopRating.getValue();
-            if (rating != null && !order.getItems().isEmpty()) {
-                int shopId = order.getItems().get(0).getShopId(); // Assumes all items from same shop
-                presenter.rateShop(shopId, rating, success -> {
-                    if (success) {
-                        shopRating.setEnabled(false);
-                        rateShopBtn.setEnabled(false);
-                    }
-                });
-            }
-        });
-        rateShopBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        layout.add(new HorizontalLayout(shopRating, rateShopBtn));
 
         Button close = new Button("Close", ev -> dialog.close());
         layout.add(close);

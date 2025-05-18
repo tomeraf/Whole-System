@@ -248,37 +248,4 @@ public class HomePresenter extends AbstractPresenter {
         });
 
     }
-
-
-    /**
-     * Add a single item by wrapping it in the
-     * addItemsToCart(batch…) call.
-     */
-    public void saveInCart(ItemDTO item) {
-        getSessionToken(token -> {
-            UI ui = UI.getCurrent();
-            if (ui == null) return;
-
-            ui.access(() -> {
-                if (token == null || !validateToken(token)) {
-                Notification.show("No token was found.", 2000, Position.MIDDLE);
-                return;
-                }
-
-                // build the nested map: { shopId → { itemId → qty } }
-                HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-                HashMap<Integer, Integer> itemsForShop = new HashMap<>();
-                itemsForShop.put(item.getItemID(), item.getQuantity());
-                userItems.put(item.getShopId(), itemsForShop);
-
-                // call your batch‐add method
-                Response<Void> resp = orderService.addItemsToCart(token, userItems);
-                if (resp.isOk()) {
-                Notification.show("Added \"" + item.getName() + "\" to cart", 2000, Position.TOP_CENTER);
-                } else {
-                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
-                }
-            });
-        });
-    }
 }

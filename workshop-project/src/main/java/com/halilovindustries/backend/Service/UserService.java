@@ -269,13 +269,13 @@ public class UserService {
             return false;
         }
     }
-    public boolean invalidToken(String sessionToken) {
+    public boolean inSystem(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
-            return userRepository.getRemovedIds().contains(userID);
+            return userRepository.getUserById(userID) != null;
         } catch (Exception e) {
             logger.error(() -> "Error checking invalid tokens: " + e.getMessage());
             return false;

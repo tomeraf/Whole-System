@@ -28,8 +28,9 @@ import com.vaadin.flow.component.notification.Notification.Position;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-@Route("cart")
-@PageTitle("Your Cart")
+
+@Route(value = "cart", layout = MainLayout.class)
+@PageTitle("My Cart")
 public class CartView extends Composite<VerticalLayout>
                        implements BeforeEnterObserver {
     private final CartPresenter presenter;
