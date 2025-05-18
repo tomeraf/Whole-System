@@ -31,7 +31,7 @@ public class Item {
         if (numOfOrders == 0) {
             throw new IllegalStateException("No orders have been made yet. Cannot update rating.");
         } 
-        this.rating = (this.rating * numOfOrders + newRating) / (numOfOrders);
+        this.rating = (this.rating * (numOfOrders-1) + newRating) / (numOfOrders);
     }
     public void updateQuantity(int quantity) {
         if (quantity >= 0) {

@@ -270,7 +270,7 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         // 3) Editable fields
         NumberField qtyField = new NumberField("Quantity");
         // qtyField.setValue((double)item.getQuantity());
-        qtyField.setPlaceholder("0");
+        qtyField.setPlaceholder(String.valueOf(item.getQuantity()));
         qtyField.setMin(0);
 
         NumberField priceField = new NumberField("Price");
