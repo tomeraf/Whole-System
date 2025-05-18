@@ -23,7 +23,7 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyH
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-
+import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.DomainServices.InteractionService;
 
 import com.halilovindustries.backend.Domain.DomainServices.ManagementService;
@@ -207,6 +207,38 @@ public class ShopService {
             return Response.ok(shopDto);
         } catch (Exception e) {
             logger.error(() -> "Error retrieving shop info: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    public Response<List<UserDTO>> getShopMembers(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<UserDTO> members = new ArrayList<>(
+                shop.getManagerIDs().stream()
+                    .map(userRepository::getUserById)
+                    .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
+                    .toList()
+            );
+
+            members.addAll(
+                shop.getOwnerIDs().stream()
+                    .map(userRepository::getUserById)
+                    .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
+                    .toList()
+            );
+
+            return Response.ok(members);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving shop members: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
     }
@@ -811,6 +843,7 @@ public class ShopService {
             Shop shop = shopRepository.getShopById(shopID);
             Registered member = userRepository.getUserByName(memberName);
             List<Permission> permissions = managementService.getMembersPermissions(user, shop, member);
+            System.out.println(permissions.toString());
             logger.info(() -> "Members permissions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(permissions);
         } catch (Exception e) {

@@ -34,6 +34,9 @@ public class ManagementService {
         if (shop.getOwnerIDs().contains(appointee.getUserID())) {
             throw new IllegalArgumentException("User is already an owner of the shop");
         }
+        if (shop.getManagerIDs().contains(appointee.getUserID())) {
+            throw new IllegalArgumentException("User is already a manager of the shop");
+        }
         appointer.addOwner(shop.getId(), (int)appointee.getUserID(), owner);
         appointee.setRoleToShop(shop.getId(), owner);
         shop.addOwner(appointee.getUserID());
@@ -48,6 +51,9 @@ public class ManagementService {
         Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
         if (shop.getManagerIDs().contains(appointee.getUserID())) {
             throw new IllegalArgumentException("User is already a manager of the shop");
+        }
+        if (shop.getOwnerIDs().contains(appointee.getUserID())) {
+            throw new IllegalArgumentException("User is already an owner of the shop");
         }
         appointer.addManager(shop.getId(), appointee.getUserID(), manager);
         appointee.setRoleToShop(shop.getId(), manager);   

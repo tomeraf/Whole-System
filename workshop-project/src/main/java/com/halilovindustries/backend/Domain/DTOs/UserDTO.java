@@ -3,14 +3,17 @@ package com.halilovindustries.backend.Domain.DTOs;
 import java.time.LocalDate;
 
 public class UserDTO {
-    public int id;
-    public String username;
-    public String password;
-    public LocalDate dateOfBirth;
-    public UserDTO(int id, String username, String password, LocalDate dateOfBirth) {
+    private int id;
+    private String username;
+    public UserDTO(int id, String username) {
         this.id = id;
         this.username = username;
-        this.password = password;
-        this.dateOfBirth = dateOfBirth;
+    }
+
+    public int getId() {
+        return id;
+    }
+    public String getUsername() {
+        return username;
     }
 }

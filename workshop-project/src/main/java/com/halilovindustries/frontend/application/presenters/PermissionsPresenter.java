@@ -50,53 +50,6 @@ public class PermissionsPresenter extends AbstractPresenter {
     //     });
     // }
 
-    public void addShopManagerPermission(int shopID, String appointeeName, Permission permission, Consumer<Boolean> onFinish) {
-        getSessionToken(token -> {
-        UI ui = UI.getCurrent();
-        if (ui == null) return;
-
-        ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
-                onFinish.accept(false);
-                return;
-            }
-
-            Response<Void> resp = shopService.addShopManagerPermission(token, shopID, appointeeName, permission);
-            if (!resp.isOk()) {
-                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
-                onFinish.accept(false);
-            } else {
-                Notification.show("Permission added successfully!", 2000, Position.MIDDLE);
-                onFinish.accept(true);
-            }
-        });
-    });
-    } 
-    
-    public void removeShopManagerPermission(int shopID, String appointeeName, Permission permission, Consumer<Boolean> onFinish) {
-        getSessionToken(token -> {
-        UI ui = UI.getCurrent();
-        if (ui == null) return;
-
-        ui.access(() -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
-                onFinish.accept(false);
-                return;
-            }
-
-            Response<Void> resp = shopService.removeShopManagerPermission(token, shopID, appointeeName, permission);
-            if (!resp.isOk()) {
-                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
-                onFinish.accept(false);
-            } else {
-                Notification.show("Permission removed successfully!", 2000, Position.MIDDLE);
-                onFinish.accept(true);
-            }
-        });
-    });
-    }
      
     // public void getMembersPermissions (int shopID, Consumer<String> onFinish) {
     //     getSessionToken(token -> {
