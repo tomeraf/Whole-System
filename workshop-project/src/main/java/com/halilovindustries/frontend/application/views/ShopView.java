@@ -3,6 +3,8 @@ package com.halilovindustries.frontend.application.views;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.halilovindustries.frontend.application.presenters.ShopPresenter;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -32,12 +34,15 @@ import com.vaadin.flow.router.PageTitle;
 @PageTitle("Shop Details")
 public class ShopView extends VerticalLayout implements HasUrlParameter<Integer> {
 
-    private final ShopPresenter presenter;
+    private final ShopPresenter shopPresenter;
+    private final InboxPresenter inboxPresenter;
     private int shopId;
+    private Button msgBtn;
 
     @Autowired
-    public ShopView(ShopPresenter presenter) {
-        this.presenter = presenter;
+    public ShopView(ShopPresenter shopPresenter, InboxPresenter inboxPresenter) {
+        this.shopPresenter = shopPresenter;
+        this.inboxPresenter = inboxPresenter;
         setPadding(true);
         setSpacing(true);
 
@@ -57,7 +62,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
     }
 
     private void loadShopData(int shopId) {
-        presenter.getShopInfo(shopId, shop -> {
+        shopPresenter.getShopInfo(shopId, shop -> {
             if (shop == null) return;
             UI.getCurrent().access(() -> {
                 removeAll(); // clear placeholder
@@ -66,14 +71,14 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
                 H2 title = new H2(shop.getName());
                 Span desc = new Span("Description: " + shop.getDescription());
                 Span rating = new Span("⭐ " + shop.getRating() + " (" + shop.getRatingCount() + " raters)");
-                add(title, desc, rating);
+                VerticalLayout actions = buildActionsBar();
+                add(title, actions);
 
                 // Search and filter bar (optional reuse)
-                HorizontalLayout actions = buildActionsBar();
-                add(actions);
+                add(desc, rating);
 
                 // Items grid
-                presenter.showShopItems(shopId, items -> {
+                shopPresenter.showShopItems(shopId, items -> {
                     FlexLayout itemsLayout = new FlexLayout();
                     itemsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
                     itemsLayout.getStyle().set("gap", "1rem");
@@ -84,36 +89,121 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
         });
     }
 
-    private HorizontalLayout buildActionsBar() {
-        // Filter button
-        Button filterBtn = new Button(VaadinIcon.FILTER.create());
-        filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
-        filterBtn.getStyle()
-            .set("height", "36px").set("min-width", "36px").set("padding", "0")
-            .set("border-radius", "4px 0 0 4px").set("border", "1px solid #ccc").set("border-right", "none")
-            .set("background-color", "lightblue").set("color", "black");
-        filterBtn.addClickListener(e -> openFilterDialog());
+    private void openMessageDialog() {
+    Dialog messageDialog = new Dialog();
+    messageDialog.setWidth("400px");
 
-        // Search field
-        TextField searchBar = new TextField();
-        searchBar.setPlaceholder("Search items…");
-        searchBar.setWidth("400px");
-        searchBar.getStyle()
-            .set("height", "38px").set("border-radius", "0").set("border-left", "none").set("border-right", "none");
+    TextField subjectField = new TextField("Subject");
+    subjectField.setWidthFull();
+    TextField messageField = new TextField("Message");
+    messageField.setWidthFull();
+    messageField.setHeight("100px");
 
-        // Search button
-        Button searchBtn = new Button(VaadinIcon.SEARCH.create());
-        searchBtn.getStyle()
-            .set("height", "36px").set("min-width", "36px").set("padding", "0")
-            .set("border-radius", "0 4px 4px 0").set("border", "1px solid #ccc").set("border-left", "none")
-            .set("background-color", "#F7B05B").set("color", "black");
+    Button sendBtn = new Button("Send", event -> {
+        String subject = subjectField.getValue();
+        String message = messageField.getValue();
 
-        HorizontalLayout group = new HorizontalLayout(filterBtn, searchBar, searchBtn);
-        group.setWidthFull();
-        group.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        group.setSpacing(false);
-        return group;
-    }
+        inboxPresenter.sendMessege(shopId, subject, message, success -> {
+            if (success) {
+                messageDialog.close();
+                UI.getCurrent().access(() -> {
+                    Dialog confirmation = new Dialog(new Span("Message sent successfully!"));
+                    confirmation.setCloseOnOutsideClick(true);
+                    confirmation.open();
+                });
+            } else {
+                UI.getCurrent().access(() -> {
+                    Dialog errorDialog = new Dialog(new Span("Failed to send message. Please try again."));
+                    errorDialog.setCloseOnOutsideClick(true);
+                    errorDialog.open();
+                });
+            }
+        });
+        messageDialog.close();
+    });
+
+sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    VerticalLayout dialogLayout = new VerticalLayout(
+        new H2("Send a Message to the Shop"),
+        subjectField,
+        messageField,
+        sendBtn
+    );
+    dialogLayout.setSpacing(true);
+    dialogLayout.setPadding(true);
+    messageDialog.add(dialogLayout);
+
+    messageDialog.setCloseOnOutsideClick(true);
+    messageDialog.setCloseOnEsc(true);
+        subjectField.clear();
+        messageField.clear();
+        messageDialog.open();
+    // // Button click opens dialog
+    // msgBtn.addClickListener(e -> {
+    
+    // });
+        }
+
+    private VerticalLayout buildActionsBar() {
+    // 2️⃣ Filter button
+    Button filterBtn = new Button("", VaadinIcon.FILTER.create());
+    filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    filterBtn.getStyle()
+        .set("height", "36px").set("min-width", "36px").set("padding", "0")
+        .set("border-radius", "4px 0 0 4px").set("border", "1px solid #ccc").set("border-right", "none")
+        .set("background-color", "lightblue").set("color", "black");
+    filterBtn.addClickListener(e -> openFilterDialog());
+
+    // 3️⃣ Search bar
+    TextField searchBar = new TextField();
+    searchBar.setPlaceholder("Search here…");
+    searchBar.setWidth("400px");
+    searchBar.getStyle()
+        .set("height", "38px").set("border-radius", "0").set("border-left", "none").set("border-right", "none");
+
+    // 4️⃣ Search button
+    Button searchBtn = new Button(VaadinIcon.SEARCH.create());
+    searchBtn.getStyle()
+        .set("height", "36px").set("min-width", "36px").set("padding", "0")
+        .set("border-radius", "0 4px 4px 0").set("border", "1px solid #ccc").set("border-left", "none")
+        .set("background-color", "#F7B05B").set("color", "black");
+
+    // 5️⃣ Message button
+    msgBtn = new Button("Message", VaadinIcon.ENVELOPE.create());
+    msgBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    msgBtn.getStyle()
+        .set("background-color", "#6200EE").set("color", "white")
+        .set("border", "none").set("border-radius", "8px")
+        .set("padding", "0.6em 1.2em");
+
+    msgBtn.addClickListener(e -> 
+        openMessageDialog()
+    );
+
+    // 6️⃣ Search group
+    HorizontalLayout searchBarGroup = new HorizontalLayout(filterBtn, searchBar, searchBtn);
+    searchBarGroup.setWidthFull();
+    searchBarGroup.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+    searchBarGroup.setAlignItems(FlexComponent.Alignment.CENTER);
+    searchBarGroup.setSpacing(false);
+    searchBarGroup.setPadding(false);
+
+    // 7️⃣ Actions row (center search + right message)
+    HorizontalLayout actionsRow = new HorizontalLayout(searchBarGroup, msgBtn);
+    actionsRow.setWidthFull();
+    actionsRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    actionsRow.expand(searchBarGroup);
+
+    // ✅ Wrap in a container
+    VerticalLayout wrapper = new VerticalLayout();
+    wrapper.setPadding(false);
+    wrapper.setSpacing(false);
+    wrapper.setWidthFull();
+    wrapper.add(actionsRow);
+
+    return wrapper;
+}
 
     private void openFilterDialog() {
         Dialog dialog = new Dialog();
@@ -168,7 +258,7 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
         qtyControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
         Button add = new Button("Add to Cart", e -> 
-            presenter.saveInCart(new ItemDTO(
+            shopPresenter.saveInCart(new ItemDTO(
                 item.getName(), item.getCategory(), item.getPrice(),
                 item.getShopId(), item.getItemID(), qty.get(), item.getRating(), item.getDescription(), item.getNumOfOrders()
             ))

@@ -54,7 +54,7 @@ public class ShopInboxPresenter extends AbstractPresenter {
     //     });
     // }
 
-    public void sendMessege(int shopID, String title, String content, Consumer<Boolean> onFinish) {
+    public void respondToMessage(int shopId, int messageId, String title, String content, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
             if (token == null || !validateToken(token) || !isLoggedIn(token)) {
                 UI.getCurrent().access(() ->
@@ -62,7 +62,7 @@ public class ShopInboxPresenter extends AbstractPresenter {
                     );
                 return;
             }
-            Response<Void> response = shopService.sendMessage(token, shopID, title, content);
+            Response<Void> response = shopService.respondToMessage(token, shopId, messageId, title, content);
             UI.getCurrent().access(() -> {
                 if (response.isOk()) {
                     Notification success = Notification.show("Message Sent Successfully");

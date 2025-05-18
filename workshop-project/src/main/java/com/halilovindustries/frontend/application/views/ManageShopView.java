@@ -26,6 +26,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
     private Button membersBtn;
     private MyShopPresenter presenter;
     private String shopName;
+    private Button inboxBtn;
     H2 title;
 
     public ManageShopView(MyShopPresenter presenter) {
@@ -53,7 +54,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
 
 
         // — Inbox —
-        Button inboxBtn = new Button("Inbox", VaadinIcon.ENVELOPE.create());
+        inboxBtn = new Button("Inbox", VaadinIcon.ENVELOPE.create());
         inboxBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         inboxBtn.getStyle().set("background-color", "white")
                             .set("border", "2px solid darkblue");
@@ -100,6 +101,8 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         });
 
         membersBtn.addClickListener(e -> UI.getCurrent().navigate("shop-members/" + shopID));
+
+        inboxBtn.addClickListener(e -> UI.getCurrent().navigate("shop-inbox/" + shopID));
 
     }
 
