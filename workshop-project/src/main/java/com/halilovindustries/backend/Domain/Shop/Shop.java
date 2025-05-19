@@ -13,6 +13,7 @@ import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.*;
+import com.halilovindustries.backend.Domain.User.Registered;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -529,6 +530,16 @@ public class Shop {
             bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
         }
         return bids;
+    }
+
+    public List<AuctionDTO> getWonAuctions(int userId) {
+        List<AuctionDTO> wonAuctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if (auction.isAuctionEnded() && auction.getBuyerId() == userId) {
+                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+            }
+        }
+        return wonAuctions;
     }
 }
 
