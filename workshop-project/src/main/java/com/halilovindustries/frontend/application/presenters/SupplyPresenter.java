@@ -1,5 +1,7 @@
 package com.halilovindustries.frontend.application.presenters;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.stereotype.Component;
@@ -30,4 +32,24 @@ public class SupplyPresenter extends AbstractPresenter {
         this.orderService  = orderService;
     }
 
+    public void isSystemManager(Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> resp = userService.isSystemManager(token);
+            if (!resp.isOk()) {
+                onFinish.accept(false);
+            } else {
+                onFinish.accept(true);
+            }
+        });
+    });
+}
 }

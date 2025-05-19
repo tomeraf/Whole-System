@@ -25,7 +25,7 @@ import com.vaadin.flow.router.HasUrlParameter;
 @PageTitle("Inbox")
 public class InboxView extends VerticalLayout{ 
     private InboxPresenter presenter;
-    Grid<Message> grid;
+    private Grid<Message> grid;
     private Integer shopID;
 
     public InboxView(InboxPresenter presenter) {

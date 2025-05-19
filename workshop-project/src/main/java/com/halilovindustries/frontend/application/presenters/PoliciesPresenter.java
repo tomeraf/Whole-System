@@ -144,7 +144,6 @@ public class PoliciesPresenter extends AbstractPresenter {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(null);
             } else {
-                Notification.show("Shop retrieved successfully!", 2000, Position.MIDDLE);
                 onFinish.accept(resp.getData());
             }
             });

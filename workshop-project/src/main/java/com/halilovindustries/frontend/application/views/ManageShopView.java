@@ -67,7 +67,6 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         inboxBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         inboxBtn.getStyle().set("background-color", "white")
                             .set("border", "2px solid darkblue");
-        inboxBtn.addClickListener(e -> openInboxDialog());
 
         // — Close Shop (red) —
         closeBtn = new Button("Close Shop", VaadinIcon.CLOSE.create());
@@ -149,30 +148,5 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
             confirm.add(buttons);
             confirm.open();
         });
-    }
-
-    private void openMembersDialog() {
-        Dialog dlg = new Dialog();
-        dlg.setWidth("400px");
-        dlg.add(new H2("Shop Members"));
-        // TODO: list your managers here
-        dlg.open();
-    }
-
-    private void openInboxDialog() {
-
-    }
-
-    private void openCloseConfirmDialog() {
-        Dialog confirm = new Dialog();
-        confirm.setWidth("300px");
-        confirm.add(new Text("Are you sure you want to close “" + shopName + "”?"));
-        Button yes = new Button("Yes", e -> {
-            // TODO: call presenter to close shop
-            confirm.close();
-        });
-        Button no = new Button("No", e -> confirm.close());
-        confirm.add(new HorizontalLayout(yes, no));
-        confirm.open();
     }
 }

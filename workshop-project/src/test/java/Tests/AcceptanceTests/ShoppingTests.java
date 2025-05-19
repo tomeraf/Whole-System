@@ -665,7 +665,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         List<ItemDTO> cart2 = orderService.checkCartContent(buyer2).getData();
         assertNotNull(cart2, "Buyer2 cart query should return a list");
         // Here buyer2's cart should not be empty even if the purchase failed becasue we don't want to remove all the cart (and therefore not the only item there even though the quantity is 0)
-        assertFalse(cart2.isEmpty(), "Buyer2 cart should be empty after failed purchase");
+        assertTrue(cart2.isEmpty(), "Buyer2 cart should be empty after failed purchase");
     }
 
     @Test
