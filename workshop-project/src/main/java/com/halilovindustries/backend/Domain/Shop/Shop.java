@@ -2,8 +2,11 @@ package com.halilovindustries.backend.Domain.Shop;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.halilovindustries.backend.Domain.Message;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -38,6 +41,7 @@ public class Shop {
     private int auctionPurchaseCounter; // Counter for auction purchases
     private HashMap<Integer, Message> inbox; // 
     int messageIdCounter = 1; // Counter for message IDs
+    private HashMap<Integer, Double> ratedIds;
 
     public Shop(int id,int founderID, String name, String description) {
         this.id = id;
@@ -59,6 +63,7 @@ public class Shop {
         this.bidPurchaseCounter = 1; 
         this.auctionPurchaseCounter = 1; 
         this.inbox = new HashMap<>();
+        this.ratedIds = new HashMap<>();
     }
 
     public int getId() { return id; }
@@ -70,7 +75,17 @@ public class Shop {
     public HashMap<Integer, Item> getItems() { return items; }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
     public Set<Integer> getManagerIDs() { return managerIDs; }
-    public double getRating() { return rating; }
+    public double getRating() { 
+        if (ratedIds.isEmpty()) {
+            return 0.0; // No ratings yet
+        }
+        double totalRating = 0;
+        for (double rating : ratedIds.values()) {
+            totalRating += rating;
+        }
+        this.rating = totalRating / ratedIds.size(); // Calculate the average rating
+        return this.rating;
+    }
     public int getRatingCount() { return ratingCount; }
     public int getFounderID() { return founderID; }
 
@@ -141,10 +156,10 @@ public class Shop {
         }
     }
 
-    public void updateItemRating(int itemId, double rating) {
+    public void updateItemRating(int raterId, int itemId, double rating) {
         if (items.containsKey(itemId)) {
             Item item = items.get(itemId);
-            item.updateRating(rating);
+            item.updateRating(raterId, rating);
         } 
         else{
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -170,16 +185,19 @@ public class Shop {
         }
     }
 
-    public void updateRating(double rating) {
+    public void updateRating(int raterId, double rating) {
         if (rating < 0 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 0 and 5.");
         }
         else {
-            ratingCount++;
-            this.rating = (rating + this.rating) / ratingCount; // Update the shop's rating based on the new rating
+            // if (!ratedIds.containsKey(raterId)) {
+            //     ratingCount++;
+            // }
+            ratedIds.put(raterId, rating); // Mark the user as having rated the shop
+            //this.rating = (rating + this.rating) / ratingCount; // Update the shop's rating based on the new rating
         }
     }
-
+    
     public void openShop(){ //must fix later on using synchronized methods
         if (isOpen) {
             throw new RuntimeException("Shop is already open.");
@@ -195,6 +213,7 @@ public class Shop {
     }
 
     public boolean canAddItemToBasket(int itemId, int quantity) {
+        System.out.println("canAddItemToBasket called with itemId: " + itemId + " and quantity: " + quantity + ", this.quantity: " + items.get(itemId).getQuantity());
         if (items.containsKey(itemId) && items.get(itemId).quantityCheck(quantity)) {
             return true;
         }
@@ -307,6 +326,7 @@ public class Shop {
                 && (itemMinRating <= 0 || item.getRating() >= itemMinRating) &&
                 (shopMinRating <= 0 || this.rating >= shopMinRating)) {
                 filteredItems.add(item);
+                System.out.println("Item added to filtered list: " + item.getName());
             }
         }
         return filteredItems;
@@ -491,6 +511,24 @@ public class Shop {
 
     public List<DiscountDTO> getDiscounts() {
         return discountPolicy.getDiscounts();
+    }
+
+    public List<AuctionDTO> getActiveAuctions() {
+        List<AuctionDTO> activeAuctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if (auction.isAuctionActive()) {
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+            }
+        }
+        return activeAuctions;
+    }
+
+    public List<BidDTO> getBids() {
+        List<BidDTO> bids = new ArrayList<>();
+        for (BidPurchase bid : bidPurchaseItems.values()) {
+            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
+        }
+        return bids;
     }
 }
 

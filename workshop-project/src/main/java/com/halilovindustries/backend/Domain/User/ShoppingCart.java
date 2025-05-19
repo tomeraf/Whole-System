@@ -35,7 +35,9 @@ public class ShoppingCart {
         for (ItemDTO item : items) {
             for (ShoppingBasket basket : baskets) {
                 if (basket.isItemIn(item.getItemID()) && basket.getShopID() == item.getShopId())
-                return false; // there is item that already exists, nothing added
+                    throw new RuntimeException("Error: item " + item.getName() + " from this shop already exists in cart.");
+                    //
+                        //return false; // there is item that already exists, nothing added
             }
         }
         
@@ -50,7 +52,8 @@ public class ShoppingCart {
             for (ShoppingBasket basket : baskets) {
                 if (basket.getShopID() == item.getShopId()) {
                     if (!basket.addItem(item)) {
-                        return false; // Item already exists, not added
+                        throw new RuntimeException("Error: item " + item.getName() + " from this shop already exists in cart.");
+                        //return false; // Item already exists, not added
                     }
                     else {
                         basketFound = true; // Item added successfully

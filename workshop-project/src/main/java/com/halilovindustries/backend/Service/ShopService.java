@@ -13,6 +13,8 @@ import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -26,7 +28,7 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthenticat
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-
+import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.DomainServices.InteractionService;
 
 import com.halilovindustries.backend.Domain.DomainServices.ManagementService;
@@ -145,6 +147,7 @@ public class ShopService {
             int minRating = filters.get("minRating") != null ? Integer.parseInt(filters.get("minRating")) : 0;
             double shopRating = filters.get("shopRating") != null ? Double.parseDouble(filters.get("shopRating")) : 0;
             List<Item> filteredItems = new ArrayList<>();
+            System.out.println("Max price is: " + maxPrice);
             for (Shop shop : shopRepository.getAllShops().values()) {
                 filteredItems.addAll(shop.filter(name, category, minPrice, maxPrice, minRating, shopRating));
             }
@@ -195,10 +198,7 @@ public class ShopService {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
+            Guest user = this.userRepository.getUserById(userID);
             Shop shop = this.shopRepository.getShopById(shopID);
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : shop.getItems().values()) {
@@ -214,6 +214,45 @@ public class ShopService {
             return Response.ok(shopDto);
         } catch (Exception e) {
             logger.error(() -> "Error retrieving shop info: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    public Response<List<UserDTO>> getShopMembers(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<UserDTO> members = new ArrayList<>();
+            List<Integer> ownerIDs = new ArrayList<>(shop.getOwnerIDs());
+            ownerIDs.removeIf(id -> (((Registered)userRepository.getUserById(id)).getAppointer(shopID) != -1));
+            int founderID = ownerIDs.get(0); //should be the only one
+            members.add(new UserDTO(founderID, userRepository.getUserById(founderID).getUsername()));
+            
+            members.addAll(
+                shop.getOwnerIDs().stream()
+                    .map(userRepository::getUserById)
+                    .filter(u -> (((Registered)u).getAppointer(shopID) != -1))
+                    .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
+                    .toList()
+            );
+
+            members.addAll(
+                shop.getManagerIDs().stream()
+                    .map(userRepository::getUserById)
+                    .map(u -> new UserDTO(u.getUserID(), u.getUsername()))
+                    .toList()
+            );
+
+            return Response.ok(members);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving shop members: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
     }
@@ -529,7 +568,7 @@ public class ShopService {
             }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
-            shoppingService.RateShop(shop, orders, rating);
+            shoppingService.RateShop(shop, orders, userID, rating);
             logger.info(() -> "Shop rated: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
             logger.error(() -> "Error rating shop: " + e.getMessage());
@@ -553,7 +592,7 @@ public class ShopService {
             }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
-            shoppingService.RateItem(shop, itemID, orders, rating);
+            shoppingService.RateItem(shop, userID, itemID, orders, rating);
             logger.info(() -> "Item rated: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
             logger.error(() -> "Error rating item: " + e.getMessage());
@@ -824,6 +863,7 @@ public class ShopService {
             Shop shop = shopRepository.getShopById(shopID);
             Registered member = userRepository.getUserByName(memberName);
             List<Permission> permissions = managementService.getMembersPermissions(user, shop, member);
+            System.out.println(permissions.toString());
             logger.info(() -> "Members permissions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(permissions);
         } catch (Exception e) {
@@ -1091,4 +1131,60 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     } 
+    public Response<List<AuctionDTO>> getActiveAuctions(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<AuctionDTO> auctions = shop.getActiveAuctions();
+            logger.info(() -> "Active auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(auctions);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active auctions: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+    public Response<List<BidDTO>> getBids(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<BidDTO> bids = managementService.getBids(user, shop);
+            logger.info(() -> "Active bids retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(bids);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active bids: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    public Response<Integer> getShopId(String sessionToken, String shopName) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopByName(shopName);
+            return Response.ok(shop.getId());
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving shop ID: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }   
+    }
 }

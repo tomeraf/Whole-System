@@ -24,4 +24,5 @@ public interface IUserRepository {
     List<Registered> getAllRegisteredUsers();
 
     List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission);
+    public List<Integer> getRemovedIds();
 }

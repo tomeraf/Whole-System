@@ -109,4 +109,9 @@ public class MemoryUserRepository implements IUserRepository {
         }
         return registeredUsers;
     }
+
+    @Override
+    public List<Integer> getRemovedIds() {
+        return removedIds;
+    }
 }
