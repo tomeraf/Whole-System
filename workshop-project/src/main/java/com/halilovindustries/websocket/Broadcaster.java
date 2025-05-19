@@ -62,22 +62,29 @@ public static synchronized Registration register(String userUuid, Consumer<Strin
      * @param message the message to send
      */
     public static boolean broadcast(String userUuid, String message) {
-        System.out.println("Broadcasting message to user: " + userUuid);
-        List<Consumer<String>> consumers = listeners.get(userUuid);
-        if (CollectionUtils.isNotEmpty(consumers)) {
-            for (Consumer<String> consumer : consumers) {
-                executor.execute(() -> consumer.accept(message));
-                System.out.println("Message broadcasted to user: " + userUuid);
-                
-            }
-            return true;
+    System.out.println("Broadcasting message to user: " + userUuid);
+    List<Consumer<String>> consumers = listeners.get(userUuid);
+    if (CollectionUtils.isNotEmpty(consumers)) {
+        System.out.println("Found " + consumers.size() + " listeners for user: " + userUuid);
+        for (Consumer<String> consumer : consumers) {
+            executor.execute(() -> {
+                try {
+                    consumer.accept(message);
+                    System.out.println("Message successfully delivered to user: " + userUuid);
+                } catch (Exception e) {
+                    System.out.println("Error delivering message to user " + userUuid + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
         }
-        else{
-            return false;
-        }
+        return true;
+    } else {
+        System.out.println("No listeners found for user: " + userUuid);
+        return false;
     }
+}
 
-    public static void removeListener(String userUuid, Consumer<String> listener) {
+    private static void removeListener(String userUuid, Consumer<String> listener) {
         List<Consumer<String>> userListeners = listeners.get(userUuid);
         if (userListeners != null) {
             userListeners.remove(listener);
