@@ -13,6 +13,8 @@ import com.halilovindustries.backend.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -402,6 +404,31 @@ public class MyShopPresenter extends AbstractPresenter {
                     onFinish.accept(List.of());
                 } else {
                     onFinish.accept(resp.getData());
+                }
+            });
+        });
+    }
+
+    public void createAuction(int shopId, int itemId, double startingPrice, LocalDateTime startDate, LocalDateTime endDate,
+                                Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+
+                Response<Void> resp = shopService.openAuction(token, shopId, itemId, startingPrice, startDate, endDate);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                } else {
+                    Notification.show("Auction created successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
                 }
             });
         });
