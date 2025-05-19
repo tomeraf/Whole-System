@@ -691,6 +691,8 @@ public class ShopService {
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.removeAppointment(user, shop, appointee);
+                notificationHandler.notifyUser(appointee.getUserID() + "",
+                        "You no longer have your role in shop:" + shop.getName());
             } catch (Exception e) {
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());

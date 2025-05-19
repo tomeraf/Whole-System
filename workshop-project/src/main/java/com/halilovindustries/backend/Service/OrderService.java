@@ -247,6 +247,7 @@ public class OrderService {
             }
             Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getAllOrders().size(), paymentDetails, shipmentDetails); // Buy the cart content
             orderRepository.addOrder(order); // Save the order to the repository
+            notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
             return Response.ok(order); 
         } 
@@ -382,6 +383,7 @@ public class OrderService {
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
+            notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(bidId).getName() + " was purchased by " + user.getUsername()+"from bid");
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
         } catch (Exception e) {
@@ -428,6 +430,7 @@ public class OrderService {
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
+            notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(auctionID).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);
             return Response.ok();
         } catch (Exception e) {
