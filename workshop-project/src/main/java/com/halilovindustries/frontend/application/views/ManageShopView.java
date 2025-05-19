@@ -10,6 +10,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -28,6 +29,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
     private String shopName;
     private Button inboxBtn;
     private Button policiesBtn;
+    private Button closeBtn;
 
     H2 title;
 
@@ -65,15 +67,14 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         inboxBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         inboxBtn.getStyle().set("background-color", "white")
                             .set("border", "2px solid darkblue");
-        inboxBtn.addClickListener(e -> openInboxDialog());
 
         // — Close Shop (red) —
-        Button closeBtn = new Button("Close Shop", VaadinIcon.CLOSE.create());
+        closeBtn = new Button("Close Shop", VaadinIcon.CLOSE.create());
         closeBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
         closeBtn.getStyle().set("background-color", "red")
                             .set("border", "white")
                             .set("color", "white");
-        closeBtn.addClickListener(e -> openCloseConfirmDialog());
+        
 
         // pack the buttons together
         HorizontalLayout controls = new HorizontalLayout(
@@ -114,30 +115,38 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
 
         policiesBtn.addClickListener(e -> UI.getCurrent().navigate("shop-policies/" + shopID));
 
-    }
+        closeBtn.addClickListener(e -> {
+            // 1️⃣ Ask for confirmation
+            Dialog confirm = new Dialog();
+            confirm.setWidth("300px");
+            confirm.add(new Text("Are you sure you want to close \"" + shopName + "\"?"));
 
-    private void openMembersDialog() {
-        Dialog dlg = new Dialog();
-        dlg.setWidth("400px");
-        dlg.add(new H2("Shop Members"));
-        // TODO: list your managers here
-        dlg.open();
-    }
+            // 2️⃣ “Yes” = call the presenter
+            Button yes = new Button("Yes", ev -> {
+                presenter.closeShop(shopID, success -> {
+                    // since closeShop uses ui.access internally, we can just react here
+                    UI.getCurrent().access(() -> {
+                        if (success) {
+                            confirm.close();
+                            
+                            // Optional: navigate away, refresh parent view, etc.
+                            UI.getCurrent().navigate(MyShopsView.class);
+                        } else {
+                            
+                        }
+                    });
+                });
+            });
+            yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-    private void openInboxDialog() {
+            // 3️⃣ “No” = just close the confirmation dialog
+            Button no = new Button("No", ev2 -> confirm.close());
 
-    }
-
-    private void openCloseConfirmDialog() {
-        Dialog confirm = new Dialog();
-        confirm.setWidth("300px");
-        confirm.add(new Text("Are you sure you want to close “" + shopName + "”?"));
-        Button yes = new Button("Yes", e -> {
-            // TODO: call presenter to close shop
-            confirm.close();
+            // 4️⃣ Put them side by side and show
+            HorizontalLayout buttons = new HorizontalLayout(yes, no);
+            buttons.setSpacing(true);
+            confirm.add(buttons);
+            confirm.open();
         });
-        Button no = new Button("No", e -> confirm.close());
-        confirm.add(new HorizontalLayout(yes, no));
-        confirm.open();
     }
 }

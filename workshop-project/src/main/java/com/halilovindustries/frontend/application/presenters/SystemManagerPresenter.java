@@ -74,7 +74,7 @@ public class SystemManagerPresenter extends AbstractPresenter {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(null);
             } else {
-                Notification.show("Suspension status: " + resp.getData(), 2000, Position.MIDDLE);
+                Notification.show("Suspension data retrieved successfully!", 2000, Position.MIDDLE);
                 onFinish.accept(resp.getData());
            }
         });
@@ -103,5 +103,53 @@ public class SystemManagerPresenter extends AbstractPresenter {
               }
         });
     });
+    }
+
+    public void closeShop(int shopId, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+
+            Response<Void> resp = shopService.closeShop(token, shopId);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+            } else {
+                Notification.show("Shop closed successfully!", 2000, Position.MIDDLE);
+                onFinish.accept(true);
+            }
+        });
+    });
+    } 
+
+    public void getShopId(String shopName, Consumer<Integer> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            }
+
+            Response<Integer> resp = shopService.getShopId(token, shopName);
+            if (!resp.isOk()) {
+                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(null);
+                return;
+            } else {
+                onFinish.accept(resp.getData());
+            }
+        });
+        });
+        
     }
 }

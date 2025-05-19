@@ -52,12 +52,12 @@ public class MyShopsView extends VerticalLayout {
         cardsLayout.setAlignItems(FlexComponent.Alignment.START);
 
         add(cardsLayout);
+        loadShops();
     }
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
-        loadShops();
     }
 
     private void loadShops() {
@@ -174,7 +174,6 @@ public class MyShopsView extends VerticalLayout {
                         Notification.show("Failed to create shop", 2000, Position.MIDDLE);
                         return;
                     }
-                    Notification.show("Created “" + newShop.getName() + "”", 1500, Position.TOP_CENTER);
                     dlg.close();
                     loadShops();
                 });
@@ -189,4 +188,5 @@ public class MyShopsView extends VerticalLayout {
         dlg.add(layout);
         dlg.open();
     }
+
 }

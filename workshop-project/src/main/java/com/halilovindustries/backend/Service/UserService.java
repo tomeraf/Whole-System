@@ -146,6 +146,10 @@ public class UserService {
                 
                 if (userRepository.getUserByName(username) != null)
                     throw new Exception("Username already exists");
+                if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
+                    // this is a special case for the system manager
+                    registered.setSystemManager(true);
+                }
                 userRepository.removeGuestById(userID); // Remove the guest from the repository
                 userRepository.saveUser(registered);
                  // should be actually inside guest.register..
@@ -329,6 +333,22 @@ public class UserService {
         } catch (Exception e) {
             logger.error(() -> "Error getting username: " + e.getMessage());
             return null;
+        }
+    }
+
+    public Response<Void> isSystemManager(String sessionToken) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> e.getMessage());
+            return Response.error(e.getMessage());
         }
     }
 }

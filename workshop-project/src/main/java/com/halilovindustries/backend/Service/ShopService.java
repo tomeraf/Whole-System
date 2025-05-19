@@ -13,6 +13,8 @@ import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -638,6 +640,7 @@ public class ShopService {
                 Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
                 Registered reciver = userRepository.getUserByName(response.getUserName());
                 reciver.addMessage(response);
+                notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
                 logger.info(() -> "Message responded: " + title + " in shop: " + shop.getName() + " by user: "
                         + user.getUsername());
             } finally {
@@ -727,6 +730,8 @@ public class ShopService {
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.removeAppointment(user, shop, appointee);
+                notificationHandler.notifyUser(appointee.getUserID() + "",
+                        "You no longer have your role in shop:" + shop.getName());
             } catch (Exception e) {
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -1126,4 +1131,60 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     } 
+    public Response<List<AuctionDTO>> getActiveAuctions(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<AuctionDTO> auctions = shop.getActiveAuctions();
+            logger.info(() -> "Active auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(auctions);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active auctions: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+    public Response<List<BidDTO>> getBids(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<BidDTO> bids = managementService.getBids(user, shop);
+            logger.info(() -> "Active bids retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(bids);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active bids: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    public Response<Integer> getShopId(String sessionToken, String shopName) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopByName(shopName);
+            return Response.ok(shop.getId());
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving shop ID: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }   
+    }
 }
