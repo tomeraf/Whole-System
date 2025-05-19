@@ -70,27 +70,6 @@ public class BidPurchase extends Purchase {
         counterBid.setCounterBidID(counterID);
         return counterBid;
     }
-    /* getMembersWithPermission() is a placeholder for the actual implementation of getting members with permission.
-    public String showStatus(){
-        List<Integer> allMembers = getMembersWithPermission();
-        allMembers.add(buyerId);
-        StringBuilder status = new StringBuilder("Bid Purchase Status:\n");
-        status.append("Bid Amount: ").append(bidAmount).append("\n");
-        status.append("Item ID: ").append(itemId).append("\n");
-        status.append("Buyer ID: ").append(buyerId).append("\n");
-        status.append("Submitter ID: ").append(submitterId).append("\n");
-        for (int memberId : allMembers) {
-            if(memberId == rejecterID) {
-                status.append("Rejecting Member ID: ").append(memberId).append("\n");
-            } else if (AcceptingMembers.contains(memberId)) {
-                status.append("Accepting Member ID: ").append(memberId).append("\n");
-            }
-            else {
-                status.append("Need to Decide Member ID: ").append(memberId).append("\n");
-            }
-        }
-    }
-    */
     private void setCounterBidID(int counterID) {
         this.CounterBidID = counterID;
     }
@@ -119,6 +98,15 @@ public class BidPurchase extends Purchase {
             reject(userID);
             isAccepted = -1;
         }
+    }
+    public int getSubmitterId() {
+        return submitterId;
+    }
+    public int getCounterBidID() {
+        return CounterBidID;
+    }
+    public boolean isDone() {
+        return done;
     }
 
 
