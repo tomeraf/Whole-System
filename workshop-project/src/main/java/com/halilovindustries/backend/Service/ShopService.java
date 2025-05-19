@@ -1010,7 +1010,7 @@ public class ShopService {
         return Response.ok();
     }
 
-    public Response<Void> addPurchaseConditon(String sessionToken, int shopID, ConditionDTO condition) {
+    public Response<Void> addPurchaseCondition(String sessionToken, int shopID, ConditionDTO condition) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
@@ -1049,4 +1049,43 @@ public class ShopService {
         }
         return Response.ok();
     }
+
+    public Response<List<ConditionDTO>> getPurchaseConditions(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<ConditionDTO> conditions = managementService.getPurchaseConditions(user, shop);
+            logger.info(() -> "Purchase conditions retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(conditions);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving purchase conditions: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+    public Response<List<DiscountDTO>> getDiscounts(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<DiscountDTO> discounts = managementService.getDiscounts(user, shop);
+            logger.info(() -> "Discounts retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(discounts);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving discounts: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    } 
 }

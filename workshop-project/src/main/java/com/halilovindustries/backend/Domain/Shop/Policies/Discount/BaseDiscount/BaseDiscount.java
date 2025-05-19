@@ -5,6 +5,8 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
 public class BaseDiscount extends Discount {
     private int percentage;
@@ -33,15 +35,6 @@ public class BaseDiscount extends Discount {
         this.percentage = percentage;
         this.itemId = -1;
         this.category = null;
-    }
-    public int getItemId() {
-        return itemId;
-    }
-    public Category getCategory() {
-        return category;
-    }
-    public int getPercentage() {
-        return percentage;
     }
     public String getType(){
         if (itemId != -1) {
@@ -128,5 +121,25 @@ public class BaseDiscount extends Discount {
         return totalDiscount;
     }
     
+    @Override
+    public DiscountKind getDiscountKind() {
+        return DiscountKind.BASE;
+    }
+    @Override
+    public DiscountType getDiscountType(){
+        return DiscountType.BASE;
+    }
+        @Override
+    public int getItemId() {
+        return itemId;
+    }
+    @Override
+    public Category getCategory() {
+        return category;
+    }
+    @Override
+    public int getPercentage() {
+        return percentage;
+    }
 
 }

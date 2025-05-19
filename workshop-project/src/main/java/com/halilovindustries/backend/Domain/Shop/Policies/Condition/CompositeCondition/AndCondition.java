@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
 public class AndCondition extends CompositeCondition {
     public AndCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
@@ -16,5 +17,9 @@ public class AndCondition extends CompositeCondition {
 
     public String toString() {
         return String.format("%s AND %s", getCondition1().toString(), getCondition2().toString());
+    }
+    @Override
+    public ConditionType getConditionType() {
+        return ConditionType.AND;
     }
 }
