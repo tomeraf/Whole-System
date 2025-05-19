@@ -13,9 +13,10 @@ public class Message {
     private String title;
     private String content;
     private int respondId;// id of the message that this message is responding to
+    private boolean FromUser;
 
     
-    public Message(int id, String userName, String shopName, LocalDateTime dateTime, String title, String content) {
+    public Message(int id, String userName, String shopName, LocalDateTime dateTime, String title, String content, boolean FromUser) {
         this.id = id;
         this.userName = userName;
         this.shopName = shopName;
@@ -23,6 +24,7 @@ public class Message {
         this.title = title;
         this.content = content;
         this.respondId = -1; // default value for respondId
+        this.FromUser = FromUser;
     }
     public int getId() {
         return id;
@@ -52,5 +54,7 @@ public class Message {
     public boolean needResponse() {
         return respondId == -1;
     }
-
+    public boolean isFromUser() {
+        return FromUser;
+    }
 }

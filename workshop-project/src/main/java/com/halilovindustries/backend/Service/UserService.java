@@ -274,7 +274,7 @@ public class UserService {
         }
     }
 
-    public Response<List<Message>> getInbox(String sessionToken,int shopID) {
+    public Response<List<Message>> getInbox(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");

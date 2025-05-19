@@ -68,7 +68,7 @@ public class MessagesTests extends BaseAcceptanceTests {
         shopService.respondToMessage(ownerToken, shop.getId(), messageId, "Re: Question", "Yes, we do!");
 
         // Now check user's inbox
-        Response<List<Message>> userInboxResp = userService.getInbox(userToken, shop.getId());
+        Response<List<Message>> userInboxResp = userService.getInbox(userToken);
         assertTrue(userInboxResp.isOk(), "User should be able to get their inbox");
         List<Message> userMessages = userInboxResp.getData();
         assertFalse(userMessages.isEmpty(), "User inbox should contain messages");
