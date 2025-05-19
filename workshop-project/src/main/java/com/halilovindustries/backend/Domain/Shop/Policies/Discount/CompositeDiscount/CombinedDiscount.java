@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 
 public class CombinedDiscount extends CompositeDiscount {
 
@@ -37,5 +38,9 @@ public class CombinedDiscount extends CompositeDiscount {
             }
         }
         return totalDiscounts;
+    }
+    @Override
+    public DiscountKind getDiscountKind() {
+        return DiscountKind.COMBINE;
     }
 }

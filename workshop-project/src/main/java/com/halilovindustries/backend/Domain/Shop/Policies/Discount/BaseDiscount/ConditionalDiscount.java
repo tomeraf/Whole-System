@@ -2,8 +2,12 @@ package com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount
 
 import java.util.HashMap;
 
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
 public class ConditionalDiscount extends BaseDiscount {
     private Condition condition;
@@ -38,6 +42,18 @@ public class ConditionalDiscount extends BaseDiscount {
             return super.getPercentagePerItem(allItems);
         }
         return new HashMap<>();
+    }
+    @Override
+    public DiscountKind getDiscountKind() {
+        return DiscountKind.CONDITIONAL;
+    }
+    @Override
+    public DiscountType getDiscountType() {
+        return DiscountType.CONDITIONAL;
+    }
+    @Override
+    public ConditionDTO getCondition() {
+        return new ConditionDTO(condition.getConditionType(),condition.getItemId(),condition.getCategory(),condition.getConditionLimits(),condition.getMinPrice(),condition.getMaxPrice(),condition.getMinQuantity(),condition.getMaxQuantity(),condition.getConditionLimits2(),condition.getItemId2(),condition.getMinPrice2(),condition.getMaxPrice2(),condition.getMinQuantity2(),condition.getMaxQuantity2(),condition.getCategory2());
     }
 
 }
