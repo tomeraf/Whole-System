@@ -601,6 +601,7 @@ public class ShopService {
                 Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
                 Registered reciver = userRepository.getUserByName(response.getUserName());
                 reciver.addMessage(response);
+                notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
                 logger.info(() -> "Message responded: " + title + " in shop: " + shop.getName() + " by user: "
                         + user.getUsername());
             } finally {
