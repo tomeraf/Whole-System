@@ -1,12 +1,14 @@
 package com.halilovindustries.frontend.application.views;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.halilovindustries.frontend.application.presenters.ShopPresenter;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Text;
@@ -84,6 +86,25 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
                     itemsLayout.getStyle().set("gap", "1rem");
                     items.forEach(item -> itemsLayout.add(createItemCard(item)));
                     add(itemsLayout);
+                });
+
+                // Auctions grid
+                shopPresenter.getActiveAuctions(shopId, auctions -> {
+                    if (auctions != null && !auctions.isEmpty()) {
+                        VerticalLayout auctionSection = new VerticalLayout();
+                        auctionSection.add(new H2("Auctions"));
+                        FlexLayout auctionLayout = new FlexLayout();
+                        auctionLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        auctionLayout.getStyle().set("gap", "1rem");
+
+                        auctions.forEach(auction -> {
+                            createAuctionCard(shopId, auction, auctionCard -> {
+                                auctionLayout.add(auctionCard);
+                            });
+                        });
+                        auctionSection.add(auctionLayout);
+                        add(auctionSection);
+                    }
                 });
             });
         });
@@ -286,4 +307,67 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         return card;
     }
+
+      private void createAuctionCard(int shopID, AuctionDTO auction, Consumer<VerticalLayout> onCardReady) {
+        shopPresenter.getShopInfo(shopID, shop -> {
+        ItemDTO item = shop.getItems().get(auction.getItemId());
+            VerticalLayout card = new VerticalLayout();
+            card.setAlignItems(FlexComponent.Alignment.CENTER);
+            card.getStyle()
+                .set("border", "2px dashed #555")
+                .set("border-radius", "8px")
+                .set("padding", "1rem")
+                .set("width", "200px")
+                .set("background-color", "#fef6e4");
+
+            Span name = new Span(item.getName());
+            name.getStyle().set("font-size", "1.5em").set("font-weight", "bold");
+
+            Span currentPrice = new Span("Current: $" + (auction.getHighestBid() > auction.getStartingBid() ? auction.getHighestBid() : auction.getStartingBid()));
+            currentPrice.getStyle().set("color", "#d35400");
+
+            Span endsAt = new Span("Ends: " + auction.getAuctionEndTime().toString());
+            endsAt.getStyle().set("font-size", "0.85em").set("color", "#888");
+
+            Button bidButton = new Button("Place Bid", e -> openBidDialog(shopID, auction, currentPrice));
+            bidButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+            card.add(name, currentPrice, endsAt, bidButton);
+            onCardReady.accept(card);
+        });
+    }
+
+    private void openBidDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("300px");
+
+        NumberField bidField = new NumberField("Your Bid");
+        bidField.setStep(0.01);
+        bidField.setMin(auction.getHighestBid());
+        bidField.setValue(auction.getHighestBid());
+
+        Button confirm = new Button("Confirm Bid", event -> {
+            double bid = bidField.getValue();
+            // Submit bid through presenter
+            shopPresenter.submitAuctionOffer(shopID, auction.getId(), bid, success -> {
+                if (success) {
+                    currentPriceLabel.setText("Current: $" + bid);
+                    dialog.close();
+                } else {
+                    bidField.setInvalid(true);
+                    bidField.setErrorMessage("Bid failed. Try again.");
+                }
+            });
+        });
+        confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        VerticalLayout layout = new VerticalLayout(
+            new H2("Place a Bid"),
+            bidField,
+            confirm
+        );
+        dialog.add(layout);
+        dialog.open();
+    }
+
 }

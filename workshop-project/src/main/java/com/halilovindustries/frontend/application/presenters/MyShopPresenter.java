@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.presenters;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.UserDTO;
@@ -429,6 +430,52 @@ public class MyShopPresenter extends AbstractPresenter {
                 } else {
                     Notification.show("Auction created successfully!", 2000, Position.MIDDLE);
                     onFinish.accept(true);
+                }
+            });
+        });
+    }
+
+    public void getActiveAuctions(int shopID, Consumer<List<AuctionDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                    return;
+                }
+
+                Response<List<AuctionDTO>> res = shopService.getActiveAuctions(token, shopID);
+                if (!res.isOk()) {
+                    Notification.show("Error: " + res.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                } else {
+                    onFinish.accept(res.getData());
+                }
+            });
+        });
+    }
+
+    public void getFutureAuctions(int shopID, Consumer<List<AuctionDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(List.of());
+                    return;
+                }
+
+                Response<List<AuctionDTO>> res = shopService.getFutureAuctions(token, shopID);
+                if (!res.isOk()) {
+                    Notification.show("Error: " + res.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                } else {
+                    onFinish.accept(res.getData());
                 }
             });
         });

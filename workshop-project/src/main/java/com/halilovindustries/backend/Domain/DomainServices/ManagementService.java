@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -250,6 +251,13 @@ public class ManagementService {
             return shop.getDiscounts();
         } else {
             throw new IllegalArgumentException("You don't have permission to view discounts");
+        }
+    }
+    public List<BidDTO> getBids(Registered user, Shop shop) {
+        if( user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
+            return shop.getBids();
+        } else {
+            throw new IllegalArgumentException("You don't have permission to view bids");
         }
     }
 

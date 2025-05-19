@@ -2,8 +2,11 @@ package com.halilovindustries.backend.Domain.Shop;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.halilovindustries.backend.Domain.Message;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -508,6 +511,34 @@ public class Shop {
 
     public List<DiscountDTO> getDiscounts() {
         return discountPolicy.getDiscounts();
+    }
+
+    public List<AuctionDTO> getActiveAuctions() {
+        List<AuctionDTO> activeAuctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if (auction.isAuctionActive()) {
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+            }
+        }
+        return activeAuctions;
+    }
+
+    public List<AuctionDTO> getFutureAuctions() {
+        List<AuctionDTO> auctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
+                auctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+            }
+        }
+        return auctions;
+    }
+
+    public List<BidDTO> getBids() {
+        List<BidDTO> bids = new ArrayList<>();
+        for (BidPurchase bid : bidPurchaseItems.values()) {
+            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
+        }
+        return bids;
     }
 }
 
