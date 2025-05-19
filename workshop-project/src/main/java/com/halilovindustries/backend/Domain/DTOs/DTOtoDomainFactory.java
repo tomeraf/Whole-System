@@ -24,7 +24,7 @@ public class DTOtoDomainFactory {
     }
     private static BaseDiscount convertBase(DiscountDTO discountDTO,boolean first) {
         if(first){
-            switch (discountDTO.getDiscountType1()) {
+            switch (discountDTO.getDiscountType()) {
                 case BASE:
                     return new BaseDiscount(discountDTO.getPercentage(), discountDTO.getCategory(), discountDTO.getItemId());
                 case CONDITIONAL:

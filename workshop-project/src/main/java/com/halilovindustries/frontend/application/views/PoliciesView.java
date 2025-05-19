@@ -8,6 +8,7 @@ import com.halilovindustries.frontend.application.presenters.PoliciesPresenter;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.select.Select;
@@ -33,6 +34,7 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     private Button addConditionButton = new Button("Add Condition");
     private Button addDiscountButton  = new Button("Add Discount");
 
+    private Grid<ConditionDTO> conditionsGrid = new Grid<>(ConditionDTO.class, false);
     private Dialog conditionDialog;
 
     // Fields for Condition 1
@@ -60,8 +62,12 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         this.presenter = presenter;
         setSizeFull();
 
+        // Header and grid
         HorizontalLayout header = new HorizontalLayout(addConditionButton, addDiscountButton);
         add(header);
+
+        configureConditionsGrid();
+        add(conditionsGrid);
 
         configureConditionDialog();
 
@@ -74,8 +80,119 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     @Override
     public void setParameter(BeforeEvent event, Integer parameter) {
         this.shopId = parameter;
+        loadConditions();
     }
 
+    private void configureConditionsGrid() {
+        // Show both simple (base) and complex conditions in one grid
+        conditionsGrid.removeAllColumns();
+        conditionsGrid
+            .addColumn(ConditionDTO::getConditionType)
+            .setHeader("Type")
+            .setWidth("80px").setFlexGrow(0);
+        // First condition fields
+        conditionsGrid
+            .addColumn(dto -> dto.getItemId() >= 0 ? String.valueOf(dto.getItemId()) : "")
+            .setHeader("Item 1")
+            .setWidth("80px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> dto.getCategory() != null ? dto.getCategory().name() : "")
+            .setHeader("Category 1")
+            .setWidth("140px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> dto.getConditionLimits() != null ? dto.getConditionLimits().name() : "")
+            .setHeader("Limits 1")
+            .setWidth("140px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> {
+                if (dto.getConditionLimits() == ConditionLimits.PRICE && dto.getMinPrice() >= 0) {
+                    return String.valueOf(dto.getMinPrice());
+                } else if (dto.getConditionLimits() == ConditionLimits.QUANTITY && dto.getMinQuantity() >= 0) {
+                    return String.valueOf(dto.getMinQuantity());
+                }
+                return "";
+            })
+            .setHeader("Min 1")
+            .setWidth("80px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> {
+                if (dto.getConditionLimits() == ConditionLimits.PRICE && dto.getMaxPrice() >= 0) {
+                    return String.valueOf(dto.getMaxPrice());
+                } else if (dto.getConditionLimits() == ConditionLimits.QUANTITY && dto.getMaxQuantity() >= 0) {
+                    return String.valueOf(dto.getMaxQuantity());
+                }
+                return "";
+            })
+            .setHeader("Max 1")
+            .setWidth("80px").setFlexGrow(0);
+        // Second condition fields
+        conditionsGrid
+            .addColumn(dto -> dto.getItemId2() >= 0 ? String.valueOf(dto.getItemId2()) : "")
+            .setHeader("Item 2")
+            .setWidth("80px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> dto.getCategory2() != null ? dto.getCategory2().name() : "")
+            .setHeader("Category 2")
+            .setWidth("140px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> dto.getConditionLimits2() != null ? dto.getConditionLimits2().name() : "")
+            .setHeader("Limits 2")
+            .setWidth("140px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> {
+                if (dto.getConditionLimits2() == ConditionLimits.PRICE && dto.getMinPrice2() >= 0) {
+                    return String.valueOf(dto.getMinPrice2());
+                } else if (dto.getConditionLimits2() == ConditionLimits.QUANTITY && dto.getMinQuantity2() >= 0) {
+                    return String.valueOf(dto.getMinQuantity2());
+                }
+                return "";
+            })
+            .setHeader("Min 2")
+            .setWidth("80px").setFlexGrow(0);
+        conditionsGrid
+            .addColumn(dto -> {
+                if (dto.getConditionLimits2() == ConditionLimits.PRICE && dto.getMaxPrice2() >= 0) {
+                    return String.valueOf(dto.getMaxPrice2());
+                } else if (dto.getConditionLimits2() == ConditionLimits.QUANTITY && dto.getMaxQuantity2() >= 0) {
+                    return String.valueOf(dto.getMaxQuantity2());
+                }
+                return "";
+            })
+            .setHeader("Max 2")
+            .setWidth("80px").setFlexGrow(0);
+        // Actions
+        conditionsGrid
+            .addComponentColumn(dto -> {
+                Button remove = new Button("Remove", ev -> submitRemove(dto));
+                remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+                return remove;
+            })
+            .setHeader("Actions")
+            .setWidth("100px").setFlexGrow(0);
+    }
+
+    
+    private void loadConditions() {
+        presenter.getShopPurchaseConditions(shopId, list -> {
+            getUI().ifPresent(ui -> ui.access(() -> conditionsGrid.setItems(list)));
+        });
+    }
+
+    private void submitRemove(ConditionDTO dto) {
+        // remove by index of dto in list, or if dto has ID, use that; here assume itemId as key
+        presenter.removePurchaseCondition(shopId, dto.getItemId(), resp -> {
+            getUI().ifPresent(ui -> ui.access(() -> {
+                if (resp.isOk()) {
+                    Notification.show("Condition removed");
+                    loadConditions();
+                } else {
+                    Notification.show("Error: " + resp.getError());
+                }
+            }));
+        });
+    }
+    
+    // existing configureConditionDialog, updateConditionButtons, submitCondition, openPlaceholderDialog ...
     private void configureConditionDialog() {
         // Populate selects
         itemSelect1.setLabel("Item");
@@ -190,6 +307,7 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
                 if (resp.isOk()) {
                     Notification.show("Condition added");
                     conditionDialog.close();
+                    loadConditions();
                 } else {
                     Notification.show("Error: " + resp.getError());
                 }

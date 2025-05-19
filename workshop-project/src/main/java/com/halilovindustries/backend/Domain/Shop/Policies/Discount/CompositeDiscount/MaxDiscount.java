@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.BaseDiscount;
 
 public class MaxDiscount extends CompositeDiscount {
@@ -32,4 +33,8 @@ public class MaxDiscount extends CompositeDiscount {
         return maxDiscount.getPercentagePerItem(allItems);
     }
 
+    @Override
+    public DiscountKind getDiscountKind() {
+        return DiscountKind.MAX;
+    }
 }

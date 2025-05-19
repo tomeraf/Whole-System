@@ -1,5 +1,7 @@
 package com.halilovindustries.websocket;
 
+import com.vaadin.flow.component.UI;
+
 // Functional interface for a registration that can be removed.
 
 import com.vaadin.flow.shared.Registration;
@@ -35,23 +37,39 @@ public class Broadcaster {
      * @param listener a consumer to handle messages
      * @return a Registration to remove the listener
      */
-    public static synchronized Registration register(String userUuid, Consumer<String> listener) {
-        listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
-        System.out.println("Listener registered for user: " + userUuid);
-        return () -> removeListener(userUuid, listener);
+public static synchronized Registration register(String userUuid, Consumer<String> listener) {
+    UI ui = UI.getCurrent();  // Capture the UI from the Vaadin thread
+    if (ui == null) {
+        throw new IllegalStateException("UI.getCurrent() is null during listener registration.");
     }
+
+    Consumer<String> wrappedListener = (message) -> {
+        ui.access(() -> listener.accept(message));
+    };
+    System.out.println("Registering listener for user: " + userUuid);
+    listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(wrappedListener);
+    return () -> removeListener(userUuid, wrappedListener);
+}
+
 
     /**
      * Broadcasts a message to all listeners registered for the given user UUID.
      * @param userUuid the user ID
      * @param message the message to send
      */
-    public static void broadcast(String userUuid, String message) {
+    public static boolean broadcast(String userUuid, String message) {
+        System.out.println("Broadcasting message to user: " + userUuid);
         List<Consumer<String>> consumers = listeners.get(userUuid);
         if (CollectionUtils.isNotEmpty(consumers)) {
             for (Consumer<String> consumer : consumers) {
                 executor.execute(() -> consumer.accept(message));
+                System.out.println("Message broadcasted to user: " + userUuid);
+                
             }
+            return true;
+        }
+        else{
+            return false;
         }
     }
 

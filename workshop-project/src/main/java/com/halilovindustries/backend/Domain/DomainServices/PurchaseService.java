@@ -1,12 +1,13 @@
 package com.halilovindustries.backend.Domain.DomainServices;
 
-import com.halilovindustries.backend.Domain.*;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -121,11 +122,11 @@ public class PurchaseService {
         }
     }
 
-	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails,List<Integer> memberIds) {
+	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
-		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID(), memberIds);
+		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID());
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
@@ -159,7 +160,17 @@ public class PurchaseService {
         return order;
     }
 
-    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
-        shop.answerOnCounterBid(bidId, accept, user.getUserID());
+    public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members) {
+        shop.answerOnCounterBid(bidId, accept, user.getUserID(),members);
+        return notifyBid(shop.getBidPurchase(bidId));
+    }
+    private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {
+        Pair<Integer,String> notificationPair= null;
+        if(bidPurchase.isAccepted()==1){
+            notificationPair= new Pair(bidPurchase.getBuyerId() ,"Bid " + bidPurchase.getId() + " has been accepted by all members");
+        } else if(bidPurchase.isAccepted()==-1){
+            notificationPair =new Pair(bidPurchase.getBuyerId(), "Bid " + bidPurchase.getId() + " has been rejected");
+        }
+        return notificationPair;
     }
 }

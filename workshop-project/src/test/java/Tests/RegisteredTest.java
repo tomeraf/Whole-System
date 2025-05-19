@@ -99,7 +99,7 @@ public class RegisteredTest {
         assertThrows(IllegalArgumentException.class, () -> appointer.addManager(SHOP_ID, APPOINTEE_ID, appointeeRole));
 
         assertTrue(appointer.getAppointments(SHOP_ID).isEmpty());             // no appointments recorded
-        assertEquals(-1, appointee.getAppointer(SHOP_ID));         // no appointer
+        assertThrows(IllegalArgumentException.class, ()->appointee.getAppointer(SHOP_ID));         // no appointer
     }
 
     @Test
@@ -141,7 +141,7 @@ public class RegisteredTest {
 
     @Test
     public void testGetAppointerNoRole() {
-        assertEquals(-1, user.getAppointer(SHOP_ID));
+        assertThrows(IllegalArgumentException.class,()-> user.getAppointer(SHOP_ID));
     }
 
     @Test

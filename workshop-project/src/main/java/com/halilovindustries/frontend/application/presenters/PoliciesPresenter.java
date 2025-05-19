@@ -108,7 +108,7 @@ public class PoliciesPresenter extends AbstractPresenter {
                 UI.getCurrent().access(() -> onFinish.accept(Collections.emptyList()));
                 return;
             }
-            Response<List<ConditionDTO>> resp = shopService.getShopPurchaseConditions(token, shopID);
+            Response<List<ConditionDTO>> resp = shopService.getPurchaseConditions(token, shopID);
             List<ConditionDTO> data = resp.isOk() ? resp.getData() : Collections.emptyList();
             UI.getCurrent().access(() -> onFinish.accept(data));
         });
@@ -120,7 +120,7 @@ public class PoliciesPresenter extends AbstractPresenter {
                 UI.getCurrent().access(() -> onFinish.accept(Collections.emptyList()));
                 return;
             }
-            Response<List<DiscountDTO>> resp = shopService.getShopDiscounts(token, shopID);
+            Response<List<DiscountDTO>> resp = shopService.getDiscounts(token, shopID);
             List<DiscountDTO> data = resp.isOk() ? resp.getData() : Collections.emptyList();
             UI.getCurrent().access(() -> onFinish.accept(data));
         });
