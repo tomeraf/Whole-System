@@ -10,28 +10,26 @@ import com.halilovindustries.backend.Service.UserService;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
 
+import org.aspectj.weaver.ast.Not;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.shared.Registration;
 
-import io.jsonwebtoken.lang.Collections;
-
 @Component
-public class HomePresenter {
-    private List<ShopDTO> randomShops = new ArrayList<>();
-    private final UserService    userService;
-    private final ShopService    shopService;
-    private final JWTAdapter     jwtAdapter;
-    private final OrderService   orderService;      // ← new
+public class HomePresenter extends AbstractPresenter {
 
     @Autowired
     public HomePresenter(
@@ -44,91 +42,20 @@ public class HomePresenter {
         this.shopService   = shopService;
         this.jwtAdapter    = jwtAdapter;
         this.orderService  = orderService;           // ← assign
-        //rnd3Shops();
-    }
-
-
-       private void rnd3Shops() {
-//        List<ShopDTO> shops = shopService.showAllShops().getData();
-//        Random rand = new Random();
-//        if (shops.isEmpty())
-//            return;
-//        int rndNum = rand.nextInt(shops.size());
-//        RandomShops = new ArrayList<>();
-//        for (int i = 0; i < 3; i++)
-//            RandomShops.add(shops.get(rndNum++ % shops.size()));
-
-        getSessionToken(token -> {
-            if (token != null) {
-                List<ShopDTO> shops = shopService.showAllShops(token).getData();
-        randomShops.clear();
-        if (shops == null || shops.isEmpty()) return;
-
-        Random rand = new Random();
-        int start = rand.nextInt(shops.size());
-        for (int i = 0; i < 3; i++) {
-            randomShops.add(shops.get((start + i) % shops.size()));
-        }
-            } else {
-                // no token? probably error
-                Notification.show("No session token found, please reload.");
-            }
-        });
-        
-    }
-
-
-    public List<ShopDTO> getRandomShops() {
-        return randomShops;
-    }
-
-
-    public List<ItemDTO> get4rndShopItems(ShopDTO shop) {
-//        List<ItemDTO> randomItems = new ArrayList<>();
-//        Random rand = new Random();
-//        if (randomShops.isEmpty())
-//            return randomItems;
-//        Object[] keys = shop.getItems().keySet().toArray();
-//        int rndNum = rand.nextInt(keys.length);
-//        for (int i = 0; i < 4; i++)
-//            randomItems.add(shop.getItems().get((Integer)(keys[rndNum%keys.length])));
-//        return randomItems;
-
-        List<ItemDTO> randomItems = new ArrayList<>();
-        if (shop.getItems() == null || shop.getItems().isEmpty())
-            return randomItems;
-
-        Object[] keys = shop.getItems().keySet().toArray();
-        Random rand = new Random();
-        int start = rand.nextInt(keys.length);
-        for (int i = 0; i < 4; i++) {
-            int idx = (start + i) % keys.length;
-            randomItems.add(shop.getItems().get((Integer)keys[idx]));
-        }
-        return randomItems;
     }
 
     public void saveSessionToken() {
-    Response<String> response = userService.enterToSystem();
-    if (!response.isOk()) {
-        System.out.println("Error: " + response.getError());
-    } else {
-        String token = response.getData();
-        // Store in localStorage using JS
-        UI.getCurrent().getPage().executeJs("localStorage.setItem('token', $0);", token);
+        System.out.println("Saving session token...");
+        Response<String> response = userService.enterToSystem();
+        if (!response.isOk()) {
+            System.out.println("Error: " + response.getError());
+        } else {
+            String token = response.getData();
+            // Store in localStorage using JS
+            UI.getCurrent().getPage()
+                .executeJs("sessionStorage.setItem('token', $0);", token);
+            System.out.println("Token saved: " + token);
         }
-    }
-
-    public void getSessionToken(Consumer<String> callback) {
-    UI.getCurrent().getPage()
-        .executeJs("return localStorage.getItem('token');")
-        .then(String.class, token -> {
-            if (token != null) {
-                callback.accept(token); // Pass it back to whoever called
-            } else {
-                callback.accept(null);
-            }
-        });
     }
 
     // in HomePresenter
@@ -138,75 +65,62 @@ public class HomePresenter {
                             BiConsumer<String, Boolean> onFinish) {
         // 1) grab the current token
         getSessionToken(oldToken -> {
-            if (oldToken == null) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
-
-            // 2) attempt registration
-            Response<Void> res = userService.registerUser(oldToken, name, password, dateOfBirth);
-            if (!res.isOk()) {
-                Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
-            // Persist it in localStorage
-            UI.getCurrent().getPage().executeJs("localStorage.setItem('token',$0);", oldToken);
-            Notification.show("Welcome, " + name + "!", 2000, Position.TOP_CENTER);
-            onFinish.accept(oldToken, true);
-        });
-    }
-
-
-    public void registerUser(String name, String password, LocalDate dateOfBirth) {
-        getSessionToken(token -> {
-            if (token != null) {
-                Response<Void> res = userService.registerUser(token, name, password, dateOfBirth);
-                if (res.isOk()) {
-                    Notification.show("Registration successful!", 2000, Position.TOP_CENTER);
-                } else {
-                    Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+            ui.access(() -> {
+                if (oldToken == null) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
                 }
-            } else {
-                // no token? probably error
-                Notification.show("No session token found, please reload.");
-            }
+
+                // 2) attempt registration
+                Response<Void> res = userService.registerUser(oldToken, name, password, dateOfBirth);
+                if (!res.isOk()) {
+                    Notification.show("Registration failed: " + res.getError(), 3000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
+                }
+                // Persist it in localStorage
+                UI.getCurrent().getPage().executeJs("localStorage.setItem('token',$0);", oldToken);
+                Notification.show("Welcome, " + name + "!", 2000, Position.TOP_CENTER);
+                onFinish.accept(oldToken, true);
+                });
         });
     }
 
     public void loginUser(String username, String password, BiConsumer<String, Boolean> onFinish) {
         getSessionToken(token -> {
-            if (token == null) {
-                Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
-                onFinish.accept(null, false);
-                return;
-            }
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+            ui.access(() -> {
+                if (token == null || !validateToken(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                    return;
+                }
 
-            Response<String> resp = userService.loginUser(token, username, password);
-            if (!resp.isOk()) {
-                Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
-                onFinish.accept(null, false);
-            } else {
-                String newToken = resp.getData();
+                Response<String> resp = userService.loginUser(token, username, password);
+                if (!resp.isOk()) {
+                    Notification.show("Login failed: " + resp.getError(), 3000, Position.MIDDLE);
+                    onFinish.accept(null, false);
+                } else {
+                    String newToken = resp.getData();
 
-                // Save the new token in localStorage
-                UI.getCurrent().getPage()
-                    .executeJs("localStorage.setItem('token', $0);", newToken);
+                    // Save the new token in localStorage
+                    UI.getCurrent().getPage()
+                        .executeJs("sessionStorage.setItem('token', $0);", newToken);
+                    UI.getCurrent().getPage()
+                        .executeJs("localStorage.setItem('token', $0);", newToken);
 
-                Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
+                    Notification.show("Welcome back!", 2000, Position.TOP_CENTER);
 
-                onFinish.accept(newToken, true);
-            }
+                    onFinish.accept(newToken, true);
+                }
+                });
         });
     }
     
-    
-    /** Validate the JWT before trusting it. */
-    public boolean validateToken(String token) {
-        return jwtAdapter.validateToken(token);
-    }
-
     /** Extract the “username” (or user-id) from a valid JWT. */
     public String extractUserId(String token) {
         return jwtAdapter.getUsername(token);
@@ -217,11 +131,13 @@ public class HomePresenter {
         return Broadcaster.register(userId, callback);
     }
 
-    
-
     public void logoutUser() {
         // 1) get current token
         getSessionToken(oldToken -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
             if (oldToken == null || !validateToken(oldToken)) {
                 Notification.show("No valid session to log out from.", 2000, Position.MIDDLE);
                 return;
@@ -232,25 +148,104 @@ public class HomePresenter {
                 Notification.show("Logout failed: " + resp.getError(), 3000, Position.MIDDLE);
                 return;
             }
+            UI.getCurrent().getPage()
+                .executeJs("localStorage.removeItem('token');");
+
             String guestToken = resp.getData();
 
             // 4) overwrite with new guest token
-            UI.getCurrent()
+            ui
             .getPage()
-            .executeJs("localStorage.setItem('token', $0);", guestToken);
+            .executeJs("sessionStorage.setItem('token', $0);", guestToken);
 
             Notification.show("Logged out successfully.", 2000, Position.TOP_CENTER);
+            UI.getCurrent().getPage().reload();
+        });
         });
     }
 
-    public List<ItemDTO> getCartContent(String sessionToken) {
-        Response<List<ItemDTO>> resp = orderService.checkCartContent(sessionToken);
-        if (resp.isOk() && resp.getData() != null) {
-            return resp.getData();
-        }
-        return Collections.emptyList();
+    public void exitAsGuest() {
+        // 1) get current token
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token)) {
+                Notification.show("No valid session to exit from.", 2000, Position.MIDDLE);
+                return;
+            }
+            // 2) call logoutRegistered on the backend
+            Response<Void> resp = userService.exitAsGuest(token);
+            if (!resp.isOk()) {
+                Notification.show("Logout failed: " + resp.getError(), 3000, Position.MIDDLE);
+                return;
+            }
+            //UI.getCurrent().getPage()
+            //    .executeJs("localStorage.removeItem('token');");
+        });
+        });
     }
-    public boolean isLoggedIn(String sessionToken) {
-        return userService.isLoggedIn(sessionToken);
+
+    
+    public void getRandomItems(int count, Consumer<List<ItemDTO>> onFinish) {
+        // Step 1: pull whatever token is in localStorage
+        getSessionToken(stored -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                String token = stored;
+
+                // Step 2: if it’s null/invalid/expired → grab a fresh **guest** token synchronously
+                if (token == null || !validateToken(token)) {
+                    Notification.show("Please reload the page", 2000, Position.MIDDLE);
+                }
+                Response<List<ItemDTO>> itemsResp = shopService.filterItemsAllShops(token, new HashMap<String, String>());
+                if (itemsResp.isOk() && !itemsResp.getData().isEmpty()) {
+                    List<ItemDTO> available = itemsResp.getData().stream()
+                        .filter(i -> i.getQuantity() > 0)
+                        .collect(Collectors.toList());
+
+                    // 2) Shuffle & trim
+                    Collections.shuffle(available);
+                    int take = Math.min(count, available.size());
+                    onFinish.accept(available.subList(0, take));
+                    return;
+                }
+            });
+        });
+    }
+
+    public void showItemsByFilter(HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token)) {
+                    Notification.show("No token was found.", 2000, Position.MIDDLE);
+                    return;
+                }
+
+                Response<List<ItemDTO>> itemsResp = shopService.filterItemsAllShops(token, filters);
+                if (itemsResp.isOk()) {
+                    List<ItemDTO> available = itemsResp.getData().stream()
+                        .filter(i -> i.getQuantity() > 0)
+                        .collect(Collectors.toList());
+                        // 1) Sort descending by rating, then descending by # of raters:
+                        available.sort(Comparator
+                            .comparingDouble(ItemDTO::getRating).reversed()
+                            //.thenComparingInt(ItemDTO::getRatingsCount).reversed()
+                        );
+
+                        // 2) Return that sorted list
+                        onFinish.accept(available);
+                } else {
+                    Notification.show("Error: " + itemsResp.getError(), 2000, Position.MIDDLE);
+                }
+            });
+        });
+
     }
 }

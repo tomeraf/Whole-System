@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -35,6 +36,9 @@ public class ManagementService {
         if (shop.getOwnerIDs().contains(appointee.getUserID())) {
             throw new IllegalArgumentException("User is already an owner of the shop");
         }
+        if (shop.getManagerIDs().contains(appointee.getUserID())) {
+            throw new IllegalArgumentException("User is already a manager of the shop");
+        }
         appointer.addOwner(shop.getId(), (int)appointee.getUserID(), owner);
         appointee.setRoleToShop(shop.getId(), owner);
         shop.addOwner(appointee.getUserID());
@@ -49,6 +53,9 @@ public class ManagementService {
         Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
         if (shop.getManagerIDs().contains(appointee.getUserID())) {
             throw new IllegalArgumentException("User is already a manager of the shop");
+        }
+        if (shop.getOwnerIDs().contains(appointee.getUserID())) {
+            throw new IllegalArgumentException("User is already an owner of the shop");
         }
         appointer.addManager(shop.getId(), appointee.getUserID(), manager);
         appointee.setRoleToShop(shop.getId(), manager);   
@@ -106,13 +113,13 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to update item quantity");
         }
     }
-    public void updateItemRating(Registered supplyManager, Shop shop, int itemID, double rating) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_RATING)) {
-            shop.updateItemRating(itemID, rating);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item rating");
-        }
-    }
+    // public void updateItemRating(Registered supplyManager, Shop shop, int itemID, double rating) {
+    //     if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_RATING)) {
+    //         shop.updateItemRating(supplyManager.getUserID(), itemID, rating);
+    //     } else {
+    //         throw new IllegalArgumentException("You don't have permission to update item rating");
+    //     }
+    // }
     public void updateItemCategory(Registered supplyManager, Shop shop, int itemID, Category category) {
         if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
             shop.updateItemCategory(itemID, category);
@@ -246,5 +253,13 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to view discounts");
         }
     }
+    public List<BidDTO> getBids(Registered user, Shop shop) {
+        if( user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
+            return shop.getBids();
+        } else {
+            throw new IllegalArgumentException("You don't have permission to view bids");
+        }
+    }
+
 
 }

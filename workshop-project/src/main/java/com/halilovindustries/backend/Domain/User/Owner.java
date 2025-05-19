@@ -43,6 +43,9 @@ public class Owner extends IRole {
         return "Owner - has all permissions";
     }
     public List<Permission> getPermissions(){
+        if (appointerID == -1) {
+            return List.of(Permission.FOUNDER);
+        }
         return List.of(Permission.OWNER);
     }
 }
