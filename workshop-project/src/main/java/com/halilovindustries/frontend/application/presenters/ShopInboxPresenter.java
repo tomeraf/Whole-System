@@ -1,9 +1,11 @@
 package com.halilovindustries.frontend.application.presenters;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.stereotype.Component;
 
+import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Service.OrderService;
@@ -28,56 +30,49 @@ public class ShopInboxPresenter extends AbstractPresenter {
         this.orderService  = orderService;           // ← assign
     }
 
-    // public void getShopInbox(Consumer<List<MessageDTO>> onFinish) {
-    //     getSessionToken(token -> {
-    //         if (token == null && !validateToken(token) && !isLoggedIn(token)) {
-    //             UI.getCurrent().access(() ->
-    //                 Notification.show("User is not logged in - guest cannot watch shop details", 2000, Position.MIDDLE)
-    //             );
-    //             return;
-    //         }
-    //         // 2) Call the backend
-    //         //Response<List<IMessage>> messages = shopService.getInbox(0);
-
-    //         // 3) Notify the user, on the UI thread
-    //         // UI.getCurrent().access(() -> {
-    //         //     if (response.isOk()) {
-    //         //         Notification success = Notification.show("Purchase successful");
-    //         //         success.setPosition(Position.MIDDLE);
-    //         //         success.setDuration(3000);
-    //         //     } else {
-    //         //         Notification failure = Notification.show("Failed to purchase items");
-    //         //         failure.setPosition(Position.MIDDLE);
-    //         //         failure.setDuration(3000);
-    //         //     }
-    //         // });
-    //     });
-    // }
-
-    public void respondToMessage(int shopId, int messageId, String title, String content, Consumer<Boolean> onFinish) {
+    public void getInbox(int shopId, Consumer<List<Message>> onFinish) {
         getSessionToken(token -> {
-            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
-                UI.getCurrent().access(() ->
-                    Notification.show("User is not logged in - guest cannot watch shop details", 2000, Position.MIDDLE)
-                    );
-                return;
-            }
-            Response<Void> response = shopService.respondToMessage(token, shopId, messageId, title, content);
-            UI.getCurrent().access(() -> {
-                if (response.isOk()) {
-                    Notification success = Notification.show("Message Sent Successfully");
-                    success.setPosition(Position.MIDDLE);
-                    success.setDuration(3000);
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(null);
+                    return;
+                }
+                Response<List<Message>> response = shopService.getInbox(token, shopId);
+                if (!response.isOk()) {
+                    Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(null);
                 } else {
-                    Notification failure = Notification.show("Failed to send message");
-                    failure.setPosition(Position.MIDDLE);
-                    failure.setDuration(3000);
+                    Notification.show("Inbox retrieved successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(response.getData());
                 }
             });
         });
     }
 
-    // public void respondToMessage(MessageDTO m,) {
+    public void respondToMessage(int shopId, int messageId, String title, String content, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
 
-    // }
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+                Response<Void> responseResult = shopService.respondToMessage(token, shopId, messageId, title, content);
+                if (!responseResult.isOk()) {
+                    Notification.show("Error: " + responseResult.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(false);
+                } else {
+                    Notification.show("Response sent successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+                }
+            });
+        });
+    }
 }
