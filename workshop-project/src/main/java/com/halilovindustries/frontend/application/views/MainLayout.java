@@ -37,7 +37,7 @@ public class MainLayout extends AppLayout {
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
         addHeaderContent();
-getStyle().setWidth("100%");
+        getStyle().setWidth("100%");
     }
 
     private void addHeaderContent() {
@@ -84,6 +84,16 @@ getStyle().setWidth("100%");
                 nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
                 nav.addItem(new SideNavItem("Inbox",   InboxView.class,   VaadinIcon.ENVELOPE.create()));
                 nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
+
+                presenter.isSystemManager(isManager -> {
+                    if (isManager) {
+                        nav.addItem(new SideNavItem(
+                            "System",
+                            SystemManagerView.class,
+                            VaadinIcon.TOOLS.create()
+                        ));
+                    }
+                });
             }
         });
 

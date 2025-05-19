@@ -335,4 +335,20 @@ public class UserService {
             return null;
         }
     }
+
+    public Response<Void> isSystemManager(String sessionToken) {
+        try {
+            if (!jwtAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(jwtAdapter.getUsername(sessionToken)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> e.getMessage());
+            return Response.error(e.getMessage());
+        }
+    }
 }
