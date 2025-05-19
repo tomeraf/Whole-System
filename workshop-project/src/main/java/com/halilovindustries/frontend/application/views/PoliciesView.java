@@ -652,9 +652,15 @@ maxField2.addValueChangeListener(e -> update.run());
         }
     }
 };
-    Stream.of(limitsSel1, minField1, maxField1, limitsSel2, minField2, maxField2).forEach(c -> c.addValueChangeListener(e -> updateButtons.run()));
+    //Stream.of(limitsSel1, minField1, maxField1, limitsSel2, minField2, maxField2).forEach(c -> c.addValueChangeListener(e -> updateButtons.run()));
 
+    limitsSel1.addValueChangeListener(e -> updateButtons.run());
+    limitsSel2.addValueChangeListener(e -> updateButtons.run());
 
+    minField1.addValueChangeListener(e -> updateButtons.run());
+    maxField1.addValueChangeListener(e -> updateButtons.run());
+    minField2.addValueChangeListener(e -> updateButtons.run());
+    maxField2.addValueChangeListener(e -> updateButtons.run());
     // Build dialog layout — SAME AS `configureConditionDialog`
     VerticalLayout content = new VerticalLayout(
         new Label("Condition 1"),
