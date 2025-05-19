@@ -56,8 +56,11 @@ public class DiscountPolicy {
         return discounts.getIds();
     }
     public List<DiscountDTO> getDiscounts() {
-        return discounts.getDiscountsList().stream().map(discount->
-        new DiscountDTO(discount.getDiscountKind(),discount.getItemId(),discount.getCategory(),discount.getPercentage(),discount.getCondition(),discount.getItemId2(),discount.getCategory2(),discount.getPercentage2(),discount.getCondition2(),discount.getDiscountType(),discount.getDiscountType2())).toList();  
+        return discounts.getDiscountsList().stream().map(discount->{
+        DiscountDTO dis=new DiscountDTO(discount.getDiscountKind(),discount.getItemId(),discount.getCategory(),discount.getPercentage(),discount.getCondition(),discount.getItemId2(),discount.getCategory2(),discount.getPercentage2(),discount.getCondition2(),discount.getDiscountType(),discount.getDiscountType2());
+        dis.setId(discount.getDiscountId());
+        return dis;
+    }).toList();  
     }
 
 
