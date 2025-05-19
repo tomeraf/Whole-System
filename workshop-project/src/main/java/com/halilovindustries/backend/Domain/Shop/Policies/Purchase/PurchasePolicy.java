@@ -72,4 +72,11 @@ public class PurchasePolicy {
         }
         return true;
     }
+    public List<ConditionDTO> getConditions() {
+        return purchaseConditions.values().stream()
+                .map(condition -> {ConditionDTO con=new ConditionDTO(condition.getConditionType(),condition.getItemId(),condition.getCategory(),condition.getConditionLimits(),condition.getMinPrice(),condition.getMaxPrice(),condition.getMinQuantity(),condition.getMaxQuantity(),condition.getConditionLimits2(),condition.getItemId2(),condition.getMinPrice2(),condition.getMaxPrice2(),condition.getMinQuantity2(),condition.getMaxQuantity2(),condition.getCategory2());
+                con.setId(condition.getId());
+                return con;})
+                .toList();
+    }
 }

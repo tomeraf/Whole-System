@@ -1,9 +1,11 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Condition.BaseCondition;
 
 import java.util.HashMap;
+import java.util.concurrent.locks.Condition;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
 public class QuantityCondition extends BaseCondition {
     private int minQuantity;
@@ -74,12 +76,18 @@ public class QuantityCondition extends BaseCondition {
     }
 
     // Getters for minQuantity and maxQuantity
+    @Override
     public int getMinQuantity() {
         return minQuantity;
     }
-
+    
+    @Override
     public int getMaxQuantity() {
         return maxQuantity;
+    }
+    @Override
+    public ConditionLimits getConditionLimits() {
+        return ConditionLimits.QUANTITY;
     }
 
     @Override

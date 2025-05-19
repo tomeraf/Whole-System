@@ -4,22 +4,23 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Category;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
 public class PriceCondition extends BaseCondition {
-    private double minPrice;
-    private double maxPrice;
+    private int minPrice;
+    private int maxPrice;
 
-    public PriceCondition(double minPrice, double maxPrice) {
+    public PriceCondition(int minPrice, int maxPrice) {
         super();
         buildPriceRange(minPrice, maxPrice);
     }
-    public PriceCondition(int itemID,Category category, double minPrice, double maxPrice) {
+    public PriceCondition(int itemID,Category category, int minPrice, int maxPrice) {
         super(itemID, category);
         buildPriceRange(minPrice, maxPrice);
 
         
     }
-    private void buildPriceRange(double minPrice, double maxPrice) {
+    private void buildPriceRange(int minPrice, int maxPrice) {
         // If both minPrice and maxPrice are -1, throw an exception
         if (minPrice == -1 && maxPrice == -1) {
             throw new IllegalArgumentException("Both minPrice and maxPrice cannot be -1");
@@ -54,14 +55,20 @@ public class PriceCondition extends BaseCondition {
                 throw new IllegalArgumentException("minPrice must be at least 0");
             }
             this.minPrice = minPrice;
-            this.maxPrice = Double.MAX_VALUE; // Set maxPrice to the maximum possible value
+            this.maxPrice = Integer.MAX_VALUE; // Set maxPrice to the maximum possible value
         }
     }
-    public double getMinPrice() {
+    @Override
+    public int getMinPrice() {
         return minPrice;
     }
-    public double getMaxPrice() {
+    @Override
+    public int getMaxPrice() {
         return maxPrice;
+    }
+    @Override
+    public ConditionLimits getConditionLimits(){
+        return ConditionLimits.PRICE;
     }
 
     @Override

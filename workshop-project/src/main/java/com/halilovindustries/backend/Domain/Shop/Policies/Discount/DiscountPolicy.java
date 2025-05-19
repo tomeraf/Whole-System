@@ -38,8 +38,8 @@ public class DiscountPolicy {
         }
     }
     private void validateDiscountDetails(DiscountDTO discountDetails) {
-        if(!discountTypes.contains(discountDetails.getDiscountType1())){
-            throw new IllegalArgumentException("Invalid discount type: " + discountDetails.getDiscountType1());
+        if(!discountTypes.contains(discountDetails.getDiscountType())){
+            throw new IllegalArgumentException("Invalid discount type: " + discountDetails.getDiscountType());
         }
         if(discountDetails.getDiscountType2()!=null && !discountTypes.contains(discountDetails.getDiscountType2())){
             throw new IllegalArgumentException("Invalid discount type: " + discountDetails.getDiscountType2());
@@ -54,6 +54,13 @@ public class DiscountPolicy {
     }
     public List<Integer> getDiscountIds() {
         return discounts.getIds();
+    }
+    public List<DiscountDTO> getDiscounts() {
+        return discounts.getDiscountsList().stream().map(discount->{
+        DiscountDTO dis=new DiscountDTO(discount.getDiscountKind(),discount.getItemId(),discount.getCategory(),discount.getPercentage(),discount.getCondition(),discount.getItemId2(),discount.getCategory2(),discount.getPercentage2(),discount.getCondition2(),discount.getDiscountType(),discount.getDiscountType2());
+        dis.setId(discount.getDiscountId());
+        return dis;
+    }).toList();  
     }
 
 

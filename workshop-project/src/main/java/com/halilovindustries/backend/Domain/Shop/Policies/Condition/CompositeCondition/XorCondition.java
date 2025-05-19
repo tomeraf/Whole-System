@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
 public class XorCondition extends CompositeCondition {
     public XorCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
@@ -17,5 +18,9 @@ public class XorCondition extends CompositeCondition {
 
     public String toString() {
         return String.format("%s OR %s,but not both", getCondition1().toString(), getCondition2().toString());
+    }
+    @Override
+    public ConditionType getConditionType() {
+        return ConditionType.XOR;
     }
 }

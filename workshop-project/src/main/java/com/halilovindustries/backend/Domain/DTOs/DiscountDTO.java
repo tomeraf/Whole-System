@@ -5,8 +5,9 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
 public class DiscountDTO {
+    private int id=-1;
     private DiscountKind discount_kind;
-    private DiscountType discountType1;
+    private DiscountType discountType;
     private int itemId;
     private Category category;
     private int percentage;
@@ -27,7 +28,7 @@ public class DiscountDTO {
         this.category2 = category2;
         this.percentage2 = percentage2;
         this.condition2 = condition2;
-        this.discountType1 = discountType1;
+        this.discountType = discountType1;
         this.discountType2 = discountType2;
     }
     public DiscountDTO(DiscountKind discount_kind, int itemId, Category category, int percentage, ConditionDTO condition, DiscountType discountType1) {
@@ -36,7 +37,7 @@ public class DiscountDTO {
         this.category = category;
         this.percentage = percentage;
         this.condition = condition;
-        this.discountType1 = discountType1;
+        this.discountType = discountType1;
         this.itemId2 = -1;
         this.category2 = null;
         this.percentage2 = -1;
@@ -70,14 +71,17 @@ public class DiscountDTO {
     public ConditionDTO getCondition2() {
         return condition2;
     }
-    public DiscountType getDiscountType1() {
-        return discountType1;
+    public DiscountType getDiscountType() {
+        return discountType;
     }
     public DiscountType getDiscountType2() {
         return discountType2;
     }
-    
-
-
+    public int getId() {
+        return id;
+    }
+    public void setId(int id) {
+        this.id = id;
+    }
 
 }

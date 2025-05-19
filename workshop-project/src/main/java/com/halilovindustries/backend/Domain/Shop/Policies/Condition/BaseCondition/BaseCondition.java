@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
 import com.halilovindustries.backend.Domain.Shop.Category;
 
 
@@ -31,9 +32,15 @@ public abstract class BaseCondition extends Condition {
         this.itemId = -1;
         this.category = null;
     }
+    @Override
+    public ConditionType getConditionType(){
+        return ConditionType.BASE;
+    }
+
     public int getItemId() {
         return itemId;
     }
+    @Override
     public Category getCategory() {
         return category;
     }

@@ -232,5 +232,19 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to remove purchase conditions");
         }
     }
+    public List<ConditionDTO> getPurchaseConditions(Registered user, Shop shop) {
+        if( user.hasPermission(shop.getId(), Permission.VIEW)) {
+            return shop.getPurchaseConditions();
+        } else {
+            throw new IllegalArgumentException("You don't have permission to view purchase conditions");
+        }
+    }
+    public List<DiscountDTO> getDiscounts(Registered user, Shop shop) {
+        if( user.hasPermission(shop.getId(), Permission.VIEW)) {
+            return shop.getDiscounts();
+        } else {
+            throw new IllegalArgumentException("You don't have permission to view discounts");
+        }
+    }
 
 }
