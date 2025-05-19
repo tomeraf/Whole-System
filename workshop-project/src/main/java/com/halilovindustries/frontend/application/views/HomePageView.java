@@ -359,12 +359,18 @@ public class HomePageView extends Composite<VerticalLayout> {
             // fire off the registration
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
+                    String userId = presenter.extractUserId(newToken);
+                    // Store this view's listener registration
+                    myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
+                        UI.getCurrent().access(() -> {
+                            Notification.show("Notification from server: " + msg, 3000, Position.TOP_CENTER);
+                        });
+                    });
+
                     // we already set localStorage & showed a welcome toast in presenter
                     showLoggedInUI();  
                     dialog.close();
                     UI.getCurrent().getPage().reload();
-                } else {
-                    // nothing to do—errors already surfaced in presenter
                 }
             });
             dialog.close();
@@ -425,7 +431,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 // Store this view's listener registration
                 myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
                     UI.getCurrent().access(() -> {
-                        Notification.show("Server: " + msg, 3000, Position.TOP_CENTER);
+                        Notification.show("Notification from server: " + msg, 3000, Position.TOP_CENTER);
                     });
                 });
 

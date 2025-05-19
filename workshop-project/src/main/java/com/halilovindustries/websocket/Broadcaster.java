@@ -44,7 +44,11 @@ public static synchronized Registration register(String userUuid, Consumer<Strin
     }
 
     Consumer<String> wrappedListener = (message) -> {
-        ui.access(() -> listener.accept(message));
+        if (ui.isAttached()) {
+            ui.access(() -> listener.accept(message));
+        } else {
+            System.out.println("UI is detached for user: " + userUuid + ", skipping notification.");
+        }
     };
     System.out.println("Registering listener for user: " + userUuid);
     listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(wrappedListener);
@@ -73,7 +77,7 @@ public static synchronized Registration register(String userUuid, Consumer<Strin
         }
     }
 
-    private static void removeListener(String userUuid, Consumer<String> listener) {
+    public static void removeListener(String userUuid, Consumer<String> listener) {
         List<Consumer<String>> userListeners = listeners.get(userUuid);
         if (userListeners != null) {
             userListeners.remove(listener);
