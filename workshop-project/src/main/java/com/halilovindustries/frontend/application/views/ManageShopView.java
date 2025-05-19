@@ -27,6 +27,8 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
     private MyShopPresenter presenter;
     private String shopName;
     private Button inboxBtn;
+    private Button policiesBtn;
+
     H2 title;
 
     public ManageShopView(MyShopPresenter presenter) {
@@ -36,9 +38,14 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         setSpacing(true);
 
 
-
         // 1️⃣ Title + Controls Row
         title = new H2(shopName);
+
+        policiesBtn = new Button("Policies", VaadinIcon.GAVEL.create());
+        policiesBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        policiesBtn.getStyle().set("background-color", "white")
+                            .set("border", "2px solid darkblue");
+
 
         // — Shop Members —
         membersBtn = new Button("Members", VaadinIcon.GROUP.create());
@@ -70,6 +77,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
 
         // pack the buttons together
         HorizontalLayout controls = new HorizontalLayout(
+                policiesBtn,        
                 membersBtn,
                 editItemsBtn,
                 inboxBtn,
@@ -103,6 +111,8 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         membersBtn.addClickListener(e -> UI.getCurrent().navigate("shop-members/" + shopID));
 
         inboxBtn.addClickListener(e -> UI.getCurrent().navigate("shop-inbox/" + shopID));
+
+        policiesBtn.addClickListener(e -> UI.getCurrent().navigate("shop-policies/" + shopID));
 
     }
 

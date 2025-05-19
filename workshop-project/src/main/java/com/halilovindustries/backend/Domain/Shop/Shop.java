@@ -480,6 +480,10 @@ public class Shop {
 			.sorted((m1, m2) -> m1.getDateTime().compareTo(m2.getDateTime()))
 			.toList();
 	}
+
+    // public List<ConditionDTO> getPurchaseConditions(){
+    //     return purchasePolicy.getConditions();
+    // }
 }
 
 
