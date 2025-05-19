@@ -441,7 +441,7 @@ public class OrderService {
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
-            notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(auctionID).getName() + " was purchased by " + registered.getUsername()+"from auction");
+            notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);
             return Response.ok();
         } catch (Exception e) {

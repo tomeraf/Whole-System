@@ -430,21 +430,28 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     }
 
     private void openAuctionPurchaseDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
-          setPadding(true);
-        setSpacing(true);
-        setAlignItems(FlexComponent.Alignment.START);
+        Dialog dialog = new Dialog();
+        dialog.setModal(true);
+        dialog.setCloseOnEsc(true);
+        dialog.setCloseOnOutsideClick(true);
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(true);
+        dialogLayout.setSpacing(true);
+        dialogLayout.setAlignItems(FlexComponent.Alignment.START);
 
         // —— Header ——
         H2 title = new H2("Checkout");
-        Button back = new Button("← Back", e -> UI.getCurrent().navigate("cart"));
+        Button back = new Button("×", e -> dialog.close()); // Close dialog instead of navigating
+        back.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         HorizontalLayout header = new HorizontalLayout(title, back);
         header.setWidthFull();
         header.expand(title);
         header.setAlignItems(FlexComponent.Alignment.CENTER);
-        add(header);
+        dialogLayout.add(header);
 
         // —— Shipment Details ——
-        add(new H3("Shipment Details"));
+        dialogLayout.add(new H3("Shipment Details"));
         FormLayout shipForm = new FormLayout();
         shipForm.setResponsiveSteps(
             new FormLayout.ResponsiveStep("0", 1),
@@ -461,16 +468,16 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         ComboBox<String> country = new ComboBox<>("Country");
         country.setItems(
             Arrays.stream(Locale.getISOCountries())
-                  .map(c -> new Locale("",c).getDisplayCountry())
-                  .sorted()
-                  .collect(Collectors.toList())
+                .map(c -> new Locale("",c).getDisplayCountry())
+                .sorted()
+                .collect(Collectors.toList())
         );
 
         shipForm.add(fullName, email, phone, address, city, country, zipCode);
-        add(shipForm);
+        dialogLayout.add(shipForm);
 
         // —— Payment Details ——
-        add(new H3("Payment Details"));
+        dialogLayout.add(new H3("Payment Details"));
         FormLayout payForm = new FormLayout();
         payForm.setResponsiveSteps(
             new FormLayout.ResponsiveStep("0", 1),
@@ -483,6 +490,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         TextField cardNumber     = new TextField("Card Number");
         ComboBox<String> expMonth = new ComboBox<>("Exp. Month");
         expMonth.setItems("01","02","03","04","05","06","07","08","09","10","11","12");
+
         ComboBox<String> expYear  = new ComboBox<>("Exp. Year");
         int currentYear = Year.now().getValue();
         List<String> years = IntStream
@@ -490,21 +498,20 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             .mapToObj(String::valueOf)
             .collect(Collectors.toList());
         expYear.setItems(years);
-        expYear.getElement().setAttribute("autocomplete", "new-password");
 
-        PasswordField cvv        = new PasswordField("CVV");
+        PasswordField cvv = new PasswordField("CVV");
+        expYear.getElement().setAttribute("autocomplete", "new-password");
         cvv.getElement().setAttribute("autocomplete", "new-password");
 
-
         payForm.add(cardHolderName, holderId, cardNumber, expMonth, expYear, cvv);
-        add(payForm);
+        dialogLayout.add(payForm);
 
         // —— Place Order ——
         Button placeOrder = new Button("Place Order", VaadinIcon.CART.create());
         placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         placeOrder.getStyle().set("margin-top", "1rem");
+
         placeOrder.addClickListener(e -> {
-            // asynchronously grab the token, extract userId, then build DTOs
             shopPresenter.getSessionToken(token -> {
                 UI ui = UI.getCurrent();
                 if (ui == null) return;
@@ -514,8 +521,6 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                         return;
                     }
 
-
-                    // build our two DTOs
                     ShipmentDetailsDTO shipDto = new ShipmentDetailsDTO(
                         holderId.getValue(),
                         fullName.getValue(),
@@ -535,12 +540,12 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                         cvv.getValue()
                     );
 
-                    // hand off to the presenter
                     shopPresenter.purchaseAuctionItem(shopID, auction.getId(), payDto, shipDto, order -> {
                         ui.access(() -> {
                             if (order != null) {
                                 Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
-                                UI.getCurrent().navigate("");
+                                dialog.close(); // Close on success
+                                UI.getCurrent().navigate(""); // Or refresh, or go somewhere
                             } else {
                                 Notification.show("Failed to place order", 2000, Position.MIDDLE);
                             }
@@ -549,9 +554,12 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                 });
             });
         });
-        add(placeOrder);
 
-        setHorizontalComponentAlignment(FlexComponent.Alignment.CENTER, placeOrder);
+        dialogLayout.add(placeOrder);
+        dialogLayout.setHorizontalComponentAlignment(FlexComponent.Alignment.CENTER, placeOrder);
+
+        dialog.add(dialogLayout);
+        dialog.open();
     }
 
 }

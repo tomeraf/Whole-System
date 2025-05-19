@@ -1208,4 +1208,24 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }   
     }
+    public Response<List<AuctionDTO>> getWonAuctions(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<AuctionDTO> auctions = shop.getWonAuctions(userID);
+            logger.info(() -> "Won auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(auctions);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving won auctions: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+
+    }
 }

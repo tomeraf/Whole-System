@@ -13,6 +13,7 @@ import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.*;
+import com.halilovindustries.backend.Domain.User.Registered;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -368,7 +369,7 @@ public class Shop {
         return true; // All items can be added to the basket
     }
 
-    public Item getItem(Integer itemId) {
+    public Item getItem(int itemId) {
         if (items.containsKey(itemId)) {
             return items.get(itemId);
         } else {
@@ -517,7 +518,7 @@ public class Shop {
         List<AuctionDTO> activeAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if (auction.isAuctionActive()) {
-                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return activeAuctions;
@@ -527,7 +528,7 @@ public class Shop {
         List<AuctionDTO> auctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
-                auctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+                auctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return auctions;
@@ -539,6 +540,16 @@ public class Shop {
             bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
         }
         return bids;
+    }
+
+    public List<AuctionDTO> getWonAuctions(int userId) {
+        List<AuctionDTO> wonAuctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if (auction.isAuctionEnded() && auction.getBuyerId() == userId && !auction.isDone()) {
+                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+            }
+        }
+        return wonAuctions;
     }
 }
 

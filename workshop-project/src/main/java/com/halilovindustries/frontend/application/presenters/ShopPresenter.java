@@ -282,4 +282,24 @@ public class ShopPresenter extends AbstractPresenter {
             });
         });
     }
+    public void getWonAuctions(int shopId, Consumer<List<AuctionDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    return;
+                }
+
+                Response<List<AuctionDTO>> resp = shopService.getWonAuctions(token, shopId);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                } else {
+                    onFinish.accept(resp.getData());
+                }
+            });
+        });
+    }
 }
