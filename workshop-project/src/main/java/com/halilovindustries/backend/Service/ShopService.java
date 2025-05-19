@@ -640,6 +640,7 @@ public class ShopService {
                 Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
                 Registered reciver = userRepository.getUserByName(response.getUserName());
                 reciver.addMessage(response);
+                notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
                 logger.info(() -> "Message responded: " + title + " in shop: " + shop.getName() + " by user: "
                         + user.getUsername());
             } finally {
@@ -729,6 +730,8 @@ public class ShopService {
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.removeAppointment(user, shop, appointee);
+                notificationHandler.notifyUser(appointee.getUserID() + "",
+                        "You no longer have your role in shop:" + shop.getName());
             } catch (Exception e) {
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
