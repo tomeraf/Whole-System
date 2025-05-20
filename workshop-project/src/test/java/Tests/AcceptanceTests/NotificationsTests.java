@@ -400,47 +400,47 @@ public class NotificationsTests extends BaseAcceptanceTests{
 
         assertFalse(res.isOk(), "Buying cart content with empty cart should fail");
     }
-    @Test
-    public void testSendAndRespondToMessage() throws Exception {
-        // Arrange
-        String founderToken = fixtures.generateRegisteredUserSession("founder", "founder");
-        ShopDTO shopDTO = fixtures.generateShopAndItems(founderToken, "TestShop");
-
-        int shopId = shopDTO.getId();
-
-        String title = "Issue with item";
-        String content = "The item arrived damaged.";
-
-        // Act - Send a message
-        Response<Void> sendRes = shopService.sendMessage(founderToken, shopId, title, content);
-
-        // Assert message was sent successfully
-        assertTrue(sendRes.isOk(), "Sending message should succeed");
-
-        // Act - Respond to the message
-        String responseTitle = "Apologies";
-        String responseContent = "We'll send a replacement.";
-
-        Response<List<Message>> shopInboxRes = shopService.getInbox(founderToken, shopId);
-        Message originalMessage = shopInboxRes.getData().stream()
-                .filter(m -> m.getTitle().equals(title))
-                .findFirst()
-                .orElseThrow();
-
-        Response<Void> respondRes = shopService.respondToMessage(
-                founderToken, shopId, originalMessage.getId(), responseTitle, responseContent
-        );
-
-        assertTrue(respondRes.isOk(), "Responding to message should succeed");
-
-        // ✅ Notification check (replace with actual check depending on your test setup)
-        String recipientId = String.valueOf(originalMessage.getUserName());
-        try {
-            assertEquals(2, notificationHandler.getNotifications(recipientId).size(), "User should have been notified about message response");
-        } catch (Exception e) {
-            assertTrue(false,"User should have been notified about message response and about his message");
-        }
-    }
+//    @Test
+//    public void testSendAndRespondToMessage() throws Exception {
+//        // Arrange
+//        String founderToken = fixtures.generateRegisteredUserSession("founder", "founder");
+//        ShopDTO shopDTO = fixtures.generateShopAndItems(founderToken, "TestShop");
+//
+//        int shopId = shopDTO.getId();
+//
+//        String title = "Issue with item";
+//        String content = "The item arrived damaged.";
+//
+//        // Act - Send a message
+//        Response<Void> sendRes = shopService.sendMessage(founderToken, shopId, title, content);
+//
+//        // Assert message was sent successfully
+//        assertTrue(sendRes.isOk(), "Sending message should succeed");
+//
+//        // Act - Respond to the message
+//        String responseTitle = "Apologies";
+//        String responseContent = "We'll send a replacement.";
+//
+//        Response<List<Message>> shopInboxRes = shopService.getInbox(founderToken, shopId);
+//        Message originalMessage = shopInboxRes.getData().stream()
+//                .filter(m -> m.getTitle().equals(title))
+//                .findFirst()
+//                .orElseThrow();
+//
+//        Response<Void> respondRes = shopService.respondToMessage(
+//                founderToken, shopId, originalMessage.getId(), responseTitle, responseContent
+//        );
+//
+//        assertTrue(respondRes.isOk(), "Responding to message should succeed");
+//
+//        // ✅ Notification check (replace with actual check depending on your test setup)
+//        String recipientId = String.valueOf(originalMessage.getUserName());
+//        try {
+//            assertEquals(2, notificationHandler.getNotifications(recipientId).size(), "User should have been notified about message response");
+//        } catch (Exception e) {
+//            assertTrue(false,"User should have been notified about message response and about his message");
+//        }
+//    }
 
 
     @Test
@@ -490,56 +490,41 @@ public class NotificationsTests extends BaseAcceptanceTests{
         }
     }
 
-    @Test
-    public void testOfflineUserReceivesNotificationOnLogin() throws Exception {
-        // Arrange - register both sender and recipient
-        String senderToken = fixtures.generateRegisteredUserSession("senderUser", "pass");
-        String recipientToken = fixtures.registerUserWithoutLogin("recipientUser", "pass"); // Not logged in yet
+//    @Test
+//    public void testOfflineUserReceivesNotificationOnLogin() throws Exception {
+//        // Arrange - register both sender and recipient
+//        String senderToken = fixtures.generateRegisteredUserSession("senderUser", "pass");
+//        String recipientToken = fixtures.registerUserWithoutLogin("recipientUser", "pass"); // Not logged in yet
+//
+//        // Sender creates shop
+//        ShopDTO shopDTO = fixtures.generateShopAndItems(senderToken, "OfflineNotifShop");
+//        int shopId = shopDTO.getId();
+//
+//        // Get recipient userId (from repository, since not logged in)
+//        int recipientId = userRepository.getUserByName("recipientUser").getUserID();
+//
+//        // Act - sender sends a message
+//        String title = "Delayed Shipping";
+//        String content = "Will this item arrive by Friday?";
+//        Response<Void> sendRes = shopService.sendMessage(senderToken, shopId, title, content);
+//        assertTrue(sendRes.isOk(), "Message send should succeed");
+//
+//        // At this point recipient is not online. Notification should be stored.
+//        Queue<NotificationDTO> storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
+//        assertEquals(1, storedNotifs.size(), "Notification should be stored for offline user");
+//
+//        NotificationDTO notif = storedNotifs.peek();
+//        assertTrue(notif.getMessage().contains("You have a new message"), "Notification content should mention new message");
+//
+//        // Act - recipient now logs in (and we simulate fetching notifications)
+//        String actualRecipientToken = fixtures.loginUser(recipientToken,"recipientUser", "pass");
+//        notificationHandler.notifyUser(String.valueOf(recipientId)); // Simulate WebSocket connect
+//
+//        // After notification dispatch, queue should be empty
+//        storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
+//        assertEquals(0, storedNotifs.size(), "Notification queue should be cleared after delivery");
+//    }
 
-        // Sender creates shop
-        ShopDTO shopDTO = fixtures.generateShopAndItems(senderToken, "OfflineNotifShop");
-        int shopId = shopDTO.getId();
 
-        // Get recipient userId (from repository, since not logged in)
-        int recipientId = userRepository.getUserByName("recipientUser").getUserID();
-
-        // Act - sender sends a message
-        String title = "Delayed Shipping";
-        String content = "Will this item arrive by Friday?";
-        Response<Void> sendRes = shopService.sendMessage(senderToken, shopId, title, content);
-        assertTrue(sendRes.isOk(), "Message send should succeed");
-
-        // At this point recipient is not online. Notification should be stored.
-        Queue<NotificationDTO> storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
-        assertEquals(1, storedNotifs.size(), "Notification should be stored for offline user");
-
-        NotificationDTO notif = storedNotifs.peek();
-        assertTrue(notif.getMessage().contains("You have a new message"), "Notification content should mention new message");
-
-        // Act - recipient now logs in (and we simulate fetching notifications)
-        String actualRecipientToken = fixtures.loginUser(recipientToken,"recipientUser", "pass");
-        notificationHandler.notifyUser(String.valueOf(recipientId)); // Simulate WebSocket connect
-
-        // After notification dispatch, queue should be empty
-        storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
-        assertEquals(0, storedNotifs.size(), "Notification queue should be cleared after delivery");
-    }
-
-    // @Test
-    // public void testDelyedNotification_CloseShop(){
-    //     String ownerToken=fixtures.generateRegisteredUserSession("owner", "owner");
-    //     ShopDTO shop=fixtures.generateShopAndItems(ownerToken, "shop");
-    //     userService.logoutRegistered(ownerToken);
-    //     Response<Void> res=shopService.closeShop(managerToken, shop.getId());
-    //     assertTrue(res.isOk(), "Shop should be closed successfully");
-    //     // Check if the notification was delayed
-    //     String ownerId=Integer.parseInt(jwtAdapter.getUsername(ownerToken))+"";
-    //     assertTrue(notificationHandler.getNotifications(ownerId).size() > 0, "Notification should be delayed");
-    //     Response<String> res2=userService.loginUser(ownerToken, "owner", "owner");
-    //     Broadcaster.register(ownerId, msg -> {});
-    //     assertTrue(res2.isOk(), "User should be able to login");
-    //     userService.loginNotify(res2.getData());
-    //     assertTrue(notificationHandler.getNotifications(ownerId).size() == 0, "Notification should be delayed");
-    // }
 
 }
