@@ -333,7 +333,7 @@ public class Shop {
         return filteredItems;
     }
 
-    public void updatePurchaseType(String purchaseType) {
+    public void updatePurchaseType(PurchaseType purchaseType) {
         purchasePolicy.updatePurchaseType(purchaseType);
     }
 
@@ -550,6 +550,14 @@ public class Shop {
             }
         }
         return wonAuctions;
+    }
+
+    public List<PurchaseType> getPurchaseTypes() {
+        return purchasePolicy.getPurchaseTypes();
+    }
+
+    public List<DiscountType> getDiscountTypes() { 
+        return discountPolicy.getDiscountTypes();
     }
 }
 

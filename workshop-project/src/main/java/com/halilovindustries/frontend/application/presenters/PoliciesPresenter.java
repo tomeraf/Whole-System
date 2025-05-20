@@ -5,6 +5,7 @@ import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
@@ -69,7 +70,7 @@ public class PoliciesPresenter extends AbstractPresenter {
         });
     }
 
-    public void updatePurchaseType(int shopID, String purchaseType, Consumer<Response<Void>> onFinish) {
+    public void updatePurchaseType(int shopID, PurchaseType purchaseType, Consumer<Response<Void>> onFinish) {
         getSessionToken(token -> {
             if (token == null) {
                 UI.getCurrent().access(() -> onFinish.accept(Response.error("Invalid session")));
@@ -148,5 +149,27 @@ public class PoliciesPresenter extends AbstractPresenter {
             }
             });
         });        
+    }
+    public void getDiscountTypes(int shopId,Consumer<List<DiscountType>> onFinish) {
+        getSessionToken(token -> {
+            if (token == null) {
+                UI.getCurrent().access(() -> onFinish.accept(Collections.emptyList()));
+                return;
+            }
+            Response<List<DiscountType>> resp = shopService.getDiscountTypes(token,shopId);
+            List<DiscountType> data = resp.isOk() ? resp.getData() : Collections.emptyList();
+            UI.getCurrent().access(() -> onFinish.accept(data));
+        });
+    }
+    public void getPurchaseTypes(int shopId,Consumer<List<PurchaseType>> onFinish) {
+        getSessionToken(token -> {
+            if (token == null) {
+                UI.getCurrent().access(() -> onFinish.accept(Collections.emptyList()));
+                return;
+            }
+            Response<List<PurchaseType>> resp = shopService.getPurchaseTypes(token,shopId);
+            List<PurchaseType> data = resp.isOk() ? resp.getData() : Collections.emptyList();
+            UI.getCurrent().access(() -> onFinish.accept(data));
+        });
     }
 }

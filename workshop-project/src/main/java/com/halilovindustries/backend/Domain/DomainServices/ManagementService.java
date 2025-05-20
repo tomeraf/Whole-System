@@ -11,6 +11,7 @@ import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.*;
 
 public class ManagementService {
@@ -136,7 +137,7 @@ public class ManagementService {
         }
     }
     
-    public void updatePurchaseType(Registered supplyManager, Shop shop, String purchaseType) {
+    public void updatePurchaseType(Registered supplyManager, Shop shop, PurchaseType purchaseType) {
         if( supplyManager.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
             shop.updatePurchaseType(purchaseType);
         } else {
