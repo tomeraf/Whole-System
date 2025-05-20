@@ -1,7 +1,9 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.frontend.application.presenters.MyShopPresenter;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.UI;
@@ -21,9 +23,14 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
+
 
 import java.util.Arrays;
+import java.util.function.Consumer;
+import java.time.LocalDateTime;
 
+import org.atmosphere.interceptor.AtmosphereResourceStateRecovery.B;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "shop-supply/", layout = MainLayout.class)
@@ -32,16 +39,24 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
 
     private final MyShopPresenter presenter;
     private final FlexLayout itemsLayout = new FlexLayout();
+    private final FlexLayout activeAuctionsLayout = new FlexLayout();
+    private final FlexLayout futureAuctionsLayout = new FlexLayout();
+
+
     private Button back = new Button("← Back");
     
     private final H3 shopTitle = new H3();
     private Button addItemButton;
+    private Button createAuctionButton;
     @Autowired
     public SupplyView(MyShopPresenter presenter) {
         this.presenter = presenter;
 
         addItemButton = new Button("Add Item", VaadinIcon.PLUS.create());
         addItemButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+
+        createAuctionButton = new Button("Create Auction", VaadinIcon.PLUS.create());
+        createAuctionButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
         
         HorizontalLayout header = new HorizontalLayout(shopTitle, back, addItemButton);
         header.setWidthFull();
@@ -54,7 +69,23 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         itemsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
         itemsLayout.getStyle().set("gap", "1rem");
 
+        
+        activeAuctionsLayout.setWidthFull();
+        activeAuctionsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+        activeAuctionsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+        activeAuctionsLayout.getStyle().set("gap", "1rem");
+
+        futureAuctionsLayout.setWidthFull();
+        futureAuctionsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+        futureAuctionsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+        futureAuctionsLayout.getStyle().set("gap", "1rem");
+        
         getContent().add(itemsLayout);
+
+        getContent().add(new H3("Ongoing Auctions"));
+        getContent().add(activeAuctionsLayout);
+        getContent().add(new H3("Future Auctions"));
+        getContent().add(futureAuctionsLayout);
     }
 
     /**
@@ -66,10 +97,62 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         addItemButton.addClickListener(e -> openAddItemDialog(shopID));  // open your “add item” dialog
         back.addClickListener(e -> UI.getCurrent().navigate("manage-shop/" + shopID));
 
+        createAuctionButton.addClickListener(e -> {
+            Dialog auctionDialog = new Dialog();
+            auctionDialog.setHeaderTitle("Create New Auction");
+
+            ComboBox<ItemDTO> itemComboBox = new ComboBox<>("Select Item");
+            presenter.getShopInfo(shopID, shop -> {
+                UI.getCurrent().access(() -> {
+                    itemComboBox.setItems(shop.getItems().values());
+                    itemComboBox.setItemLabelGenerator(ItemDTO::getName);
+                });
+            });
+            NumberField startingPriceField = new NumberField("Starting Price");
+            startingPriceField.setMin(0.01);
+            startingPriceField.setStep(0.1);
+            startingPriceField.setValue(10.0); // Default
+
+            DateTimePicker startDateField = new DateTimePicker("Start Date & Time");
+            startDateField.setValue(LocalDateTime.now());
+
+            DateTimePicker endDateField = new DateTimePicker("End Date & Time");
+            endDateField.setValue(LocalDateTime.now().plusHours(24));
+
+            VerticalLayout layout = new VerticalLayout(
+            itemComboBox, startingPriceField, startDateField, endDateField
+            );
+
+            Button createBtn = new Button("Create", ev -> {
+                ItemDTO selectedItem = itemComboBox.getValue();
+                Double price = startingPriceField.getValue();
+                LocalDateTime start = startDateField.getValue();
+                LocalDateTime end = endDateField.getValue();
+                presenter.createAuction(shopID, selectedItem.getItemID(), price, start, end, success -> {
+                    UI.getCurrent().access(() -> {
+                        if (success) {
+                            Notification.show("Auction created", 2000, Position.TOP_CENTER);
+                            auctionDialog.close();
+                            loadItems(shopID);
+                        } else {
+                            Notification.show("Failed to create auction", 2000, Position.MIDDLE);
+                        }
+                    });
+                });
+            });
+
+            Button cancelBtn = new Button("Cancel", ev -> auctionDialog.close());
+            HorizontalLayout buttons = new HorizontalLayout(createBtn, cancelBtn);
+            layout.add(buttons);
+            auctionDialog.add(layout);
+            auctionDialog.open();
+        });
     }
 
     private void loadItems(int shopID) {
         itemsLayout.removeAll();
+        activeAuctionsLayout.removeAll();
+        futureAuctionsLayout.removeAll();
         presenter.getShopInfo(shopID, shop -> {
             UI.getCurrent().access(() -> {
                 if (shop == null) {
@@ -80,11 +163,32 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
                 shopTitle.setText(shop.getName());
 
                 // now render each item
-                shop.getItems().values()
+                shop.getItems().values()    
                     .forEach(item -> itemsLayout.add(createItemCard(item)));
+                
+                presenter.getActiveAuctions(shopID, auctions -> {
+                    for (AuctionDTO auction : auctions) {
+                        createAuctionCard(shopID, auction, card -> {
+                            UI.getCurrent().access(() -> { 
+                                activeAuctionsLayout.add(card);
+                            });
+                        });
+                    }
+
+                    presenter.getFutureAuctions(shopID, futureAuctions -> {
+                        for (AuctionDTO auction : futureAuctions) {
+                            createAuctionCard(shopID, auction, card -> {
+                                UI.getCurrent().access(() -> { 
+                                    futureAuctionsLayout.add(card);
+                                });
+                            });
+                        }
+                    });
+                });
             });
         });
     }
+    
 
     // private void openAddItemDialog1(int shopID) {
     //     Dialog dlg = new Dialog();
@@ -223,6 +327,38 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         return card;
     }
 
+   private void createAuctionCard(int shopID, AuctionDTO auction, Consumer<VerticalLayout> onCardReady) {
+        presenter.getShopInfo(shopID, shop -> {
+        ItemDTO item = shop.getItems().get(auction.getItemId());
+            VerticalLayout card = new VerticalLayout();
+            card.setAlignItems(FlexComponent.Alignment.CENTER);
+            card.getStyle()
+                .set("border", "2px dashed #555")
+                .set("border-radius", "8px")
+                .set("padding", "1rem")
+                .set("width", "200px")
+                .set("background-color", "#fef6e4");
+
+            Span name = new Span(item.getName());
+            name.getStyle().set("font-size", "1.5em").set("font-weight", "bold");
+
+            Span currentPrice = new Span("Current: $" + auction.getHighestBid());
+            currentPrice.getStyle().set("color", "#d35400");
+
+            Span startsAt = new Span("Starts: " + auction.getAuctionStartTime().toString());
+            startsAt.getStyle().set("font-size", "0.85em").set("color", "#888");;
+
+            Span endsAt = new Span("Ends: " + auction.getAuctionEndTime().toString());
+            endsAt.getStyle().set("font-size", "0.85em").set("color", "#888");
+
+            card.add(name, currentPrice, startsAt, endsAt);
+            onCardReady.accept(card);
+        });
+    }
+
+
+
+
     // private void editItemDetails1(ItemDTO item) {
     //     Div stock = new Div();
     //     stock.getStyle()
@@ -280,6 +416,66 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         TextArea descArea = new TextArea("Description");
         descArea.setValue(item.getDescription());
         descArea.setWidthFull();
+
+
+        Button createAuction = new Button("Create Auction", e -> {
+            Dialog auctionDialog = new Dialog();
+            auctionDialog.setHeaderTitle("Create Auction");
+
+            VerticalLayout layout = new VerticalLayout();
+            layout.setSpacing(true);
+
+            // Input fields
+            NumberField startingPriceField = new NumberField("Starting Price");
+            startingPriceField.setMin(0.01);
+            startingPriceField.setStep(0.1);
+            startingPriceField.setValue(10.0); // Default
+
+            DateTimePicker startDateField = new DateTimePicker("Start Date & Time");
+            startDateField.setValue(LocalDateTime.now());
+
+            DateTimePicker endDateField = new DateTimePicker("End Date & Time");
+            endDateField.setValue(LocalDateTime.now().plusHours(24));
+
+            layout.add(startingPriceField, startDateField, endDateField);
+
+            // Buttons
+            Button confirmBtn = new Button("Create", event -> {
+                Double price = startingPriceField.getValue();
+                LocalDateTime startDate = startDateField.getValue();
+                LocalDateTime endDate = endDateField.getValue();
+
+                if (price == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+                    Notification.show("Please provide valid inputs", 3000, Position.MIDDLE);
+                    return;
+                }
+
+                int currentShopID = item.getShopId();
+                int itemID = item.getItemID();
+
+                presenter.createAuction(currentShopID, itemID, price, startDate, endDate, success -> {
+                    UI.getCurrent().access(() -> {
+                        if (success) {
+                            Notification.show("Auction created", 2000, Position.TOP_CENTER);
+                            auctionDialog.close();
+                            dlg.close();
+                            loadItems(currentShopID);
+                        } else {
+                            Notification.show("Failed to create auction", 2000, Position.MIDDLE);
+                        }
+                    });
+                });
+            });
+
+            Button cancelBtn = new Button("Cancel", e2 -> auctionDialog.close());
+
+            HorizontalLayout buttons = new HorizontalLayout(confirmBtn, cancelBtn);
+            layout.add(buttons);
+
+            auctionDialog.add(layout);
+            auctionDialog.open();
+        });
+        createAuction.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
 
         // 4) Action buttons
         Button save = new Button("Save", e -> {
@@ -342,6 +538,8 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         Button cancel = new Button("Cancel", e2 -> dlg.close());
         cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
+        
+        HorizontalLayout auctionLayout = new HorizontalLayout(createAuction);
         HorizontalLayout actions = new HorizontalLayout(save, delete, cancel);
         actions.setSpacing(true);
 
@@ -351,6 +549,7 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
             qtyField,
             priceField,
             descArea,
+            auctionLayout,
             actions
         );
         layout.setPadding(false);

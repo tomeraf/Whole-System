@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.presenters;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
@@ -259,5 +260,46 @@ public class ShopPresenter extends AbstractPresenter {
                 }
             });
         });        
+    }
+
+    public void getActiveAuctions(int shopID, Consumer<List<AuctionDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                    return;
+                }
+                Response<List<AuctionDTO>> res = shopService.getActiveAuctions(token, shopID);
+                if (!res.isOk()) {
+                    Notification.show("Error: " + res.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                } else {
+                    onFinish.accept(res.getData());
+                }
+            });
+        });
+    }
+    public void getWonAuctions(int shopId, Consumer<List<AuctionDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    return;
+                }
+
+                Response<List<AuctionDTO>> resp = shopService.getWonAuctions(token, shopId);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                } else {
+                    onFinish.accept(resp.getData());
+                }
+            });
+        });
     }
 }

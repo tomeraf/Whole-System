@@ -1,28 +1,43 @@
 package com.halilovindustries.frontend.application.views;
 
+import java.time.Year;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.halilovindustries.frontend.application.presenters.ShopPresenter;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.BeforeEvent;
@@ -84,6 +99,42 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
                     itemsLayout.getStyle().set("gap", "1rem");
                     items.forEach(item -> itemsLayout.add(createItemCard(item)));
                     add(itemsLayout);
+                });
+
+                // Auctions grid
+                shopPresenter.getActiveAuctions(shopId, auctions -> {
+                    if (auctions != null && !auctions.isEmpty()) {
+                        VerticalLayout auctionSection = new VerticalLayout();
+                        auctionSection.add(new H2("Auctions"));
+                        FlexLayout auctionLayout = new FlexLayout();
+                        auctionLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        auctionLayout.getStyle().set("gap", "1rem");
+
+                        auctions.forEach(auction -> {
+                            createAuctionCard(shopId, auction, auctionCard -> {
+                                auctionLayout.add(auctionCard);
+                            });
+                        });
+                        auctionSection.add(auctionLayout);
+                        add(auctionSection);
+                    }
+                });
+                shopPresenter.getWonAuctions(shopId, auctions -> {
+                    if (auctions != null && !auctions.isEmpty()) {
+                        VerticalLayout auctionSection = new VerticalLayout();
+                        auctionSection.add(new H2("Won Auctions"));
+                        FlexLayout auctionLayout = new FlexLayout();
+                        auctionLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        auctionLayout.getStyle().set("gap", "1rem");
+
+                        auctions.forEach(auction -> {
+                            createWonAuctionCard(shopId, auction, auctionCard -> {
+                                auctionLayout.add(auctionCard);
+                            });
+                        });
+                        auctionSection.add(auctionLayout);
+                        add(auctionSection);
+                    }
                 });
             });
         });
@@ -286,4 +337,229 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         return card;
     }
+
+      private void createAuctionCard(int shopID, AuctionDTO auction, Consumer<VerticalLayout> onCardReady) {
+        shopPresenter.getShopInfo(shopID, shop -> {
+        ItemDTO item = shop.getItems().get(auction.getItemId());
+            VerticalLayout card = new VerticalLayout();
+            card.setAlignItems(FlexComponent.Alignment.CENTER);
+            card.getStyle()
+                .set("border", "2px dashed #555")
+                .set("border-radius", "8px")
+                .set("padding", "1rem")
+                .set("width", "200px")
+                .set("background-color", "#fef6e4");
+
+            Span name = new Span(item.getName());
+            name.getStyle().set("font-size", "1.5em").set("font-weight", "bold");
+
+            Span currentPrice = new Span("Current: $" + (auction.getHighestBid() > auction.getStartingBid() ? auction.getHighestBid() : auction.getStartingBid()));
+            currentPrice.getStyle().set("color", "#d35400");
+
+            Span endsAt = new Span("Ends: " + auction.getAuctionEndTime().toString());
+            endsAt.getStyle().set("font-size", "0.85em").set("color", "#888");
+
+            Button bidButton = new Button("Place Bid", e -> openBidDialog(shopID, auction, currentPrice));
+            bidButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+            card.add(name, currentPrice, endsAt, bidButton);
+            onCardReady.accept(card);
+        });
+    }
+
+    private void createWonAuctionCard(int shopID, AuctionDTO auction, Consumer<VerticalLayout> onCardReady) {
+        shopPresenter.getShopInfo(shopID, shop -> {
+        ItemDTO item = shop.getItems().get(auction.getItemId());
+            VerticalLayout card = new VerticalLayout();
+            card.setAlignItems(FlexComponent.Alignment.CENTER);
+            card.getStyle()
+                .set("border", "2px dashed #555")
+                .set("border-radius", "8px")
+                .set("padding", "1rem")
+                .set("width", "200px")
+                .set("background-color", "#fef6e4");
+
+            Span name = new Span(item.getName());
+            name.getStyle().set("font-size", "1.5em").set("font-weight", "bold");
+
+            Span Price = new Span("Current: $" + auction.getHighestBid());
+            Price.getStyle().set("color", "#d35400");
+
+            Span endedAt = new Span("Ended at: " + auction.getAuctionEndTime().toString());
+            endedAt.getStyle().set("font-size", "0.85em").set("color", "#888");
+
+            Button purchaseButton = new Button("Purchase", e -> openAuctionPurchaseDialog(shopID, auction, Price));
+            purchaseButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+            card.add(name, Price, endedAt, purchaseButton);
+            onCardReady.accept(card);
+        });
+    }
+
+    private void openBidDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("300px");
+
+        NumberField bidField = new NumberField("Your Bid");
+        bidField.setStep(0.01);
+        bidField.setMin(auction.getHighestBid());
+        bidField.setValue(auction.getHighestBid());
+
+        Button confirm = new Button("Confirm Bid", event -> {
+            double bid = bidField.getValue();
+            // Submit bid through presenter
+            shopPresenter.submitAuctionOffer(shopID, auction.getId(), bid, success -> {
+                if (success) {
+                    currentPriceLabel.setText("Current: $" + bid);
+                    dialog.close();
+                } else {
+                    bidField.setInvalid(true);
+                    bidField.setErrorMessage("Bid failed. Try again.");
+                }
+            });
+        });
+        confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        VerticalLayout layout = new VerticalLayout(
+            new H2("Place a Bid"),
+            bidField,
+            confirm
+        );
+        dialog.add(layout);
+        dialog.open();
+    }
+
+    private void openAuctionPurchaseDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
+        Dialog dialog = new Dialog();
+        dialog.setModal(true);
+        dialog.setCloseOnEsc(true);
+        dialog.setCloseOnOutsideClick(true);
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(true);
+        dialogLayout.setSpacing(true);
+        dialogLayout.setAlignItems(FlexComponent.Alignment.START);
+
+        // —— Header ——
+        H2 title = new H2("Checkout");
+        Button back = new Button("×", e -> dialog.close()); // Close dialog instead of navigating
+        back.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        HorizontalLayout header = new HorizontalLayout(title, back);
+        header.setWidthFull();
+        header.expand(title);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        dialogLayout.add(header);
+
+        // —— Shipment Details ——
+        dialogLayout.add(new H3("Shipment Details"));
+        FormLayout shipForm = new FormLayout();
+        shipForm.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("600px", 2)
+        );
+        shipForm.getElement().setAttribute("autocomplete", "off");
+
+        TextField fullName = new TextField("Full Name");
+        TextField email    = new TextField("Email");
+        TextField phone    = new TextField("Phone");
+        TextField address  = new TextField("Address");
+        TextField city     = new TextField("City");
+        TextField zipCode  = new TextField("Zip Code");
+        ComboBox<String> country = new ComboBox<>("Country");
+        country.setItems(
+            Arrays.stream(Locale.getISOCountries())
+                .map(c -> new Locale("",c).getDisplayCountry())
+                .sorted()
+                .collect(Collectors.toList())
+        );
+
+        shipForm.add(fullName, email, phone, address, city, country, zipCode);
+        dialogLayout.add(shipForm);
+
+        // —— Payment Details ——
+        dialogLayout.add(new H3("Payment Details"));
+        FormLayout payForm = new FormLayout();
+        payForm.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("600px", 2)
+        );
+        payForm.getElement().setAttribute("autocomplete", "off");
+
+        TextField cardHolderName = new TextField("Card Holder Name");
+        TextField holderId       = new TextField("Card Holder ID");
+        TextField cardNumber     = new TextField("Card Number");
+        ComboBox<String> expMonth = new ComboBox<>("Exp. Month");
+        expMonth.setItems("01","02","03","04","05","06","07","08","09","10","11","12");
+
+        ComboBox<String> expYear  = new ComboBox<>("Exp. Year");
+        int currentYear = Year.now().getValue();
+        List<String> years = IntStream
+            .range(currentYear, currentYear + 41)
+            .mapToObj(String::valueOf)
+            .collect(Collectors.toList());
+        expYear.setItems(years);
+
+        PasswordField cvv = new PasswordField("CVV");
+        expYear.getElement().setAttribute("autocomplete", "new-password");
+        cvv.getElement().setAttribute("autocomplete", "new-password");
+
+        payForm.add(cardHolderName, holderId, cardNumber, expMonth, expYear, cvv);
+        dialogLayout.add(payForm);
+
+        // —— Place Order ——
+        Button placeOrder = new Button("Place Order", VaadinIcon.CART.create());
+        placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        placeOrder.getStyle().set("margin-top", "1rem");
+
+        placeOrder.addClickListener(e -> {
+            shopPresenter.getSessionToken(token -> {
+                UI ui = UI.getCurrent();
+                if (ui == null) return;
+                ui.access(() -> {
+                    if (token == null || !shopPresenter.validateToken(token)) {
+                        Notification.show("Session expired, please log in again", 2000, Notification.Position.MIDDLE);
+                        return;
+                    }
+
+                    ShipmentDetailsDTO shipDto = new ShipmentDetailsDTO(
+                        holderId.getValue(),
+                        fullName.getValue(),
+                        email.getValue(),
+                        phone.getValue(),
+                        country.getValue(),
+                        city.getValue(),
+                        address.getValue(),
+                        zipCode.getValue()
+                    );
+
+                    PaymentDetailsDTO payDto = new PaymentDetailsDTO(
+                        cardNumber.getValue(),
+                        cardHolderName.getValue(),
+                        holderId.getValue(),
+                        expMonth.getValue() + "/" + expYear.getValue(),
+                        cvv.getValue()
+                    );
+
+                    shopPresenter.purchaseAuctionItem(shopID, auction.getId(), payDto, shipDto, order -> {
+                        ui.access(() -> {
+                            if (order != null) {
+                                Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
+                                dialog.close(); // Close on success
+                                UI.getCurrent().navigate(""); // Or refresh, or go somewhere
+                            } else {
+                                Notification.show("Failed to place order", 2000, Position.MIDDLE);
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
+        dialogLayout.add(placeOrder);
+        dialogLayout.setHorizontalComponentAlignment(FlexComponent.Alignment.CENTER, placeOrder);
+
+        dialog.add(dialogLayout);
+        dialog.open();
+    }
+
 }
