@@ -65,6 +65,28 @@ public class AcceptanceTestFixtures {
         return ownerToken;
     }
 
+    public String registerUserWithoutLogin(String name, String password) {
+        Response<String> guestResp = userService.enterToSystem();
+        assertTrue(guestResp.isOk(), "Guest entry should succeed");
+        String guestToken = guestResp.getData();
+        assertNotNull(guestToken, "Guest token must not be null");
+
+        Response<Void> regRes = userService.registerUser(
+                guestToken, name, password, LocalDate.now().minusYears(25)
+        );
+        assertTrue(regRes.isOk(), "User registration should succeed");
+
+        return guestToken; // Still a guest token, since user is not logged in
+    }
+    public String loginUser(String guestToken, String username, String password) {
+        Response<String> loginRes = userService.loginUser(guestToken, username, password);
+        assertTrue(loginRes.isOk(), "Login should succeed");
+        String userToken = loginRes.getData();
+        assertNotNull(userToken, "User token must not be null after login");
+        return userToken;
+    }
+
+
     public String generateSystemManagerSession(String name, String password) {
         Response<String> guestResp = userService.enterToSystem();
         assertTrue(guestResp.isOk(), "System manager enterToSystem should succeed");
