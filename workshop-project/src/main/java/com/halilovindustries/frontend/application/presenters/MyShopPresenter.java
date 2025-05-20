@@ -7,6 +7,7 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
@@ -220,7 +221,7 @@ public class MyShopPresenter extends AbstractPresenter {
     });
     }
 
-    public void updatePurchaseType(int shopID, String purchaseType, Consumer<Boolean> onFinish) {
+    public void updatePurchaseType(int shopID, PurchaseType purchaseType, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;

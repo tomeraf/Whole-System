@@ -14,6 +14,7 @@ import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -777,7 +778,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     public void testUpdatePurchasePolicy_WithInvalidToken_ShouldFail() {
         // use an invalid token
         String badToken = "invalid";
-        Response<Void> resp = shopService.updatePurchaseType(badToken, 1, "ANY_POLICY");
+        Response<Void> resp = shopService.updatePurchaseType(badToken, 1, PurchaseType.BID);
         assertFalse(resp.isOk(), "Should fail when not logged in");
     }
 
@@ -796,29 +797,10 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(addMgr.isOk(), "addShopManager should succeed");
 
         // 3) Attempt to edit
-        Response<Void> resp = shopService.updatePurchaseType(mgrToken, shop.getId(), "ANY_POLICY");
+        Response<Void> resp = shopService.updatePurchaseType(mgrToken, shop.getId(), PurchaseType.BID);
         assertFalse(resp.isOk(), "Should fail when lacking permission");
     }
 
-    @Test
-    public void testPurchasePolicyFormat_InvalidFormat_ShouldFail() {
-        // 1) Owner + shop
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-
-        // 2) Manager with permission
-        String mgrGuest = userService.enterToSystem().getData();
-        userService.registerUser(mgrGuest, "mgrBadP", "pwdB", LocalDate.now().minusYears(30));
-        String mgrToken = userService.loginUser(mgrGuest, "mgrBadP", "pwdB").getData();
-
-        Set<Permission> perms = new HashSet<>();
-        perms.add(Permission.UPDATE_PURCHASE_POLICY);
-        shopService.addShopManager(ownerToken, shop.getId(), "mgrBadP", perms);
-
-        // 3) Submit malformed policy
-        Response<Void> resp = shopService.updatePurchaseType(mgrToken, shop.getId(), "not a valid format");
-        assertFalse(resp.isOk(), "Should fail on invalid format");
-    }
 
     @Test
     public void testCloseShop_ShouldSucceed() {

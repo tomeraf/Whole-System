@@ -8,9 +8,12 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLim
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.frontend.application.presenters.PoliciesPresenter;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Label;
@@ -29,6 +32,7 @@ import com.vaadin.flow.router.Route;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -40,6 +44,8 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
 
     private final PoliciesPresenter presenter;
     private int shopId;
+    private boolean suppressPurchaseEvents = false;
+    private boolean suppressDiscountEvents = false;
 
     // ─── EXISTING CONDITION FIELDS (UNCHANGED) ─────────────────────────────────
 
@@ -47,24 +53,24 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     private Grid<ConditionDTO> conditionsGrid = new Grid<>(ConditionDTO.class, false);
     private Dialog conditionDialog;
 
-    private Select<String> itemSelect1       = new Select<>();
+    private Select<String> itemSelect1 = new Select<>();
     private Select<Category> categorySelect1 = new Select<>();
     private Select<ConditionLimits> limitsSelect1 = new Select<>();
-    private IntegerField minField1           = new IntegerField("Min");
-    private IntegerField maxField1           = new IntegerField("Max");
+    private IntegerField minField1 = new IntegerField("Min");
+    private IntegerField maxField1 = new IntegerField("Max");
 
-    private Select<String> itemSelect2       = new Select<>();
+    private Select<String> itemSelect2 = new Select<>();
     private Select<Category> categorySelect2 = new Select<>();
     private Select<ConditionLimits> limitsSelect2 = new Select<>();
-    private IntegerField minField2           = new IntegerField("Min");
-    private IntegerField maxField2           = new IntegerField("Max");
+    private IntegerField minField2 = new IntegerField("Min");
+    private IntegerField maxField2 = new IntegerField("Max");
 
     private Button baseButton = new Button("Base");
-    private Button xorButton  = new Button("XOR");
-    private Button andButton  = new Button("AND");
-    private Button orButton   = new Button("OR");
+    private Button xorButton = new Button("XOR");
+    private Button andButton = new Button("AND");
+    private Button orButton = new Button("OR");
 
-    private Map<String,Integer> itemNameToId = new HashMap<>();
+    private Map<String, Integer> itemNameToId = new HashMap<>();
 
     // ─── NEW DISCOUNT FIELDS ───────────────────────────────────────────────────
 
@@ -73,30 +79,32 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     private Dialog discountDialog;
 
     // ─── DISCOUNT-CONDITION DIALOG #1 FIELDS ──────────────────────────
-    private Select<String>           dcItemSelect1       = new Select<>();
-    private Select<Category>         dcCategorySelect1   = new Select<>();
-    private Select<ConditionLimits>  dcLimitsSelect1     = new Select<>();
-    private IntegerField             dcMinField1         = new IntegerField("Min");
-    private IntegerField             dcMaxField1         = new IntegerField("Max");
-    private Dialog                   discountConditionDialog1;
+    private Select<String> dcItemSelect1 = new Select<>();
+    private Select<Category> dcCategorySelect1 = new Select<>();
+    private Select<ConditionLimits> dcLimitsSelect1 = new Select<>();
+    private IntegerField dcMinField1 = new IntegerField("Min");
+    private IntegerField dcMaxField1 = new IntegerField("Max");
+    private Dialog discountConditionDialog1;
 
     // ─── DISCOUNT-CONDITION DIALOG #2 FIELDS ──────────────────────────
-    private Select<String>           dcItemSelect2       = new Select<>();
-    private Select<Category>         dcCategorySelect2   = new Select<>();
-    private Select<ConditionLimits>  dcLimitsSelect2     = new Select<>();
-    private IntegerField             dcMinField2         = new IntegerField("Min");
-    private IntegerField             dcMaxField2         = new IntegerField("Max");
-    private Dialog                   discountConditionDialog2;
-
+    private Select<String> dcItemSelect2 = new Select<>();
+    private Select<Category> dcCategorySelect2 = new Select<>();
+    private Select<ConditionLimits> dcLimitsSelect2 = new Select<>();
+    private IntegerField dcMinField2 = new IntegerField("Min");
+    private IntegerField dcMaxField2 = new IntegerField("Max");
+    private Dialog discountConditionDialog2;
 
     private ConditionDTO selectedCondition1;
     private ConditionDTO selectedCondition2;
 
     // temporary holder & callback for re-using the same conditionDialog
     private ConditionDTO tempCondition;
-    //private Dialog discountConditionDialog1;
-    //private Dialog discountConditionDialog2;
+    // private Dialog discountConditionDialog1;
+    // private Dialog discountConditionDialog2;
     private Consumer<ConditionDTO> onConditionSaved;
+    // fd
+    private CheckboxGroup<PurchaseType> purchaseTypeGroup = new CheckboxGroup<>();
+    private CheckboxGroup<DiscountType> discountTypeGroup = new CheckboxGroup<>();
 
     // ─── CONSTRUCTOR ────────────────────────────────────────────────────────────
 
@@ -107,30 +115,77 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
 
         // header: both buttons
         HorizontalLayout header = new HorizontalLayout(addConditionButton, addDiscountButton);
-        add(header);
+        purchaseTypeGroup.setLabel("Purchase Policies");
+        purchaseTypeGroup.setItems(PurchaseType.values());
+
+        discountTypeGroup.setLabel("Discount Policies");
+        discountTypeGroup.setItems(DiscountType.values());
+
+        purchaseTypeGroup.addValueChangeListener(e -> {
+            if (suppressPurchaseEvents) return;
+
+            Set<PurchaseType> newValue = e.getValue();
+            Set<PurchaseType> oldValue = e.getOldValue();
+
+            for (PurchaseType type : newValue) {
+                if (!oldValue.contains(type)) {
+                    presenter.updatePurchaseType(shopId, type, resp -> {
+                        // Optional notification
+                    });
+                }
+            }
+            for (PurchaseType type : oldValue) {
+                if (!newValue.contains(type)) {
+                    presenter.updatePurchaseType(shopId, type, resp -> {
+                        // Optional notification
+                    });
+                }
+            }
+        });
+
+        discountTypeGroup.addValueChangeListener(e -> {
+            if (suppressDiscountEvents) return;
+
+            Set<DiscountType> newValue = e.getValue();
+            Set<DiscountType> oldValue = e.getOldValue();
+
+            for (DiscountType type : newValue) {
+                if (!oldValue.contains(type)) {
+                    presenter.updateDiscountType(shopId, type, resp -> {});
+                }
+            }
+            for (DiscountType type : oldValue) {
+                if (!newValue.contains(type)) {
+                    presenter.updateDiscountType(shopId, type, resp -> {});
+                }
+            }
+        });
+
+
+        HorizontalLayout policyControls = new HorizontalLayout(
+                purchaseTypeGroup,
+                discountTypeGroup);
+        add(header, policyControls);
 
         // add grids
         add(conditionsGrid);
         add(discountsGrid);
 
         // configure both dialogs
-        configureConditionDialog();  // builds conditionDialog & wiring        
+        configureConditionDialog(); // builds conditionDialog & wiring
         configureDiscountDialog();
         configureDiscountConditionDialog(
-            true, 
-            dcItemSelect1, dcCategorySelect1, dcLimitsSelect1, dcMinField1, dcMaxField1,
-            dlg -> discountConditionDialog1 = dlg
-        );
+                true,
+                dcItemSelect1, dcCategorySelect1, dcLimitsSelect1, dcMinField1, dcMaxField1,
+                dlg -> discountConditionDialog1 = dlg);
         configureDiscountConditionDialog(
-            false,
-            dcItemSelect2, dcCategorySelect2, dcLimitsSelect2, dcMinField2, dcMaxField2,
-            dlg -> discountConditionDialog2 = dlg
-        );
-
+                false,
+                dcItemSelect2, dcCategorySelect2, dcLimitsSelect2, dcMinField2, dcMaxField2,
+                dlg -> discountConditionDialog2 = dlg);
 
         // openers
         addConditionButton.addClickListener(e -> conditionDialog.open());
-        addDiscountButton .addClickListener(e -> discountDialog.open());
+        addDiscountButton.addClickListener(e -> discountDialog.open());
     }
 
     // ─── ROUTER PARAMETER ────────────────────────────────────────────────────────
@@ -138,9 +193,22 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     @Override
     public void setParameter(BeforeEvent event, Integer parameter) {
         this.shopId = parameter;
-        presenter.getShopInfo(shopId, shop -> {
-            if (shop == null) return;
 
+        presenter.getShopInfo(shopId, shop -> {
+            if (shop == null)
+                return;
+
+            presenter.getPurchaseTypes(shopId, types -> getUI().ifPresent(ui -> ui.access(() -> {
+                suppressPurchaseEvents = true;
+                purchaseTypeGroup.setValue(types == null ? Set.of() : Set.copyOf(types));
+                suppressPurchaseEvents = false;
+            })));
+
+            presenter.getDiscountTypes(shopId, types -> getUI().ifPresent(ui -> ui.access(() -> {
+                suppressDiscountEvents = true;
+                discountTypeGroup.setValue(types == null ? Set.of() : Set.copyOf(types));
+                suppressDiscountEvents = false;
+            })));
             // build & load conditions
             configureConditionsGrid(shop);
             loadConditions();
@@ -157,45 +225,47 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         conditionsGrid.removeAllColumns();
         conditionsGrid.addColumn(ConditionDTO::getConditionType).setHeader("Type").setWidth("80px").setFlexGrow(0);
         conditionsGrid.addColumn(dto -> dto.getItemId() >= 0
-                  ? shop.getItems().get(dto.getItemId()).getName() : "")
-            .setHeader("Item 1").setWidth("80px").setFlexGrow(0);
-        conditionsGrid.addColumn(dto -> dto.getCategory()!=null?dto.getCategory().name():"")
-            .setHeader("Category 1").setWidth("140px").setFlexGrow(0);
-        conditionsGrid.addColumn(dto -> dto.getConditionLimits()!=null?dto.getConditionLimits().name():"")
-            .setHeader("Limits 1").setWidth("140px").setFlexGrow(0);
+                ? shop.getItems().get(dto.getItemId()).getName()
+                : "")
+                .setHeader("Item 1").setWidth("80px").setFlexGrow(0);
+        conditionsGrid.addColumn(dto -> dto.getCategory() != null ? dto.getCategory().name() : "")
+                .setHeader("Category 1").setWidth("140px").setFlexGrow(0);
+        conditionsGrid.addColumn(dto -> dto.getConditionLimits() != null ? dto.getConditionLimits().name() : "")
+                .setHeader("Limits 1").setWidth("140px").setFlexGrow(0);
         conditionsGrid.addColumn(dto -> {
-            if (dto.getConditionLimits()==ConditionLimits.PRICE && dto.getMinPrice()>=0)
+            if (dto.getConditionLimits() == ConditionLimits.PRICE && dto.getMinPrice() >= 0)
                 return String.valueOf(dto.getMinPrice());
-            if (dto.getConditionLimits()==ConditionLimits.QUANTITY && dto.getMinQuantity()>=0)
+            if (dto.getConditionLimits() == ConditionLimits.QUANTITY && dto.getMinQuantity() >= 0)
                 return String.valueOf(dto.getMinQuantity());
             return "";
         }).setHeader("Min 1").setWidth("80px").setFlexGrow(0);
         conditionsGrid.addColumn(dto -> {
-            if (dto.getConditionLimits()==ConditionLimits.PRICE && dto.getMaxPrice()>=0)
+            if (dto.getConditionLimits() == ConditionLimits.PRICE && dto.getMaxPrice() >= 0)
                 return String.valueOf(dto.getMaxPrice());
-            if (dto.getConditionLimits()==ConditionLimits.QUANTITY && dto.getMaxQuantity()>=0)
+            if (dto.getConditionLimits() == ConditionLimits.QUANTITY && dto.getMaxQuantity() >= 0)
                 return String.valueOf(dto.getMaxQuantity());
             return "";
         }).setHeader("Max 1").setWidth("80px").setFlexGrow(0);
 
-        conditionsGrid.addColumn(dto -> dto.getItemId2()>=0
-                  ? shop.getItems().get(dto.getItemId2()).getName() : "")
-            .setHeader("Item 2").setWidth("80px").setFlexGrow(0);
-        conditionsGrid.addColumn(dto -> dto.getCategory2()!=null?dto.getCategory2().name():"")
-            .setHeader("Category 2").setWidth("140px").setFlexGrow(0);
-        conditionsGrid.addColumn(dto -> dto.getConditionLimits2()!=null?dto.getConditionLimits2().name():"")
-            .setHeader("Limits 2").setWidth("140px").setFlexGrow(0);
+        conditionsGrid.addColumn(dto -> dto.getItemId2() >= 0
+                ? shop.getItems().get(dto.getItemId2()).getName()
+                : "")
+                .setHeader("Item 2").setWidth("80px").setFlexGrow(0);
+        conditionsGrid.addColumn(dto -> dto.getCategory2() != null ? dto.getCategory2().name() : "")
+                .setHeader("Category 2").setWidth("140px").setFlexGrow(0);
+        conditionsGrid.addColumn(dto -> dto.getConditionLimits2() != null ? dto.getConditionLimits2().name() : "")
+                .setHeader("Limits 2").setWidth("140px").setFlexGrow(0);
         conditionsGrid.addColumn(dto -> {
-            if (dto.getConditionLimits2()==ConditionLimits.PRICE && dto.getMinPrice2()>=0)
+            if (dto.getConditionLimits2() == ConditionLimits.PRICE && dto.getMinPrice2() >= 0)
                 return String.valueOf(dto.getMinPrice2());
-            if (dto.getConditionLimits2()==ConditionLimits.QUANTITY && dto.getMinQuantity2()>=0)
+            if (dto.getConditionLimits2() == ConditionLimits.QUANTITY && dto.getMinQuantity2() >= 0)
                 return String.valueOf(dto.getMinQuantity2());
             return "";
         }).setHeader("Min 2").setWidth("80px").setFlexGrow(0);
         conditionsGrid.addColumn(dto -> {
-            if (dto.getConditionLimits2()==ConditionLimits.PRICE && dto.getMaxPrice2()>=0)
+            if (dto.getConditionLimits2() == ConditionLimits.PRICE && dto.getMaxPrice2() >= 0)
                 return String.valueOf(dto.getMaxPrice2());
-            if (dto.getConditionLimits2()==ConditionLimits.QUANTITY && dto.getMaxQuantity2()>=0)
+            if (dto.getConditionLimits2() == ConditionLimits.QUANTITY && dto.getMaxQuantity2() >= 0)
                 return String.valueOf(dto.getMaxQuantity2());
             return "";
         }).setHeader("Max 2").setWidth("80px").setFlexGrow(0);
@@ -208,22 +278,19 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     }
 
     private void loadConditions() {
-        presenter.getShopPurchaseConditions(shopId, list ->
-            getUI().ifPresent(ui -> ui.access(() -> conditionsGrid.setItems(list)))
-        );
+        presenter.getShopPurchaseConditions(shopId,
+                list -> getUI().ifPresent(ui -> ui.access(() -> conditionsGrid.setItems(list))));
     }
 
     private void submitRemove(ConditionDTO dto) {
-        presenter.removePurchaseCondition(shopId, dto.getId(), resp ->
-            getUI().ifPresent(ui -> ui.access(() -> {
-                if (resp.isOk()) {
-                    Notification.show("Condition removed");
-                    loadConditions();
-                } else {
-                    Notification.show("Error: " + resp.getError());
-                }
-            }))
-        );
+        presenter.removePurchaseCondition(shopId, dto.getId(), resp -> getUI().ifPresent(ui -> ui.access(() -> {
+            if (resp.isOk()) {
+                Notification.show("Condition removed");
+                loadConditions();
+            } else {
+                Notification.show("Error: " + resp.getError());
+            }
+        })));
     }
 
     private void configureConditionDialog() {
@@ -232,7 +299,7 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         itemSelect2.setLabel("Item");
         presenter.getShopInfo(shopId, shop -> {
             List<String> items = shop.getItems().values().stream()
-                                     .map(dto -> dto.getName()).toList();
+                    .map(dto -> dto.getName()).toList();
             itemSelect1.setItems(items);
             itemSelect2.setItems(items);
         });
@@ -263,21 +330,20 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         andButton.setEnabled(false);
         orButton.setEnabled(false);
         itemSelect2.addValueChangeListener(e -> update.run());
-categorySelect2.addValueChangeListener(e -> update.run());
-limitsSelect2.addValueChangeListener(e -> update.run());
-minField2.addValueChangeListener(e -> update.run());
-maxField2.addValueChangeListener(e -> update.run());
+        categorySelect2.addValueChangeListener(e -> update.run());
+        limitsSelect2.addValueChangeListener(e -> update.run());
+        minField2.addValueChangeListener(e -> update.run());
+        maxField2.addValueChangeListener(e -> update.run());
         VerticalLayout content = new VerticalLayout(
-            new Label("Condition 1"),
-            new HorizontalLayout(itemSelect1, categorySelect1),
-            new HorizontalLayout(limitsSelect1),
-            new HorizontalLayout(minField1, maxField1),
-            new Label("Condition 2"),
-            new HorizontalLayout(itemSelect2, categorySelect2),
-            new HorizontalLayout(limitsSelect2),
-            new HorizontalLayout(minField2, maxField2),
-            new HorizontalLayout(baseButton, xorButton, andButton, orButton)
-        );
+                new Label("Condition 1"),
+                new HorizontalLayout(itemSelect1, categorySelect1),
+                new HorizontalLayout(limitsSelect1),
+                new HorizontalLayout(minField1, maxField1),
+                new Label("Condition 2"),
+                new HorizontalLayout(itemSelect2, categorySelect2),
+                new HorizontalLayout(limitsSelect2),
+                new HorizontalLayout(minField2, maxField2),
+                new HorizontalLayout(baseButton, xorButton, andButton, orButton));
         conditionDialog = new Dialog(content);
         conditionDialog.setWidth("500px");
 
@@ -295,7 +361,7 @@ maxField2.addValueChangeListener(e -> update.run());
                 minField2.clear();
                 maxField1.clear();
                 maxField2.clear();
-                
+
                 onConditionSaved.accept(tempCondition);
                 tempCondition = null;
                 onConditionSaved = null;
@@ -305,12 +371,12 @@ maxField2.addValueChangeListener(e -> update.run());
 
     private void updateConditionButtons() {
         boolean firstFilled = limitsSelect1.getValue() != null
-            && minField1.getValue() != null
-            && maxField1.getValue() != null;
+                && minField1.getValue() != null
+                && maxField1.getValue() != null;
 
         boolean secondFilled = limitsSelect2.getValue() != null
-            && minField2.getValue() != null
-            && maxField2.getValue() != null;
+                && minField2.getValue() != null
+                && maxField2.getValue() != null;
 
         // Disable all by default
         baseButton.setEnabled(false);
@@ -349,51 +415,48 @@ maxField2.addValueChangeListener(e -> update.run());
             int max2 = maxField2.getValue() != null ? maxField2.getValue() : -1;
             Category cat2 = categorySelect2.getValue();
 
-            int minPrice  = lim1==ConditionLimits.PRICE? min1:-1;
-            int maxPrice  = lim1==ConditionLimits.PRICE? max1:-1;
-            int minQty    = lim1==ConditionLimits.QUANTITY? min1:-1;
-            int maxQty    = lim1==ConditionLimits.QUANTITY? max1:-1;
-            int minPrice2 = lim2==ConditionLimits.PRICE? min2:-1;
-            int maxPrice2 = lim2==ConditionLimits.PRICE? max2:-1;
-            int minQty2   = lim2==ConditionLimits.QUANTITY? min2:-1;
-            int maxQty2   = lim2==ConditionLimits.QUANTITY? max2:-1;
+            int minPrice = lim1 == ConditionLimits.PRICE ? min1 : -1;
+            int maxPrice = lim1 == ConditionLimits.PRICE ? max1 : -1;
+            int minQty = lim1 == ConditionLimits.QUANTITY ? min1 : -1;
+            int maxQty = lim1 == ConditionLimits.QUANTITY ? max1 : -1;
+            int minPrice2 = lim2 == ConditionLimits.PRICE ? min2 : -1;
+            int maxPrice2 = lim2 == ConditionLimits.PRICE ? max2 : -1;
+            int minQty2 = lim2 == ConditionLimits.QUANTITY ? min2 : -1;
+            int maxQty2 = lim2 == ConditionLimits.QUANTITY ? max2 : -1;
 
             ConditionDTO dto;
             if (type == ConditionType.BASE) {
                 dto = new ConditionDTO(itemId1, cat1, lim1, minPrice, maxPrice, minQty, maxQty);
             } else {
                 dto = new ConditionDTO(type,
-                    itemId1, cat1, lim1, minPrice, maxPrice, minQty, maxQty,
-                    lim2, itemId2, minPrice2, maxPrice2, minQty2, maxQty2, cat2
-                );
+                        itemId1, cat1, lim1, minPrice, maxPrice, minQty, maxQty,
+                        lim2, itemId2, minPrice2, maxPrice2, minQty2, maxQty2, cat2);
             }
             // stash for discount re-use
             tempCondition = dto;
 
-            presenter.addPurchaseCondition(shopId, dto, resp ->
-                getUI().ifPresent(ui -> ui.access(() -> {
-                    if (resp.isOk()) {
-                        Notification.show("Condition added");
-                        // close the dialog
-                        itemSelect1.clear();
-                        itemSelect2.clear();
-                        categorySelect1.clear();
-                        categorySelect2.clear();
-                        limitsSelect1.clear();
-                        limitsSelect2.clear();
-                        minField1.clear();
-                        minField2.clear();
-                        maxField1.clear();
-                        maxField2.clear();
-                        
-                        conditionDialog.close();
-                        loadConditions();
-                        tempCondition = null;
-                    } else {
-                        Notification.show("Error: " + resp.getError());
-                    }
-                }))
-            );
+            presenter.addPurchaseCondition(shopId, dto, resp -> getUI().ifPresent(ui -> ui.access(() -> {
+                if (resp.isOk()) {
+                    Notification.show("Condition added");
+                    // close the dialog
+                    itemSelect1.clear();
+                    itemSelect2.clear();
+                    categorySelect1.clear();
+                    categorySelect2.clear();
+                    limitsSelect1.clear();
+                    limitsSelect2.clear();
+                    minField1.clear();
+                    minField2.clear();
+                    maxField1.clear();
+                    maxField2.clear();
+
+                    conditionDialog.close();
+                    loadConditions();
+                    tempCondition = null;
+                } else {
+                    Notification.show("Error: " + resp.getError());
+                }
+            })));
         });
     }
 
@@ -404,56 +467,52 @@ maxField2.addValueChangeListener(e -> update.run());
 
         // Kind
         discountsGrid.addColumn(DiscountDTO::getDiscountKind)
-            .setHeader("Kind")
-            .setWidth("100px").setFlexGrow(0);
+                .setHeader("Kind")
+                .setWidth("100px").setFlexGrow(0);
 
         // Applies To 1
-        discountsGrid.addColumn(dto ->
-            dto.getItemId() >= 0
-            ? shop.getItems().get(dto.getItemId()).getName()
-            : dto.getCategory() != null
-                ? dto.getCategory().name()
-                : "–"
-        )
-        .setHeader("Applies To 1")
-        .setWidth("140px").setFlexGrow(0);
+        discountsGrid.addColumn(dto -> dto.getItemId() >= 0
+                ? shop.getItems().get(dto.getItemId()).getName()
+                : dto.getCategory() != null
+                        ? dto.getCategory().name()
+                        : "–")
+                .setHeader("Applies To 1")
+                .setWidth("140px").setFlexGrow(0);
 
         // % 1
         discountsGrid.addColumn(DiscountDTO::getPercentage)
-            .setHeader("% 1")
-            .setWidth("80px").setFlexGrow(0);
+                .setHeader("% 1")
+                .setWidth("80px").setFlexGrow(0);
 
         // ─── Button for Condition 1 ──────────────────────────────────────────────
         discountsGrid.addComponentColumn(dto -> {
             Button btn = new Button("View Cond 1", evt -> showConditionDialog(dto.getCondition()));
             return btn;
         })
-        .setHeader("Condition 1")
-        .setWidth("120px").setFlexGrow(0);
+                .setHeader("Condition 1")
+                .setWidth("120px").setFlexGrow(0);
 
         // Applies To 2
-        discountsGrid.addColumn(dto ->
-            dto.getItemId2() >= 0
-            ? shop.getItems().get(dto.getItemId2()).getName()
-            : dto.getCategory2() != null
-                ? dto.getCategory2().name()
-                : "–"
-        )
-        .setHeader("Applies To 2")
-        .setWidth("140px").setFlexGrow(0);
+        discountsGrid.addColumn(dto -> dto.getItemId2() >= 0
+                ? shop.getItems().get(dto.getItemId2()).getName()
+                : dto.getCategory2() != null
+                        ? dto.getCategory2().name()
+                        : "–")
+                .setHeader("Applies To 2")
+                .setWidth("140px").setFlexGrow(0);
 
         // % 2
         discountsGrid.addColumn(DiscountDTO::getPercentage2)
-            .setHeader("% 2")
-            .setWidth("80px").setFlexGrow(0);
+                .setHeader("% 2")
+                .setWidth("80px").setFlexGrow(0);
 
         // ─── Button for Condition 2 ──────────────────────────────────────────────
         discountsGrid.addComponentColumn(dto -> {
             Button btn = new Button("View Cond 2", evt -> showConditionDialog(dto.getCondition2()));
             return btn;
         })
-        .setHeader("Condition 2")
-        .setWidth("120px").setFlexGrow(0);
+                .setHeader("Condition 2")
+                .setWidth("120px").setFlexGrow(0);
 
         // Actions
         discountsGrid.addComponentColumn(dto -> {
@@ -461,8 +520,8 @@ maxField2.addValueChangeListener(e -> update.run());
             rm.addThemeVariants(ButtonVariant.LUMO_ERROR);
             return rm;
         })
-        .setHeader("Actions")
-        .setFlexGrow(0);
+                .setHeader("Actions")
+                .setFlexGrow(0);
     }
 
     private void showConditionDialog(ConditionDTO c) {
@@ -473,42 +532,38 @@ maxField2.addValueChangeListener(e -> update.run());
             dlg.add(new Span("No condition set"));
         } else {
             VerticalLayout content = new VerticalLayout();
-            content.add(new Span("Type:   "    + c.getConditionType()));
-            content.add(new Span("Limits: "    + c.getConditionLimits()));
-            content.add(new Span("Min:    "    + 
-                (c.getConditionLimits() == ConditionLimits.PRICE 
-                    ? c.getMinPrice() 
-                    : c.getMinQuantity())));
-            content.add(new Span("Max:    "    + 
-                (c.getConditionLimits() == ConditionLimits.PRICE 
-                    ? c.getMaxPrice() 
-                    : c.getMaxQuantity())));
+            content.add(new Span("Type:   " + c.getConditionType()));
+            content.add(new Span("Limits: " + c.getConditionLimits()));
+            content.add(new Span("Min:    " +
+                    (c.getConditionLimits() == ConditionLimits.PRICE
+                            ? c.getMinPrice()
+                            : c.getMinQuantity())));
+            content.add(new Span("Max:    " +
+                    (c.getConditionLimits() == ConditionLimits.PRICE
+                            ? c.getMaxPrice()
+                            : c.getMaxQuantity())));
             dlg.add(content);
         }
 
         dlg.open();
     }
 
-
     private void loadDiscounts() {
-        presenter.getShopDiscounts(shopId, list ->
-            getUI().ifPresent(ui -> ui.access(() -> discountsGrid.setItems(list)))
-        );
+        presenter.getShopDiscounts(shopId,
+                list -> getUI().ifPresent(ui -> ui.access(() -> discountsGrid.setItems(list))));
     }
 
     private void submitRemoveDiscount(DiscountDTO dto) {
-        presenter.removeDiscount(shopId, dto.getId(), resp ->
-            getUI().ifPresent(ui -> ui.access(() -> {
-                if (resp.isOk()) {
-                    Notification.show("Discount removed");
-                    loadDiscounts();
-                } else {
-                    Notification.show("Error: " + resp.getError());
-                }
-            }))
-        );
+        presenter.removeDiscount(shopId, dto.getId(), resp -> getUI().ifPresent(ui -> ui.access(() -> {
+            if (resp.isOk()) {
+                Notification.show("Discount removed");
+                loadDiscounts();
+            } else {
+                Notification.show("Error: " + resp.getError());
+            }
+        })));
     }
-    
+
     // ─── HELPERS ────────────────────────────────────────────────────────────────
 
     /**
@@ -523,198 +578,195 @@ maxField2.addValueChangeListener(e -> update.run());
      * @param dialogSink receives the built Dialog so we can store it
      */
     private void configureDiscountConditionDialog(
-    boolean first,
-    Select<String> itemSel1,
-    Select<Category> categorySel1,
-    Select<ConditionLimits> limitsSel1,
-    IntegerField minField1,
-    IntegerField maxField1,
-    Consumer<Dialog> dialogSink
-) {
-    // Fields for condition 2 (symmetric to condition 1)
-    Select<String> itemSel2 = new Select<>();
-    Select<Category> categorySel2 = new Select<>();
-    Select<ConditionLimits> limitsSel2 = new Select<>();
-    IntegerField minField2 = new IntegerField("Min");
-    IntegerField maxField2 = new IntegerField("Max");
+            boolean first,
+            Select<String> itemSel1,
+            Select<Category> categorySel1,
+            Select<ConditionLimits> limitsSel1,
+            IntegerField minField1,
+            IntegerField maxField1,
+            Consumer<Dialog> dialogSink) {
+        // Fields for condition 2 (symmetric to condition 1)
+        Select<String> itemSel2 = new Select<>();
+        Select<Category> categorySel2 = new Select<>();
+        Select<ConditionLimits> limitsSel2 = new Select<>();
+        IntegerField minField2 = new IntegerField("Min");
+        IntegerField maxField2 = new IntegerField("Max");
 
-    // Labeling
-    itemSel1.setLabel("Item");
-    itemSel2.setLabel("Item");
-    categorySel1.setLabel("Category");
-    categorySel2.setLabel("Category");
-    limitsSel1.setLabel("Condition Limits");
-    limitsSel2.setLabel("Condition Limits");
+        // Labeling
+        itemSel1.setLabel("Item");
+        itemSel2.setLabel("Item");
+        categorySel1.setLabel("Category");
+        categorySel2.setLabel("Category");
+        limitsSel1.setLabel("Condition Limits");
+        limitsSel2.setLabel("Condition Limits");
 
-    // Populate shop items
-    presenter.getShopInfo(shopId, shop -> {
-        List<String> items = shop.getItems().values().stream().map(i -> i.getName()).toList();
-        itemSel1.setItems(items);
-        itemSel2.setItems(items);
-    });
-
-    categorySel1.setItems(Category.values());
-    categorySel2.setItems(Category.values());
-    limitsSel1.setItems(ConditionLimits.values());
-    limitsSel2.setItems(ConditionLimits.values());
-
-    // Buttons
-    Button base = new Button("Base");
-    Button xor = new Button("XOR");
-    Button and = new Button("AND");
-    Button or  = new Button("OR");
-    Stream.of(base, xor, and, or).forEach(b -> b.addThemeVariants(ButtonVariant.LUMO_PRIMARY));
-
-    // Submit handler
-    Consumer<ConditionType> submit = type -> {
+        // Populate shop items
         presenter.getShopInfo(shopId, shop -> {
-            int itemId1 = shop.getItems().entrySet().stream()
-                .filter(e -> e.getValue().getName().equals(itemSel1.getValue()))
-                .map(Map.Entry::getKey).findFirst().orElse(-1);
-            int itemId2 = shop.getItems().entrySet().stream()
-                .filter(e -> e.getValue().getName().equals(itemSel2.getValue()))
-                .map(Map.Entry::getKey).findFirst().orElse(-1);
-
-            Category cat1 = categorySel1.getValue();
-            Category cat2 = categorySel2.getValue();
-            ConditionLimits lim1 = limitsSel1.getValue();
-            ConditionLimits lim2 = limitsSel2.getValue();
-
-            int min1 = minField1.getValue() != null ? minField1.getValue() : -1;
-            int max1 = maxField1.getValue() != null ? maxField1.getValue() : -1;
-            int min2 = minField2.getValue() != null ? minField2.getValue() : -1;
-            int max2 = maxField2.getValue() != null ? maxField2.getValue() : -1;
-
-            int minPrice1 = lim1 == ConditionLimits.PRICE ? min1 : -1;
-            int maxPrice1 = lim1 == ConditionLimits.PRICE ? max1 : -1;
-            int minQty1   = lim1 == ConditionLimits.QUANTITY ? min1 : -1;
-            int maxQty1   = lim1 == ConditionLimits.QUANTITY ? max1 : -1;
-
-            int minPrice2 = lim2 == ConditionLimits.PRICE ? min2 : -1;
-            int maxPrice2 = lim2 == ConditionLimits.PRICE ? max2 : -1;
-            int minQty2   = lim2 == ConditionLimits.QUANTITY ? min2 : -1;
-            int maxQty2   = lim2 == ConditionLimits.QUANTITY ? max2 : -1;
-
-            ConditionDTO dto = (type == ConditionType.BASE)
-                ? new ConditionDTO(itemId1, cat1, lim1, minPrice1, maxPrice1, minQty1, maxQty1)
-                : new ConditionDTO(type,
-                    itemId1, cat1, lim1, minPrice1, maxPrice1, minQty1, maxQty1,
-                    lim2, itemId2, minPrice2, maxPrice2, minQty2, maxQty2, cat2
-                );
-
-            //clear all fields and vaadin buttons:
-            // itemSel1.clear();
-            // categorySel1.clear();
-            // limitsSel1.clear();
-            // minField1.clear();
-            // maxField1.clear();
-            // itemSel2.clear();
-            // categorySel2.clear();
-            // limitsSel2.clear();
-            // minField2.clear();
-            // maxField2.clear();
-            // base.setEnabled(false);
-            // xor.setEnabled(false);
-            // and.setEnabled(false);
-            // or.setEnabled(false);
-            tempCondition = dto;
-            (first ? discountConditionDialog1 : discountConditionDialog2).close();
+            List<String> items = shop.getItems().values().stream().map(i -> i.getName()).toList();
+            itemSel1.setItems(items);
+            itemSel2.setItems(items);
         });
-    };
 
-    base.addClickListener(e -> submit.accept(ConditionType.BASE));
-    xor .addClickListener(e -> submit.accept(ConditionType.XOR));
-    and .addClickListener(e -> submit.accept(ConditionType.AND));
-    or  .addClickListener(e -> submit.accept(ConditionType.OR));
-    Stream.of(base, xor, and, or).forEach(b -> b.setEnabled(false));
-    //Stream.of(itemSelect2, categorySelect2, limitsSelect2, minField2, maxField2).forEach(b -> b.addValueChangeListener(e -> update.run()));
+        categorySel1.setItems(Category.values());
+        categorySel2.setItems(Category.values());
+        limitsSel1.setItems(ConditionLimits.values());
+        limitsSel2.setItems(ConditionLimits.values());
+
+        // Buttons
+        Button base = new Button("Base");
+        Button xor = new Button("XOR");
+        Button and = new Button("AND");
+        Button or = new Button("OR");
+        Stream.of(base, xor, and, or).forEach(b -> b.addThemeVariants(ButtonVariant.LUMO_PRIMARY));
+
+        // Submit handler
+        Consumer<ConditionType> submit = type -> {
+            presenter.getShopInfo(shopId, shop -> {
+                int itemId1 = shop.getItems().entrySet().stream()
+                        .filter(e -> e.getValue().getName().equals(itemSel1.getValue()))
+                        .map(Map.Entry::getKey).findFirst().orElse(-1);
+                int itemId2 = shop.getItems().entrySet().stream()
+                        .filter(e -> e.getValue().getName().equals(itemSel2.getValue()))
+                        .map(Map.Entry::getKey).findFirst().orElse(-1);
+
+                Category cat1 = categorySel1.getValue();
+                Category cat2 = categorySel2.getValue();
+                ConditionLimits lim1 = limitsSel1.getValue();
+                ConditionLimits lim2 = limitsSel2.getValue();
+
+                int min1 = minField1.getValue() != null ? minField1.getValue() : -1;
+                int max1 = maxField1.getValue() != null ? maxField1.getValue() : -1;
+                int min2 = minField2.getValue() != null ? minField2.getValue() : -1;
+                int max2 = maxField2.getValue() != null ? maxField2.getValue() : -1;
+
+                int minPrice1 = lim1 == ConditionLimits.PRICE ? min1 : -1;
+                int maxPrice1 = lim1 == ConditionLimits.PRICE ? max1 : -1;
+                int minQty1 = lim1 == ConditionLimits.QUANTITY ? min1 : -1;
+                int maxQty1 = lim1 == ConditionLimits.QUANTITY ? max1 : -1;
+
+                int minPrice2 = lim2 == ConditionLimits.PRICE ? min2 : -1;
+                int maxPrice2 = lim2 == ConditionLimits.PRICE ? max2 : -1;
+                int minQty2 = lim2 == ConditionLimits.QUANTITY ? min2 : -1;
+                int maxQty2 = lim2 == ConditionLimits.QUANTITY ? max2 : -1;
+
+                ConditionDTO dto = (type == ConditionType.BASE)
+                        ? new ConditionDTO(itemId1, cat1, lim1, minPrice1, maxPrice1, minQty1, maxQty1)
+                        : new ConditionDTO(type,
+                                itemId1, cat1, lim1, minPrice1, maxPrice1, minQty1, maxQty1,
+                                lim2, itemId2, minPrice2, maxPrice2, minQty2, maxQty2, cat2);
+
+                // clear all fields and vaadin buttons:
+                // itemSel1.clear();
+                // categorySel1.clear();
+                // limitsSel1.clear();
+                // minField1.clear();
+                // maxField1.clear();
+                // itemSel2.clear();
+                // categorySel2.clear();
+                // limitsSel2.clear();
+                // minField2.clear();
+                // maxField2.clear();
+                // base.setEnabled(false);
+                // xor.setEnabled(false);
+                // and.setEnabled(false);
+                // or.setEnabled(false);
+                tempCondition = dto;
+                (first ? discountConditionDialog1 : discountConditionDialog2).close();
+            });
+        };
+
+        base.addClickListener(e -> submit.accept(ConditionType.BASE));
+        xor.addClickListener(e -> submit.accept(ConditionType.XOR));
+        and.addClickListener(e -> submit.accept(ConditionType.AND));
+        or.addClickListener(e -> submit.accept(ConditionType.OR));
+        Stream.of(base, xor, and, or).forEach(b -> b.setEnabled(false));
+        // Stream.of(itemSelect2, categorySelect2, limitsSelect2, minField2,
+        // maxField2).forEach(b -> b.addValueChangeListener(e -> update.run()));
         // Enable BASE only if something is filled
-    Runnable updateButtons = () -> {
-    boolean firstFilled = limitsSel1.getValue() != null
-        && minField1.getValue() != null
-        && maxField1.getValue() != null;
+        Runnable updateButtons = () -> {
+            boolean firstFilled = limitsSel1.getValue() != null
+                    && minField1.getValue() != null
+                    && maxField1.getValue() != null;
 
-    boolean secondFilled = limitsSel2.getValue() != null
-        && minField2.getValue() != null
-        && maxField2.getValue() != null;
+            boolean secondFilled = limitsSel2.getValue() != null
+                    && minField2.getValue() != null
+                    && maxField2.getValue() != null;
 
-    base.setEnabled(false);
-    xor.setEnabled(false);
-    and.setEnabled(false);
-    or.setEnabled(false);
+            base.setEnabled(false);
+            xor.setEnabled(false);
+            and.setEnabled(false);
+            or.setEnabled(false);
 
-    if (firstFilled) {
-        base.setEnabled(true);
-        if (secondFilled) {
-            xor.setEnabled(true);
-            and.setEnabled(true);
-            or.setEnabled(true);
-        }
+            if (firstFilled) {
+                base.setEnabled(true);
+                if (secondFilled) {
+                    xor.setEnabled(true);
+                    and.setEnabled(true);
+                    or.setEnabled(true);
+                }
+            }
+        };
+        // Stream.of(limitsSel1, minField1, maxField1, limitsSel2, minField2,
+        // maxField2).forEach(c -> c.addValueChangeListener(e -> updateButtons.run()));
+
+        limitsSel1.addValueChangeListener(e -> updateButtons.run());
+        limitsSel2.addValueChangeListener(e -> updateButtons.run());
+
+        minField1.addValueChangeListener(e -> updateButtons.run());
+        maxField1.addValueChangeListener(e -> updateButtons.run());
+        minField2.addValueChangeListener(e -> updateButtons.run());
+        maxField2.addValueChangeListener(e -> updateButtons.run());
+        // Build dialog layout — SAME AS `configureConditionDialog`
+        VerticalLayout content = new VerticalLayout(
+                new Label("Condition 1"),
+                new HorizontalLayout(itemSel1, categorySel1),
+                new HorizontalLayout(limitsSel1),
+                new HorizontalLayout(minField1, maxField1),
+                new Label("Condition 2"),
+                new HorizontalLayout(itemSel2, categorySel2),
+                new HorizontalLayout(limitsSel2),
+                new HorizontalLayout(minField2, maxField2),
+                new HorizontalLayout(base, xor, and, or));
+        Dialog dlg = new Dialog(content);
+        dlg.setWidth("500px");
+
+        dlg.addOpenedChangeListener(evt -> {
+            if (!evt.isOpened()) {
+                if (tempCondition != null && onConditionSaved != null) {
+                    onConditionSaved.accept(tempCondition);
+                }
+                // always reset both to avoid lingering data
+                tempCondition = null;
+                onConditionSaved = null;
+            }
+        });
+
+        Runnable resetFields = () -> {
+            itemSel1.clear();
+            categorySel1.clear();
+            limitsSel1.clear();
+            minField1.clear();
+            maxField1.clear();
+
+            itemSel2.clear();
+            categorySel2.clear();
+            limitsSel2.clear();
+            minField2.clear();
+            maxField2.clear();
+
+            tempCondition = null;
+            onConditionSaved = null;
+        };
+        // dlg.addOpenedChangeListener(evt -> {
+        // if (!evt.isOpened() && onConditionSaved != null && tempCondition != null) {
+        // onConditionSaved.accept(tempCondition);
+        // tempCondition = null;
+        // onConditionSaved = null;
+        // }
+        // });
+
+        dialogSink.accept(dlg);
     }
-};
-    //Stream.of(limitsSel1, minField1, maxField1, limitsSel2, minField2, maxField2).forEach(c -> c.addValueChangeListener(e -> updateButtons.run()));
-
-    limitsSel1.addValueChangeListener(e -> updateButtons.run());
-    limitsSel2.addValueChangeListener(e -> updateButtons.run());
-
-    minField1.addValueChangeListener(e -> updateButtons.run());
-    maxField1.addValueChangeListener(e -> updateButtons.run());
-    minField2.addValueChangeListener(e -> updateButtons.run());
-    maxField2.addValueChangeListener(e -> updateButtons.run());
-    // Build dialog layout — SAME AS `configureConditionDialog`
-    VerticalLayout content = new VerticalLayout(
-        new Label("Condition 1"),
-        new HorizontalLayout(itemSel1, categorySel1),
-        new HorizontalLayout(limitsSel1),
-        new HorizontalLayout(minField1, maxField1),
-        new Label("Condition 2"),
-        new HorizontalLayout(itemSel2, categorySel2),
-        new HorizontalLayout(limitsSel2),
-        new HorizontalLayout(minField2, maxField2),
-        new HorizontalLayout(base, xor, and, or)
-    );
-    Dialog dlg = new Dialog(content);
-    dlg.setWidth("500px");
-
-    dlg.addOpenedChangeListener(evt -> {
-    if (!evt.isOpened()) {
-        if (tempCondition != null && onConditionSaved != null) {
-            onConditionSaved.accept(tempCondition);
-        }
-        // always reset both to avoid lingering data
-        tempCondition = null;
-        onConditionSaved = null;
-    }
-});
-
-    
-Runnable resetFields = () -> {
-    itemSel1.clear();
-    categorySel1.clear();
-    limitsSel1.clear();
-    minField1.clear();
-    maxField1.clear();
-
-    itemSel2.clear();
-    categorySel2.clear();
-    limitsSel2.clear();
-    minField2.clear();
-    maxField2.clear();
-
-    tempCondition = null;
-    onConditionSaved = null;
-};
-// dlg.addOpenedChangeListener(evt -> {
-//     if (!evt.isOpened() && onConditionSaved != null && tempCondition != null) {
-//         onConditionSaved.accept(tempCondition);
-//         tempCondition = null;
-//         onConditionSaved = null;
-//     }
-// });
-
-    dialogSink.accept(dlg);
-}
-
 
     private void configureDiscountDialog() {
         discountDialog = new Dialog();
@@ -766,28 +818,27 @@ Runnable resetFields = () -> {
                 cond2Button.setVisible(true);
             }
         });
-        Button saveButton  = new Button("Save Discount", e -> {
+        Button saveButton = new Button("Save Discount", e -> {
             presenter.getShopInfo(shopId, shop -> {
                 int itemId1 = shop.getItems().entrySet().stream()
-                    .filter(e1 -> e1.getValue().getName().equals(discountItemSelect1.getValue()))
-                    .map(Map.Entry::getKey).findFirst().orElse(-1);
+                        .filter(e1 -> e1.getValue().getName().equals(discountItemSelect1.getValue()))
+                        .map(Map.Entry::getKey).findFirst().orElse(-1);
                 int itemId2 = shop.getItems().entrySet().stream()
-                    .filter(e2 -> e2.getValue().getName().equals(discountItemSelect2.getValue()))
-                    .map(Map.Entry::getKey).findFirst().orElse(-1);
+                        .filter(e2 -> e2.getValue().getName().equals(discountItemSelect2.getValue()))
+                        .map(Map.Entry::getKey).findFirst().orElse(-1);
 
                 DiscountDTO dto = new DiscountDTO(
-                    discountKindSelect.getValue(),
-                    itemId1,
-                    discountCategorySelect1.getValue(),
-                    percentage1Field.getValue() != null ? percentage1Field.getValue() : -1,
-                    selectedCondition1,
-                    itemId2,
-                    discountCategorySelect2.getValue(),
-                    percentage2Field.getValue() != null ? percentage2Field.getValue() : -1,
-                    selectedCondition2,
-                    discountType1Select.getValue(),
-                    discountType2Select.getValue()
-                );
+                        discountKindSelect.getValue(),
+                        itemId1,
+                        discountCategorySelect1.getValue(),
+                        percentage1Field.getValue() != null ? percentage1Field.getValue() : -1,
+                        selectedCondition1,
+                        itemId2,
+                        discountCategorySelect2.getValue(),
+                        percentage2Field.getValue() != null ? percentage2Field.getValue() : -1,
+                        selectedCondition2,
+                        discountType1Select.getValue(),
+                        discountType2Select.getValue());
 
                 presenter.addDiscount(shopId, dto, resp -> getUI().ifPresent(ui -> ui.access(() -> {
                     if (resp.isOk()) {
@@ -802,7 +853,8 @@ Runnable resetFields = () -> {
                         percentage1Field.clear();
                         percentage2Field.clear();
                         cond1Button.setEnabled(false);
-                        cond2Button.setEnabled(false);;
+                        cond2Button.setEnabled(false);
+                        ;
                         discountDialog.close();
                         loadDiscounts();
                     } else {
@@ -812,16 +864,17 @@ Runnable resetFields = () -> {
             });
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        
+
         // Set up dialog layout
         VerticalLayout content = new VerticalLayout(
-            discountKindSelect,
-            new HorizontalLayout(discountType1Select, discountItemSelect1, discountCategorySelect1, percentage1Field),
-            new HorizontalLayout(cond1Button),
-            new HorizontalLayout(discountType2Select, discountItemSelect2, discountCategorySelect2, percentage2Field),
-            new HorizontalLayout(cond2Button),
-            saveButton
-        );
+                discountKindSelect,
+                new HorizontalLayout(discountType1Select, discountItemSelect1, discountCategorySelect1,
+                        percentage1Field),
+                new HorizontalLayout(cond1Button),
+                new HorizontalLayout(discountType2Select, discountItemSelect2, discountCategorySelect2,
+                        percentage2Field),
+                new HorizontalLayout(cond2Button),
+                saveButton);
 
         discountDialog.add(content);
 
@@ -836,7 +889,6 @@ Runnable resetFields = () -> {
         };
         discountKindSelect.addValueChangeListener(e -> updateDiscountKindUI.run());
         updateDiscountKindUI.run();
-
 
         // Fill item names after shop is loaded
         presenter.getShopInfo(shopId, shop -> {
