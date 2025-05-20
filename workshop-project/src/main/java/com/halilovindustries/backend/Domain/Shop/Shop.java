@@ -369,7 +369,7 @@ public class Shop {
         return true; // All items can be added to the basket
     }
 
-    public Item getItem(Integer itemId) {
+    public Item getItem(int itemId) {
         if (items.containsKey(itemId)) {
             return items.get(itemId);
         } else {
@@ -518,10 +518,20 @@ public class Shop {
         List<AuctionDTO> activeAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if (auction.isAuctionActive()) {
-                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return activeAuctions;
+    }
+
+    public List<AuctionDTO> getFutureAuctions() {
+        List<AuctionDTO> auctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+            if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
+                auctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+            }
+        }
+        return auctions;
     }
 
     public List<BidDTO> getBids() {
@@ -535,8 +545,8 @@ public class Shop {
     public List<AuctionDTO> getWonAuctions(int userId) {
         List<AuctionDTO> wonAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
-            if (auction.isAuctionEnded() && auction.getBuyerId() == userId) {
-                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))));
+            if (auction.isAuctionEnded() && auction.getBuyerId() == userId && !auction.isDone()) {
+                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return wonAuctions;

@@ -18,6 +18,7 @@ public class ShopDTO {
         this.items = items;
         this.rating = rating; 
         this.ratingCount = ratingCount;
+
     }
     public int getId() {
         return id;
