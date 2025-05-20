@@ -13,6 +13,7 @@ import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
@@ -1029,7 +1030,7 @@ public class ShopService {
     }
 
     // purchase policy
-    public Response<Void> updatePurchaseType(String sessionToken, int shopID, String purchaseType) {
+    public Response<Void> updatePurchaseType(String sessionToken, int shopID, PurchaseType purchaseType) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, update the purchase type for the item in the shop with the
@@ -1227,5 +1228,35 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
 
+    }
+    public Response<List<PurchaseType>> getPurchaseTypes(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<PurchaseType> purchaseTypes = shop.getPurchaseTypes();
+            logger.info(() -> "Purchase types retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(purchaseTypes);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving purchase types: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+    public Response<List<DiscountType>> getDiscountTypes(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<DiscountType> discountTypes = shop.getDiscountTypes();
+            logger.info(() -> "Discount types retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(discountTypes);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving discount types: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
     }
 }

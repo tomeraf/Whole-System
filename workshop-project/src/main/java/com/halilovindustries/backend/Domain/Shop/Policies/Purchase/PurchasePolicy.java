@@ -20,18 +20,11 @@ public class PurchasePolicy {
         this.purchaseTypes.add(PurchaseType.IMMEDIATE);
         this.purchaseConditions = new HashMap<>();
     }
-    public void updatePurchaseType(String purchaseType){
-        PurchaseType type;
-        try{
-            type = PurchaseType.fromString(purchaseType);
-        }
-        catch(Exception e){
-            throw new IllegalArgumentException("not valid purchase Type");
-        }
-        if (this.purchaseTypes.contains(type)) {
-            this.purchaseTypes.remove(type);
+    public void updatePurchaseType(PurchaseType purchaseType){
+        if (this.purchaseTypes.contains(purchaseType)) {
+            this.purchaseTypes.remove(purchaseType);
         } else {
-            this.purchaseTypes.add(type);
+            this.purchaseTypes.add(purchaseType);
         }
 
     }
@@ -78,5 +71,8 @@ public class PurchasePolicy {
                 con.setId(condition.getId());
                 return con;})
                 .toList();
+    }
+    public List<PurchaseType> getPurchaseTypes() {
+        return purchaseTypes;
     }
 }

@@ -62,6 +62,9 @@ public class DiscountPolicy {
         return dis;
     }).toList();  
     }
+    public List<DiscountType> getDiscountTypes() {
+        return discountTypes;
+    }
 
 
 }
