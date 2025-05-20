@@ -1,5 +1,8 @@
 package Tests.AcceptanceTests;
 
+import com.halilovindustries.backend.Domain.DTOs.*;
+import com.halilovindustries.backend.Domain.Response;
+import com.halilovindustries.backend.Domain.Shop.Shop;
 import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
@@ -8,6 +11,8 @@ import com.vaadin.flow.shared.Registration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -234,6 +239,178 @@ public class NotificationsTests extends BaseAcceptanceTests{
             Broadcaster.register("bad-user", msg -> {});
         }, "Should throw when UI.getCurrent() is null");
     }
+
+    @Test
+    public void testNotificationOnCloseShop() throws Exception {
+        // Arrange
+        String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+
+        // Register listener for all shop members (including owner)
+        Shop realShop = shopRepository.getShopById(shop.getId());
+        int founderId = realShop.getFounderID();
+
+        UI mockUI = mock(UI.class);
+        doAnswer(invocation -> {
+            Command command = invocation.getArgument(0);
+            command.execute();
+            return null;
+        }).when(mockUI).access(any(Command.class));
+        UI.setCurrent(mockUI);
+
+        CompletableFuture<String> notificationReceived = new CompletableFuture<>();
+        // Register broadcaster listener for founder id
+        Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
+
+        //close shop
+        Response<Void> res = shopService.closeShop(ownerToken, shop.getId());
+
+        // Assert
+        assertTrue(res.isOk(), "Closing shop should succeed");
+
+        // Check notification broadcasted
+        String notification = notificationReceived.get(5, TimeUnit.SECONDS);
+        assertNotNull(notification, "Notification should be received");
+        assertTrue(notification.contains("is closed"), "Notification should mention shop closure");
+
+        registration.remove();
+        UI.setCurrent(null);
+    }
+
+    @Test
+    public void testNotificationOnBuyCartContent() throws Exception {
+        // Arrange
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
+        ShopDTO shop = fixtures.generateShopAndItems(buyerToken, "MyShop");
+
+        ItemDTO firstItem = shop.getItems().get(0);
+
+        // Prepare items map for addItemsToCart
+        HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+        HashMap<Integer, Integer> itemsForShop = new HashMap<>();
+        itemsForShop.put(firstItem.getItemID(), 1);  // buy 1 quantity of the first item
+        userItems.put(shop.getId(), itemsForShop);
+
+        // Add items to cart
+        Response<Void> addToCartResponse = orderService.addItemsToCart(buyerToken, userItems);
+        assertTrue(addToCartResponse.isOk(), "Adding items to cart should succeed");
+
+        // Prepare mock UI to allow access() calls
+        UI mockUI = mock(UI.class);
+        doAnswer(invocation -> {
+            Command command = invocation.getArgument(0);
+            command.execute();
+            return null;
+        }).when(mockUI).access(any(Command.class));
+        UI.setCurrent(mockUI);
+
+        Shop realShop = shopRepository.getShopById(shop.getId());
+        int founderId = realShop.getFounderID();
+
+        CompletableFuture<String> notificationReceived = new CompletableFuture<>();
+        Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
+
+        // Prepare dummy payment and shipment details
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
+
+        //return true for validation
+        when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(true);
+        when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(true);
+
+
+        // Act
+        Response<Order> buyResponse = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+
+        // Assert
+        assertTrue(buyResponse.isOk(), "Buying cart content should succeed");
+
+        String notification = notificationReceived.get(5, TimeUnit.SECONDS);
+        assertNotNull(notification, "Notification should be received");
+        assertTrue(notification.contains("purchased"), "Notification should mention purchase. this is the notification: " + notification);
+
+        registration.remove();
+        UI.setCurrent(null);
+    }
+
+    @Test
+    public void testCloseShopUnauthorizedUser() throws Exception {
+        String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+
+        // Generate a token for a different user who is NOT the owner
+        String otherUserToken = fixtures.generateRegisteredUserSession("intruder", "intruder");
+
+        Response<Void> res = shopService.closeShop(otherUserToken, shop.getId());
+
+        assertFalse(res.isOk(), "Closing shop by unauthorized user should fail");
+    }
+
+    @Test
+    public void testCloseShopNonExistentShop() throws Exception {
+        String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
+
+        int fakeShopId = 99999; // Assuming this shop ID does not exist
+
+        Response<Void> res = shopService.closeShop(ownerToken, fakeShopId);
+
+        assertFalse(res.isOk(), "Closing a non-existent shop should fail");
+    }
+
+    @Test
+    public void testBuyCartContentInvalidPayment() throws Exception {
+        String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
+
+        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
+        HashMap<Integer, Integer> shopItems = new HashMap<>();
+        shopItems.put(shop.getItems().get(0).getItemID(), 1);
+        itemsMap.put(shop.getId(), shopItems);
+
+        orderService.addItemsToCart(buyerToken, itemsMap);
+
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
+
+
+        when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(false);
+        when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(false);
+
+        // Mock payment validation to fail
+        when(payment.validatePaymentDetails(any())).thenReturn(false);
+
+        Response<Order> res = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+
+        assertFalse(res.isOk(), "Buying cart content with invalid payment should fail");
+    }
+
+    @Test
+    public void testBuyCartContentEmptyCart() throws Exception {
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
+
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
+
+
+        // No items added to cart
+
+        Response<Order> res = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+
+        assertFalse(res.isOk(), "Buying cart content with empty cart should fail");
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
