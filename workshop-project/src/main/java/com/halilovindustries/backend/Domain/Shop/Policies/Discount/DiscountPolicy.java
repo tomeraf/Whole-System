@@ -65,6 +65,19 @@ public class DiscountPolicy {
     public List<DiscountType> getDiscountTypes() {
         return discountTypes;
     }
+    public HashMap<Item, Double> getPricePerItem(HashMap<Item, Integer> allItems) {
+        HashMap<Item,Double> percentages = discounts.getPercentagePerItem(allItems);
+        HashMap<Item, Double> prices = new HashMap<>();
+        for (Item item : allItems.keySet()) {
+            if (percentages.containsKey(item)) {
+                prices.put(item, percentages.get(item) * item.getPrice());
+            }
+            else {
+                prices.put(item, item.getPrice());
+            }
+        }
+        return prices;
+    }
 
 
 }

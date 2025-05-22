@@ -18,31 +18,12 @@ import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 
 public class PurchaseService {
     // Use case #2.3: Add item to cart
-    // items = <shop, <itemId, quantity>>
-    public void addItemsToCart(Guest user, HashMap<Shop,HashMap<Integer,Integer>> items) {
+    public void addItemsToCart(Guest user, Shop shop,int itemId, int quantity) {
         ShoppingCart cart = user.getCart();
-        List<ItemDTO> itemDTOs = new ArrayList<>();
-        for (Shop shop : items.keySet()) {
-            HashMap<Integer, Integer> itemsMap = items.get(shop);
-            if(shop.canAddItemsToBasket(itemsMap)){
-                for(Integer itemId : itemsMap.keySet()) {
-                    Item item = shop.getItem(itemId);
-                    int quantity = itemsMap.get(itemId);
-                    itemDTOs.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, quantity, item.getRating(), item.getDescription(),item.getNumOfOrders()));
-                }
-            }
-            else {
-                throw new IllegalArgumentException("Error: cant add items.");
-            }
-        }
-        cart.addItems(itemDTOs);
-    }
-
-    // Use case #2.4.b: Delete items from cart
-    public void removeItemsFromCart(Guest user, HashMap<Integer,List<Integer>> items)
-    {
-        ShoppingCart cart = user.getCart();
-        cart.deleteItems(items);
+        if(shop.canAddItemToBasket(itemId, quantity))
+            cart.addItem(shop.getId(),itemId, quantity);
+        else
+            throw new IllegalArgumentException("Error: item cannot be added to cart.");
     }
     
     // use case 2.5
@@ -51,21 +32,12 @@ public class PurchaseService {
             throw new IllegalArgumentException("Error: no shops to purchase from.");    
         }
         ShoppingCart cart = user.getCart();
-        List<ItemDTO> items = cart.getItems();
+        HashMap<Integer,HashMap<Integer,Integer>> items = cart.getItems();
         HashMap<Shop, HashMap<Integer, Integer>> itemsToBuy = new HashMap<>();
-        for (ItemDTO item : items) {
-            Shop shop = null;
-            for (Shop s : shops) {
-                if (s.getId() == item.getShopId()) {
-                    shop = s;
-                    break;
-                }
-            }
-            if (shop != null) {
-                if (!itemsToBuy.containsKey(shop)) {
-                    itemsToBuy.put(shop, new HashMap<>());
-                }
-                itemsToBuy.get(shop).put(item.getItemID(), item.getQuantity());
+        for(Shop shop : shops) {
+            HashMap<Integer,Integer> itemsMap = items.get(shop.getId());
+            if(itemsMap!=null) {
+                itemsToBuy.put(shop, itemsMap);
             }
         }
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
@@ -77,20 +49,14 @@ public class PurchaseService {
                 throw new IllegalArgumentException("Error: cant purchase items.");
             }
         }
+        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
+        for(Shop shop : itemsToBuy.keySet()) {
+            itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)));
+        }
         Double total = 0.0;
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
             total=+shop.purchaseBasket(itemsMap);
-        }
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
-        for(Shop shop : itemsToBuy.keySet()) {
-            HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-            List<ItemDTO> itemsList = new ArrayList<>();
-            for(Integer itemId : itemsMap.keySet()) {
-                Item item = shop.getItem(itemId);
-                itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription(), item.getNumOfOrders()));
-            }
-            itemsToShip.put(shop.getId(), itemsList);
         }
         ship.processShipment(total*0.1, shipmentDetails);
         pay.processPayment(total, paymentDetails);
@@ -100,9 +66,21 @@ public class PurchaseService {
     }
 
 
-    public List<ItemDTO> checkCartContent(Guest user)
+    public List<ItemDTO> checkCartContent(Guest user,List<Shop> shops)
     {
-        return user.getCart().getItems();
+        List<ItemDTO> cart = new ArrayList<>();
+        HashMap<Integer,HashMap<Integer,Integer>> items = user.getCart().getItems();
+        for(Shop shop : shops) {
+            HashMap<Integer,Integer> itemsMap = items.get(shop.getId());
+            HashMap<Item,Double> discountedPrices= shop.getDiscountedPrices(itemsMap);//returns updated prices and removes items that cannot be purchased(due to quantity))
+            List<ItemDTO> itemsList = new ArrayList<>();
+            for(Item item : discountedPrices.keySet()) {
+                int quantity = itemsMap.get(item.getId());
+                itemsList.add(new ItemDTO(item.getName(), item.getCategory(), discountedPrices.get(item), shop.getId(), item.getId(), itemsMap.get(item.getId()), item.getRating(), item.getDescription(), item.getNumOfOrders()));
+            }
+            cart.addAll(itemsList);
+        }
+        return cart;
     }
 
     // public void directPurchase(Guest user, int itemId)
