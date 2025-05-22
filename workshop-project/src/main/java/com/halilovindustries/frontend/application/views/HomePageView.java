@@ -49,7 +49,6 @@ import java.util.function.Consumer;
 @Route(value = "", layout = MainLayout.class)
 public class HomePageView extends Composite<VerticalLayout> {
     private final HomePresenter presenter;
-    private Registration myBroadcastRegistration;
     private Button loginButton, registerButton, logoutButton;
     private Button viewCart;
     private HorizontalLayout randomSection;
@@ -57,6 +56,8 @@ public class HomePageView extends Composite<VerticalLayout> {
     //private final FlexLayout itemsLayout = new FlexLayout();
     private final FlexLayout cardsLayout;
     private TextField searchBar;
+    private Registration broadcasterRegistration;
+
     @Autowired
     public HomePageView(HomePresenter p) {
         this.presenter = p;
@@ -361,17 +362,11 @@ public class HomePageView extends Composite<VerticalLayout> {
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
                     String userId = presenter.extractUserId(newToken);
-                    // Store this view's listener registration
-                    myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
-                        UI.getCurrent().access(() -> {
-                            Notification.show("Notification from server: " + msg, 3000, Position.TOP_CENTER);
-                        });
-                    });
+                    
 
                     // we already set localStorage & showed a welcome toast in presenter
                     showLoggedInUI();  
                     dialog.close();
-                    UI.getCurrent().getPage().reload();
                 }
             });
             dialog.close();
@@ -433,59 +428,24 @@ public class HomePageView extends Composite<VerticalLayout> {
             String currentUserId = null;
             
             // Check if we already have a registration for this user
-            if (myBroadcastRegistration != null) {
+            
                 try {
                     // Get current token and extract user ID
                     presenter.getSessionToken(currentToken -> {
                         if (currentToken != null && presenter.validateToken(currentToken)) {
                             String currId = presenter.extractUserId(currentToken);
-                            // Only remove if it's a different user
-                            if (!userId.equals(currId)) {
-                                myBroadcastRegistration.remove();
-                                myBroadcastRegistration = null;
-                            }
+
                         }
                     });
                 } catch (Exception e) {
-                    // If anything goes wrong, remove existing registration
-                    myBroadcastRegistration.remove();
-                    myBroadcastRegistration = null;
-                }
-            }
-            
-            // Only create a new registration if needed
-            if (myBroadcastRegistration == null) {
-                System.out.println("Creating new broadcast listener for user: " + userId);
-                myBroadcastRegistration = presenter.subscribeToBroadcast(userId, msg -> {
-                    // Handle broadcast messages
-                    System.out.println("Received broadcast message: " + msg);
-                    UI.getCurrent().access(() -> {
-                        Notification notification = new Notification(
-                            "Server: " + msg, 
-                            3000, 
-                            Position.TOP_CENTER
-                        );
-                        notification.open();
-                    });
-                });
-                showLoggedInUI(); // hide login, show logout
 
-                if (isDefaultUser) {
-                    // Don't reload for default user - avoids validation issues
-                    Notification.show("Logged in as System Manager", 3000, Position.MIDDLE);
-                } else {
-                    UI.getCurrent().getPage().reload();
                 }
-            }
+                showLoggedInUI();
         }
     });
 }
 
     private void doLogout() {
-        if (myBroadcastRegistration != null) {
-            myBroadcastRegistration.remove();
-            myBroadcastRegistration = null;
-        }
         presenter.logoutUser(); // performs backend logout and gets new guest token
         showGuestUI();          // switch back to guest view
     }
@@ -513,16 +473,28 @@ public class HomePageView extends Composite<VerticalLayout> {
 
     /** Show login/register, hide logout */
     private void showGuestUI() {
-        loginButton.setVisible(true);
-        registerButton.setVisible(true);
-        logoutButton.setVisible(false);
+        UI.getCurrent().access(() -> {
+                    UI.getCurrent().getChildren()
+                        .filter(c -> c instanceof MainLayout)
+                        .map(c -> (MainLayout)c)
+                        .forEach(MainLayout::refreshDrawer);
+                        loginButton.setVisible(true);
+                        registerButton.setVisible(true);
+                        logoutButton.setVisible(false);
+                    });
     }
 
     /** Hide login/register, show logout */
     private void showLoggedInUI() {
-        loginButton.setVisible(false);
-        registerButton.setVisible(false);
-        logoutButton.setVisible(true);
+        UI.getCurrent().access(() -> {
+                    UI.getCurrent().getChildren()
+                        .filter(c -> c instanceof MainLayout)
+                        .map(c -> (MainLayout)c)
+                        .forEach(MainLayout::refreshDrawer);
+                        loginButton.setVisible(false);
+                        registerButton.setVisible(false);
+                        logoutButton.setVisible(true);
+                    });
     }
 
 
@@ -547,49 +519,15 @@ public class HomePageView extends Composite<VerticalLayout> {
                     if (!valid) {
                         // Token is null or corrupted → get a new guest
                         System.out.println("Invalid token - creating new guest session");
-                        // Don't touch broadcast registration here
                         UI.getCurrent().getPage().executeJs(
                             "localStorage.removeItem('token'); sessionStorage.removeItem('token');"
                         );
                         presenter.saveSessionToken();
                         showGuestUI();
                     } else if (loggedIn) {
-                        // Everything is fine - handle broadcast registration
                         String userId = presenter.extractUserId(token);
                         System.out.println("User is logged in with ID: " + userId);
-                        
-                        // Only register if no registration exists
-                        if (myBroadcastRegistration == null) {
-                            System.out.println("Creating broadcast registration for user: " + userId);
-                            
-                            // Create a robust consumer for broadcast messages
-                            Consumer<String> messageConsumer = msg -> {
-                                System.out.println("Received broadcast message: " + msg);
-                                UI currentUI = UI.getCurrent();
-                                if (currentUI != null && currentUI.isAttached()) {
-                                    currentUI.access(() -> {
-                                        try {
-                                            System.out.println("Showing notification with message: " + msg);
-                                            Notification notification = new Notification(
-                                                "Server: " + msg, 
-                                                3000, 
-                                                Position.TOP_CENTER
-                                            );
-                                            notification.open();
-                                        } catch (Exception e) {
-                                            System.err.println("Error showing notification: " + e.getMessage());
-                                        }
-                                    });
-                                } else {
-                                    System.err.println("UI not available for notification");
-                                }
-                            };
-                            
-                            myBroadcastRegistration = presenter.subscribeToBroadcast(userId, messageConsumer);
-                        } else {
-                            System.out.println("Broadcast registration already exists for user");
-                        }
-                        
+                        registerForNotifications(userId);
                         showLoggedInUI();
                     } else {
                         // Token is valid JWT but not logged in
@@ -598,8 +536,6 @@ public class HomePageView extends Composite<VerticalLayout> {
                             .executeJs("return localStorage.getItem('token') === $0;", token)
                             .then(Boolean.class, isPersistent -> {
                                 if (Boolean.TRUE.equals(isPersistent) || !presenter.isInSystem(token)) {
-                                    System.out.println("Clearing storage without affecting broadcast registration");
-                                    // Only clear storage, don't remove broadcast registration
                                     UI.getCurrent().getPage().executeJs(
                                         "localStorage.removeItem('token'); sessionStorage.removeItem('token');"
                                     );
@@ -619,11 +555,6 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private void clearStorage() {
-        // Unsubscribe from any existing broadcasts
-        if (myBroadcastRegistration != null) {
-            myBroadcastRegistration.remove();
-            myBroadcastRegistration = null;
-        }
         
         UI.getCurrent().getPage().executeJs(
             "localStorage.removeItem('token'); sessionStorage.removeItem('token');"
@@ -633,40 +564,9 @@ public class HomePageView extends Composite<VerticalLayout> {
     @Override
     protected void onDetach(DetachEvent event) {
         super.onDetach(event);
-        
-        // Only clean up broadcast subscription when the view is fully detached
-        // and not just during page refresh or navigation
-        if (myBroadcastRegistration != null && !UI.getCurrent().getSession().hasLock()) {
-            System.out.println("Cleaning up broadcast registration in onDetach");
-            myBroadcastRegistration.remove();
-            myBroadcastRegistration = null;
-        }
+        unregisterNotifications();
+        System.out.println("HomePageView onDetach called");
     }
-
-    //@Override
-    // protected void onAttach1(AttachEvent event) {
-    //     super.onAttach(event);
-        
-    //     presenter.getSessionToken(token -> {
-    //         UI ui = UI.getCurrent();
-    //         if (ui == null) 
-    //             return;
-    //         ui.access(() -> {
-    //             if (token == null || !presenter.validateToken(token)) {
-    //                 // brand-new tab with NO guest token → fetch one
-    //                 presenter.saveSessionToken();
-    //                 showGuestUI();
-    //             } 
-    //             else if (!presenter.isLoggedIn(token)) {
-    //                 showGuestUI();
-    //             }
-    //             else {
-    //                 showLoggedInUI();
-    //             }
-    //         });
-    //     });
-    //     loadRandomItems();
-    // }
 
 
     private void openFilterDialog() {
@@ -747,5 +647,31 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         dialog.add(layout);
         dialog.open();
+    }
+
+    /** Called on Broadcaster thread → safely hand off to UI thread */
+    private void handlePushMessage(String msg) {
+        UI ui = UI.getCurrent();
+        if (ui != null) {
+            ui.access(() -> {
+                Notification.show(msg, 3000, Notification.Position.TOP_END);
+            });
+        }
+    }
+
+    /** Subscribe to receive live pushes for this user */
+    private void registerForNotifications(String userId) {
+        unregisterNotifications();  // in case we already had one
+        broadcasterRegistration = Broadcaster.register(userId, this::handlePushMessage);
+        System.out.println("Subscribed to live notifications for " + userId);
+    }
+
+    /** Clean up subscription */
+    private void unregisterNotifications() {
+        if (broadcasterRegistration != null) {
+            broadcasterRegistration.remove();
+            broadcasterRegistration = null;
+            System.out.println("Unsubscribed from live notifications");
+        }
     }
 }
