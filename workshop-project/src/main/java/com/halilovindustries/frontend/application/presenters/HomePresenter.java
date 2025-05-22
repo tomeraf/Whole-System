@@ -240,4 +240,9 @@ public class HomePresenter extends AbstractPresenter {
         });
 
     }
+
+    public void loginNotify() {
+        getSessionToken(token -> {userService.loginNotify(token);}
+        );
+    }
 }

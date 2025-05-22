@@ -533,15 +533,6 @@ public class HomePageView extends Composite<VerticalLayout> {
                     } else if (loggedIn) {
                         String userId = presenter.extractUserId(token);
                         System.out.println("User is logged in with ID: " + userId);
-                        if (ui.getSession().getAttribute("notifications-registered") == null) {
-                            registerForNotifications(userId);
-                            ui.getSession().setAttribute("notifications-registered", true);
-
-                            ui.addDetachListener(detach -> {
-                                unregisterNotifications();
-                                System.out.println("Unregistered notifications for UI");
-                            });
-                        }
                         showLoggedInUI();
                     } else {
                         // Token is valid JWT but not logged in
@@ -656,15 +647,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         dialog.open();
     }
 
-    // /** Called on Broadcaster thread → safely hand off to UI thread */
-    // private void handlePushMessage(String msg) {
-    //     if (ui != null) {
-    //         ui.access(() -> {
-    //             Notification.show(msg, 3000, Notification.Position.TOP_END);
-    //         });
-    //     }
-    // }
-
     /** Subscribe to receive live pushes for this user */
     private void registerForNotifications(String userId) {
         unregisterNotifications();  // in case we already had one
@@ -677,6 +659,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                 });            
             }
         });
+        presenter.loginNotify();
         System.out.println("Subscribed to live notifications for " + userId);
     }
 
