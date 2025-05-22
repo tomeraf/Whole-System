@@ -23,6 +23,8 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.shared.communication.PushMode;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -513,7 +515,6 @@ public class HomePageView extends Composite<VerticalLayout> {
                 System.out.println("UI not available or not attached in getSessionToken callback");
                 return;
             }
-            ui.setPollInterval(3000); // milliseconds
 
             ui.access(() -> {
                 try {
@@ -672,9 +673,8 @@ public class HomePageView extends Composite<VerticalLayout> {
         broadcasterRegistration = Broadcaster.register(userId, msg-> {
             if (ui != null) {
                 ui.access(() -> {
-                    Notification notification = new Notification(msg, 3000, Position.TOP_END);
-                    notification.open();
-                });
+                    Notification.show("Notification from server" + ": " + msg, 10000, Position.TOP_CENTER);
+                });            
             }
         });
         System.out.println("Subscribed to live notifications for " + userId);
