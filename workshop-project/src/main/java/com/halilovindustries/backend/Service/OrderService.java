@@ -35,6 +35,7 @@ import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -49,6 +50,7 @@ public class OrderService {
 
     private final ConcurrencyHandler ConcurrencyHandler;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
 
     @Autowired
     public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter,
@@ -69,6 +71,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return list of ItemDTOs in the cart, or null on error
      */
+    @Transactional
     public Response<List<ItemDTO>> checkCartContent(String sessionToken) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -84,9 +87,6 @@ public class OrderService {
                 // if the shop has no such item, or it's out of stock, drop it
                 return underlying == null || underlying.getQuantity() <= 0;
             });
-            // List<ItemDTO> itemDTOs = items.stream()
-            //         .map(item -> new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(), item.getId(), item.getQuantity(), item.getRating()))
-            //         .toList(); // Convert Item to ItemDTO
 
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
@@ -101,9 +101,10 @@ public class OrderService {
      * Adds items to the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param itemDTOs list of items to add
+     * @param userItems list of items to add
      */
     // items = shopId, itemID
+    @Transactional
     public Response<Void> addItemsToCart(String sessionToken, HashMap<Integer, HashMap<Integer, Integer>> userItems) {
         List<Lock> acquiredLocks = new ArrayList<>();
 
@@ -162,9 +163,10 @@ public class OrderService {
      * Removes items from the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param itemDTOs list of items to remove
+     * @param userItems list of items to remove
      */
     // userItems = shopID, itemID
+    @Transactional
     public Response<Void> removeItemsFromCart(String sessionToken, HashMap<Integer, List<Integer>> userItems) {
 
         try {
@@ -193,6 +195,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return the created Order, or null on failure
      */
+    @Transactional
     public Response<Order> buyCartContent(String sessionToken, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         List<Lock> acquiredLocks = new ArrayList<>();
         
@@ -279,6 +282,7 @@ public class OrderService {
         }
     }
 
+
     /**
      * Submits a bid offer for a specific item.
      *
@@ -286,6 +290,7 @@ public class OrderService {
      * @param itemID the item to bid on
      * @param offerPrice the bid amount
      */
+    @Transactional
     public Response<Void> submitBidOffer(String sessionToken, int shopId, int itemID, double offerPrice) {
 
         Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
@@ -332,9 +337,10 @@ public class OrderService {
      * Answers on a counter bid.
      *
      * @param sessionToken current session token
-     * @param itemID the item to bid on
+     * @param shopId the item to bid on
      * @param accept whether to accept the counter bid
      */
+    @Transactional
     public Response<Void> answerOnCounterBid(String sessionToken,int shopId,int bidId,boolean accept) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -366,6 +372,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return list of past Orders, or null on error
      */
+     @Transactional
     public Response<List<Order>> viewPersonalOrderHistory(String sessionToken) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -380,6 +387,8 @@ public class OrderService {
             return Response.error("Error viewing personal search history: " + e.getMessage());
         }
     }
+
+    @Transactional
     public Response<Void> purchaseBidItem(String sessionToken,int shopId,int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -403,6 +412,7 @@ public class OrderService {
         }
     }
 
+    @Transactional
     public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
 
             try {
@@ -427,6 +437,8 @@ public class OrderService {
                 return Response.error("Error submitting auction offer: " + e.getMessage());
             }
     }
+
+    @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
