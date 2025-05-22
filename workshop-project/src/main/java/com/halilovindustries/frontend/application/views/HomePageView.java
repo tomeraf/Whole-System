@@ -28,6 +28,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.PreserveOnRefresh;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+@PreserveOnRefresh
 @CssImport("./themes/my-app/shop-cards.css")
 @PageTitle("Home Page")
 @Route(value = "", layout = MainLayout.class)
@@ -362,7 +364,7 @@ public class HomePageView extends Composite<VerticalLayout> {
             presenter.registerUser(name, pw, dob, (newToken, success) -> {
                 if (success) {
                     String userId = presenter.extractUserId(newToken);
-                    
+                    registerForNotifications(userId);
 
                     // we already set localStorage & showed a welcome toast in presenter
                     showLoggedInUI();  
@@ -434,7 +436,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                     presenter.getSessionToken(currentToken -> {
                         if (currentToken != null && presenter.validateToken(currentToken)) {
                             String currId = presenter.extractUserId(currentToken);
-
+                            registerForNotifications(currId);
                         }
                     });
                 } catch (Exception e) {
@@ -446,6 +448,7 @@ public class HomePageView extends Composite<VerticalLayout> {
 }
 
     private void doLogout() {
+        unregisterNotifications(); // clean up any existing subscription
         presenter.logoutUser(); // performs backend logout and gets new guest token
         showGuestUI();          // switch back to guest view
     }
@@ -505,10 +508,12 @@ public class HomePageView extends Composite<VerticalLayout> {
 
         presenter.getSessionToken(token -> {
             UI ui = UI.getCurrent();
+            
             if (ui == null || !ui.isAttached()) {
                 System.out.println("UI not available or not attached in getSessionToken callback");
                 return;
             }
+            ui.setPollInterval(3000); // milliseconds
 
             ui.access(() -> {
                 try {
@@ -527,7 +532,15 @@ public class HomePageView extends Composite<VerticalLayout> {
                     } else if (loggedIn) {
                         String userId = presenter.extractUserId(token);
                         System.out.println("User is logged in with ID: " + userId);
-                        registerForNotifications(userId);
+                        if (ui.getSession().getAttribute("notifications-registered") == null) {
+                            registerForNotifications(userId);
+                            ui.getSession().setAttribute("notifications-registered", true);
+
+                            ui.addDetachListener(detach -> {
+                                unregisterNotifications();
+                                System.out.println("Unregistered notifications for UI");
+                            });
+                        }
                         showLoggedInUI();
                     } else {
                         // Token is valid JWT but not logged in
@@ -559,13 +572,6 @@ public class HomePageView extends Composite<VerticalLayout> {
         UI.getCurrent().getPage().executeJs(
             "localStorage.removeItem('token'); sessionStorage.removeItem('token');"
         );
-    }
-
-    @Override
-    protected void onDetach(DetachEvent event) {
-        super.onDetach(event);
-        unregisterNotifications();
-        System.out.println("HomePageView onDetach called");
     }
 
 
@@ -649,20 +655,28 @@ public class HomePageView extends Composite<VerticalLayout> {
         dialog.open();
     }
 
-    /** Called on Broadcaster thread → safely hand off to UI thread */
-    private void handlePushMessage(String msg) {
-        UI ui = UI.getCurrent();
-        if (ui != null) {
-            ui.access(() -> {
-                Notification.show(msg, 3000, Notification.Position.TOP_END);
-            });
-        }
-    }
+    // /** Called on Broadcaster thread → safely hand off to UI thread */
+    // private void handlePushMessage(String msg) {
+    //     if (ui != null) {
+    //         ui.access(() -> {
+    //             Notification.show(msg, 3000, Notification.Position.TOP_END);
+    //         });
+    //     }
+    // }
 
     /** Subscribe to receive live pushes for this user */
     private void registerForNotifications(String userId) {
         unregisterNotifications();  // in case we already had one
-        broadcasterRegistration = Broadcaster.register(userId, this::handlePushMessage);
+        UI ui = UI.getCurrent();
+        
+        broadcasterRegistration = Broadcaster.register(userId, msg-> {
+            if (ui != null) {
+                ui.access(() -> {
+                    Notification notification = new Notification(msg, 3000, Position.TOP_END);
+                    notification.open();
+                });
+            }
+        });
         System.out.println("Subscribed to live notifications for " + userId);
     }
 
