@@ -420,6 +420,7 @@ public class Shop {
                 if (!getItem(auctionPurchase.getItemId()).quantityCheck(1)) {
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
+                items.get(auctionPurchase.getItemId()).buyItem(1);
                 return auctionPurchase.purchaseAuctionItem(userID);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Auction purchase failed: " + e.getMessage());
