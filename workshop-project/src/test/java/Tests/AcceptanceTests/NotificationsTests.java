@@ -364,12 +364,8 @@ public class NotificationsTests extends BaseAcceptanceTests{
 
         String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
 
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> shopItems = new HashMap<>();
-        shopItems.put(shop.getItems().get(0).getItemID(), 1);
-        itemsMap.put(shop.getId(), shopItems);
 
-        orderService.addItemsToCart(buyerToken, itemsMap);
+        orderService.addItemToCart(buyerToken,shop.getId(),shop.getItems().get(0).getItemID(),1);
 
         PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
         ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");

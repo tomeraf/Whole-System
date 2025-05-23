@@ -183,7 +183,7 @@ public class AcceptanceTestFixtures {
         return shopService.getShopInfo(ownerToken, shopId).getData();
     }
 
-        public Order successfulBuyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
+    public Order successfulBuyCartContent(String sessionToken, PaymentDetailsDTO p, ShipmentDetailsDTO s) {
         mockPositivePayment(p);
         mockPositiveShipment(s);
 

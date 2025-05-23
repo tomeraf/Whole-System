@@ -77,17 +77,8 @@ public class OrderService {
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             
             Guest guest = userRepository.getUserById(userID);
-            List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest);
-            itemDTOs.removeIf(item -> {
-            Shop shop = shopRepository.getShopById(item.getShopId());
-                Item underlying = shop.getItems().get(item.getItemID());
-                // if the shop has no such item, or it's out of stock, drop it
-                return underlying == null || underlying.getQuantity() <= 0;
-            });
-            // List<ItemDTO> itemDTOs = items.stream()
-            //         .map(item -> new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(), item.getId(), item.getQuantity(), item.getRating()))
-            //         .toList(); // Convert Item to ItemDTO
-
+            List<Shop> shops= shopRepository.getAllShops().values().stream().filter(shop ->guest.getCart().getShopIDs().contains(shop.getId())).collect(Collectors.toList());
+            List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest,shops);
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
         } 
@@ -104,8 +95,8 @@ public class OrderService {
      * @param itemDTOs list of items to add
      */
     // items = shopId, itemID
-    public Response<Void> addItemsToCart(String sessionToken, HashMap<Integer, HashMap<Integer, Integer>> userItems) {
-        List<Lock> acquiredLocks = new ArrayList<>();
+    public Response<Void> addItemToCart(String sessionToken, int shopId,int itemID, int quantity) {
+        Lock shopLock=null;
 
 
         try {
@@ -120,27 +111,10 @@ public class OrderService {
 
 
             
-            Set<Integer> shopIds = userItems.keySet(); // Get the set of shop IDs
-            
-            List<Integer> sortedShopIds = new ArrayList<>(shopIds);
-            Collections.sort(sortedShopIds);
-
-            // Lock all needed shops
-            for (int shopId : sortedShopIds) {
-                Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
-                shopRead.lock();
-                acquiredLocks.add(shopRead);
-            }
-
-            HashMap<Shop, HashMap<Integer, Integer>> items = new HashMap<>(); 
-            for (int shopId : sortedShopIds) {
-                HashMap<Integer, Integer> itemIDs = userItems.get(shopId); // Get the item IDs for the current shop
-                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                items.put(shop, itemIDs); // Add the shop and its items to the map
-            }
-            
-
-            purchaseService.addItemsToCart(guest, items); // Add items to the cart
+            shopLock = ConcurrencyHandler.getShopReadLock(shopId);
+            shopLock.lock();
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            purchaseService.addItemsToCart(guest, shop,itemID,quantity); // Add items to the cart
 
             logger.info(() -> "Items added to cart successfully");
             return Response.ok();
@@ -150,10 +124,8 @@ public class OrderService {
             return Response.error("Error adding items to cart: " + e.getMessage());
         }
         finally {
-            // Unlock in reverse order
-            Collections.reverse(acquiredLocks);
-            for (Lock lock : acquiredLocks) {
-                lock.unlock();
+            if (shopLock != null) {
+                shopLock.unlock();
             }
         }
     }
@@ -165,7 +137,7 @@ public class OrderService {
      * @param itemDTOs list of items to remove
      */
     // userItems = shopID, itemID
-    public Response<Void> removeItemsFromCart(String sessionToken, HashMap<Integer, List<Integer>> userItems) {
+    public Response<Void> removeItemFromCart(String sessionToken, int shopId,int itemID) {
 
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -176,8 +148,8 @@ public class OrderService {
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
-            purchaseService.removeItemsFromCart(guest, userItems); // Save the updated cart to the repository
-            
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            guest.getCart().deleteItem(shopId,itemID); // Remove items from the cart
             
             logger.info(() -> "Items removed from cart successfully");
             return Response.ok();
@@ -225,8 +197,8 @@ public class OrderService {
             // Then add items
             for (ShoppingBasket basket : guest.getCart().getBaskets()) {
                 int shopID = basket.getShopID();
-                for (ItemDTO item : basket.getItems()) {
-                    locksToAcquire.add(new Pair<>(shopID, item.getItemID()));
+                for (Integer item : basket.getItems().keySet()) {
+                    locksToAcquire.add(new Pair<>(shopID, item));
                 }
             }
 

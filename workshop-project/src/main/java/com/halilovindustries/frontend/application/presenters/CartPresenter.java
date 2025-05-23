@@ -36,7 +36,7 @@ public class CartPresenter extends AbstractPresenter {
 
     // userItems = <shopID, list<itemID>>
     // select all items from the cart you want to remove
-    public void removeItemsFromCart(HashMap<Integer, List<Integer>> userItems, Consumer<Boolean> onFinish) {
+    public void removeItemFromCart(int shopId,int itemId, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;
@@ -48,7 +48,7 @@ public class CartPresenter extends AbstractPresenter {
                 return;
             }
 
-            Response<Void> resp = orderService.removeItemsFromCart(token, userItems);
+            Response<Void> resp = orderService.removeItemFromCart(token, shopId, itemId);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

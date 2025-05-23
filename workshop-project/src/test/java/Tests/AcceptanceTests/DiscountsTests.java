@@ -84,16 +84,14 @@ public class DiscountsTests extends BaseAcceptanceTests {
 
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(2);
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> itemMap = new HashMap<>();
-        itemMap.put(List.of(toBuy).get(0).getItemID(), 1);
-        itemsMap.put(shop.getId(), itemMap);
         shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
         // 3) Add to cart
-        Response<Void> addResp = orderService.addItemsToCart(
+        Response<Void> addResp = orderService.addItemToCart(
             customerToken,
-            itemsMap
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
@@ -117,18 +115,14 @@ public class DiscountsTests extends BaseAcceptanceTests {
 
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(2);
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> itemMap = new HashMap<>();
-        itemMap.put(List.of(toBuy).get(0).getItemID(), 1);
-        //apple
-        itemMap.put(0,1);
-        itemsMap.put(shop.getId(), itemMap);
         shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
         // 3) Add to cart
-        Response<Void> addResp = orderService.addItemsToCart(
+        Response<Void> addResp = orderService.addItemToCart(
             customerToken,
-            itemsMap
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
@@ -152,16 +146,14 @@ public class DiscountsTests extends BaseAcceptanceTests {
 
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(2);
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> itemMap = new HashMap<>();
-        itemMap.put(List.of(toBuy).get(0).getItemID(), 1);
-        itemsMap.put(shop.getId(), itemMap);
         shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
         // 3) Add to cart
-        Response<Void> addResp = orderService.addItemsToCart(
+        Response<Void> addResp = orderService.addItemToCart(
             customerToken,
-            itemsMap
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout
@@ -263,15 +255,13 @@ public class DiscountsTests extends BaseAcceptanceTests {
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
         List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
         ItemDTO toBuy = shopItems.get(2);
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> itemMap = new HashMap<>();
-        itemMap.put(List.of(toBuy).get(0).getItemID(), 1);
-        itemsMap.put(shop.getId(), itemMap);
         shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
         // 3) Add to cart
-        Response<Void> addResp = orderService.addItemsToCart(
+        Response<Void> addResp = orderService.addItemToCart(
             customerToken,
-            itemsMap
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
         );
         assertTrue(addResp.isOk(), "Adding items to cart should succeed");
         // 4) Checkout

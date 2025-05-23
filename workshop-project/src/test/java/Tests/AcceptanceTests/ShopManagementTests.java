@@ -228,14 +228,10 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         
         String guestToken = userService.enterToSystem().getData();
         List<ItemDTO> items = shopService.showShopItems(ownerToken,shopDto.getId()).getData();
-        HashMap<Integer, HashMap<Integer, Integer>> itemsMap = new HashMap<>();
-        HashMap<Integer, Integer> itemMap = new HashMap<>();
-        itemMap.put(items.get(0).getItemID(), 1);
-        itemMap.put(items.get(1).getItemID(), 1);
-        itemsMap.put(shopDto.getId(), itemMap);
 
-        orderService.addItemsToCart(guestToken, itemsMap);
-
+        orderService.addItemToCart(guestToken, shopDto.getId(), items.get(0).getItemID(), 1);
+        
+        
         fixtures.successfulBuyCartContent(guestToken, p, s);
         
         Response<Void> res = shopService.rateShop(guestToken, shopDto.getId(), 5);

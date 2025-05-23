@@ -109,7 +109,7 @@ public class CartView extends Composite<VerticalLayout>
             Collections.singletonList(item.getItemID())
             );
 
-            presenter.removeItemsFromCart(toRemove, success -> {
+            presenter.removeItemFromCart(item.getShopId(),item.getItemID(), success -> {
             UI.getCurrent().access(() -> {
                 dlg.close();
                 if (success) {

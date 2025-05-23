@@ -1,6 +1,9 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import com.halilovindustries.backend.Domain.DTOs.Pair;
 
@@ -8,6 +11,7 @@ public class AuctionPurchase extends Purchase {
     private double highestBid=0;
     private LocalDateTime auctionStartTime; 
     private LocalDateTime auctionEndTime;
+    private List<Integer> bidders;
     private boolean done = false; 
 
     
@@ -16,6 +20,7 @@ public class AuctionPurchase extends Purchase {
         validateAuctionTimes(auctionStartTime, auctionEndTime);
         this.auctionStartTime = auctionStartTime;
         this.auctionEndTime = auctionEndTime;
+        bidders = new ArrayList<>();
     }
     private void validateAuctionTimes(LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
         if (auctionStartTime.isAfter(auctionEndTime)) {
@@ -33,6 +38,9 @@ public class AuctionPurchase extends Purchase {
         if (bidAmount > highestBid && bidAmount >= getAmount() && isAuctionActive()) {
             this.highestBid = bidAmount;
             setBuyerId(buyerId);
+            if(!bidders.contains(buyerId)) {
+                bidders.add(buyerId);
+            }
         } else {
             throw new IllegalArgumentException("Bid amount must be higher than the current bid and starting bid.");
         }
@@ -58,6 +66,9 @@ public class AuctionPurchase extends Purchase {
     }
     public boolean isDone() {
         return done;
+    }
+    public List<Integer> getBidders() {
+        return bidders;
     }
     public Pair<Integer, Double> purchaseAuctionItem(int userID) {
         if (!isAuctionEnded()) {
