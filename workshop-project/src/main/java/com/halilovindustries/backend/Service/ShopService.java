@@ -568,7 +568,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
-            List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
+            List<Order> orders = orderRepository.findByUserId(userID);
             shoppingService.RateShop(shop, orders, userID, rating);
             logger.info(() -> "Shop rated: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
@@ -592,7 +592,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
-            List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
+            List<Order> orders = orderRepository.findByUserId(userID);
             shoppingService.RateItem(shop, userID, itemID, orders, rating);
             logger.info(() -> "Item rated: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {

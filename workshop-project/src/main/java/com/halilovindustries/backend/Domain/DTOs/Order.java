@@ -23,8 +23,8 @@ public class Order {
     public Order(){}
 
     public Order(int userId, double totalPrice, List<ItemDTO> items) {
-        this.totalPrice = totalPrice;
         this.userId = userId;
+        this.totalPrice = totalPrice;
         for (ItemDTO item : items) {
             item.setOrder(this);
         }

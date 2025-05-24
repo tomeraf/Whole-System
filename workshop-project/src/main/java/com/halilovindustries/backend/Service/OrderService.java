@@ -82,7 +82,7 @@ public class OrderService {
             Guest guest = userRepository.getUserById(userID);
             List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest);
             itemDTOs.removeIf(item -> {
-            Shop shop = shopRepository.getShopById(item.getShopId());
+                Shop shop = shopRepository.getShopById(item.getShopId());
                 Item underlying = shop.getItems().get(item.getItemID());
                 // if the shop has no such item, or it's out of stock, drop it
                 return underlying == null || underlying.getQuantity() <= 0;
@@ -256,11 +256,11 @@ public class OrderService {
             List<Shop> shops = new ArrayList<>();
             for (int i = 0; i < guest.getCart().getBaskets().size(); i++) {
                 int shopID = guest.getCart().getBaskets().get(i).getShopID();
-                Shop shop = shopRepository.getShopById(shopID); // Get the shop by ID
-                shops.add(shop); // Add the shop to the list of shops
+                Shop shop = shopRepository.getShopById(shopID);
+                shops.add(shop);
             }
-            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getAllOrders().size(), paymentDetails, shipmentDetails); // Buy the cart content
-            orderRepository.addOrder(order); // Save the order to the repository
+            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment, paymentDetails, shipmentDetails);
+            orderRepository.save(order);
             notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
             return Response.ok(order); 
@@ -281,7 +281,6 @@ public class OrderService {
             }
         }
     }
-
 
     /**
      * Submits a bid offer for a specific item.
@@ -379,7 +378,7 @@ public class OrderService {
                 throw new Exception("User not logged in");
             }
             int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            List<Order> orders = orderRepository.getOrdersByCustomerId(userId);
+            List<Order> orders = orderRepository.findByUserId(userId);
             logger.info(() -> "Personal search history viewed successfully for user ID: " + userId);
             return Response.ok(orders);
         } catch (Exception e) {
@@ -395,14 +394,14 @@ public class OrderService {
                 throw new Exception("User not logged in");
             }
             int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Guest guest = userRepository.getUserById(userId); // Get the guest user by ID
+            Guest guest = userRepository.getUserById(userId);
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
-            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
-            orderRepository.addOrder(order); // Save the order to the repository
+            Shop shop = shopRepository.getShopById(shopId);
+            Order order = purchaseService.purchaseBidItem(user,shop,bidId,payment, shipment, paymentDetalis, shipmentDetalis);
+            orderRepository.save(order);
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(bidId).getName() + " was purchased by " + user.getUsername()+"from bid");
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
@@ -451,8 +450,8 @@ public class OrderService {
             }
             Registered registered = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis);
-            orderRepository.addOrder(order); // Save the order to the repository
+            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, payment, shipment, paymentDetalis, shipmentDetalis);
+            orderRepository.save(order); // Save the order to the repository
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);
             return Response.ok();

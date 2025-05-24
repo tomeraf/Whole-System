@@ -23,7 +23,6 @@ import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryNotificationRepository;
-import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
 import com.halilovindustries.backend.Service.NotificationHandler;
@@ -32,10 +31,15 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import com.halilovindustries.websocket.INotifier;
 import com.halilovindustries.websocket.VaadinNotifier;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+
+@SpringBootTest
 public abstract class BaseAcceptanceTests {
     protected IShopRepository shopRepository;
     protected IUserRepository userRepository;
+    @Autowired
     protected IOrderRepository orderRepository;
     protected INotificationRepository notificationRepository;
     protected IAuthentication jwtAdapter;
@@ -88,7 +92,6 @@ public abstract class BaseAcceptanceTests {
     public void setUp() {
         shopRepository   = new MemoryShopRepository();
         userRepository   = new MemoryUserRepository();
-        orderRepository  = new MemoryOrderRepository();
         notificationRepository= new MemoryNotificationRepository();
         
         JWTAdapter adapter = new JWTAdapter();

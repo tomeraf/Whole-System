@@ -314,7 +314,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertEquals(1, history.size(), "Exactly one order should exist for this buyer");
 
         Order recorded = history.get(0);
-        assertEquals(created.getId(), recorded.getId(), "Order IDs should match");
+        assertEquals(created.getOrderID(), recorded.getOrderID(), "Order IDs should match");
         assertEquals(1, recorded.getItems().size(), "Order must contain exactly one item");
         assertEquals(
             toBuy.getName(),

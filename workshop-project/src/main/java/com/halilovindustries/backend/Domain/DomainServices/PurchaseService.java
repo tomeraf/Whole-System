@@ -46,7 +46,7 @@ public class PurchaseService {
     }
     
     // use case 2.5
-    public Order buyCartContent(Guest user, List<Shop> shops, IShipment ship, IPayment pay, int orderID, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
+    public Order buyCartContent(Guest user, List<Shop> shops, IShipment ship, IPayment pay, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         if (shops.isEmpty()) {
             throw new IllegalArgumentException("Error: no shops to purchase from.");    
         }
@@ -78,25 +78,23 @@ public class PurchaseService {
             }
         }
         Double total = 0.0;
+        List<ItemDTO> itemsList = new ArrayList<>();
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
             total=+shop.purchaseBasket(itemsMap);
         }
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-            List<ItemDTO> itemsList = new ArrayList<>();
+
             for(Integer itemId : itemsMap.keySet()) {
                 Item item = shop.getItem(itemId);
                 itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription(), item.getNumOfOrders()));
             }
-            itemsToShip.put(shop.getId(), itemsList);
         }
         ship.processShipment(total*0.1, shipmentDetails);
         pay.processPayment(total, paymentDetails);
         cart.clearCart();
-        Order order = new Order(orderID, user.getUserID(), total, itemsToShip);
-        return order;
+        return new Order(user.getUserID(), total, itemsList);
     }
 
 
@@ -122,43 +120,37 @@ public class PurchaseService {
         }
     }
 
-	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,int orderID,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
+	public Order purchaseBidItem(Guest guest, Shop shop, int bidId,IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
 		Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID());
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
         itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
-        itemsToShip.put(shop.getId(), itemsList);
         pay.processPayment(offer.getValue(), paymentDetails);
         ship.processShipment(offer.getValue()*0.1, shipmentDetails);
-        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip);
-        return order;
+        return new Order(guest.getUserID(), offer.getKey(), itemsList);
     }
 
     public void submitAuctionOffer(Registered user, Shop shop, int auctionID, double offerPrice) {
         shop.submitAuctionOffer(auctionID, offerPrice, user.getUserID());
     }
 
-    public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int orderID, IPayment payment,
+    public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, IPayment payment,
             IShipment shipment, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         
         if(!(shipment.validateShipmentDetails(shipmentDetails)& payment.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
         Pair<Integer,Double> offer = shop.purchaseAuctionItem(auctionID, user.getUserID());
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(offer.getKey());
         itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
-        itemsToShip.put(shop.getId(), itemsList);
         payment.processPayment(offer.getValue(), paymentDetails);
         shipment.processShipment(offer.getValue()*0.1, shipmentDetails);
         shop.updateItemQuantity(item.getId(), item.getQuantity()-1);
-        Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip);
-        return order;
+        return new Order(user.getUserID(), offer.getValue(), itemsList);
     }
 
     public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members) {
