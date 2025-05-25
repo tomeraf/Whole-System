@@ -3,16 +3,21 @@ package com.halilovindustries.backend.Domain.User;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.halilovindustries.backend.Domain.DTOs.*;
+import jakarta.persistence.*;
 
+@Entity
+@Access(AccessType.FIELD)
 public class ShoppingCart {
-    private HashMap<Integer,ShoppingBasket> baskets;//<shopId, basket>
+    @Id
+    @Column(name = "cart_id")
     private int cartID;
 
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ShoppingBasket> baskets;
 
-    public ShoppingCart(HashMap<Integer,ShoppingBasket> baskets, int cartID) {
+
+    public ShoppingCart(List<ShoppingBasket> baskets, int cartID) {
         this.baskets = baskets;
         this.cartID = cartID;
     }
@@ -20,7 +25,7 @@ public class ShoppingCart {
 
     public ShoppingCart(int cartID) {
         this.cartID = cartID;
-        this.baskets = new HashMap();
+        this.baskets = new ArrayList<>();
     }
 
 
@@ -30,67 +35,56 @@ public class ShoppingCart {
 
 
     // Use case #2.3: Add item to cart
-    public void addItem(int shopID,int itemID,int quantity) {
-        // Check if the basket for the given shopID already exists
-        ShoppingBasket basket = baskets.get(shopID);
-        if (basket == null) {
-            // If not, create a new basket for the shopID
-            basket = new ShoppingBasket(shopID);
-            baskets.put(shopID, basket);
-        }
-
-        // Add the item to the basket
+    public void addItem(int shopID, int itemID, int quantity) {
+        ShoppingBasket basket = baskets.stream()
+            .filter(b -> b.getShopID() == shopID)
+            .findFirst()
+            .orElseGet(() -> {
+                ShoppingBasket newBasket = new ShoppingBasket(shopID);
+                newBasket.setCart(this);
+                baskets.add(newBasket);
+                return newBasket;
+            });
         basket.addItem(itemID, quantity);
     }
 
 
     // Use case #2.4.a: Check cart content
     // Use case #2.5: Buy items in cart - get all items in cart
-    public HashMap<Integer,HashMap<Integer,Integer>> getItems() {//<shopID, <itemID, quantity>>
-        HashMap<Integer,HashMap<Integer,Integer>> items = new HashMap<>();
-
-        // Iterate through each basket
-        for (Map.Entry<Integer, ShoppingBasket> entry : baskets.entrySet()) {
-            int shopID = entry.getKey();
-            ShoppingBasket basket = entry.getValue();
-
-            // Get the items in the basket
-            HashMap<Integer,Integer> itemList = basket.getItems();
-
-            // Add the items to the result map
-            items.put(shopID, itemList);
+    public HashMap<Integer, HashMap<Integer, Integer>> getItems() {
+        HashMap<Integer, HashMap<Integer, Integer>> items = new HashMap<>();
+        for (ShoppingBasket basket : baskets) {
+            items.put(basket.getShopID(), basket.getItems());
         }
-
         return items;
     }
 
-
     // Use case #2.4.b: Change cart content
-    // map<Integer, Integer> items: shopID, List<ItemID>
     public boolean deleteItem(int shopID, int itemID) {
-        // Check if the basket for the given shopID exists
-        ShoppingBasket basket = baskets.get(shopID);
-        if (basket != null) {
-            // Remove the item from the basket
-            return basket.removeItem(itemID);
+        for (ShoppingBasket basket : baskets) {
+            if (basket.getShopID() == shopID) {
+                return basket.removeItem(itemID);
+            }
         }
-        return false; // Basket not found, nothing removed
+        return false;
     }
 
 
     // Use case #2.5: Buy items in cart - after confirmation, the items are removed from the cart
     public void clearCart() {
-        // Clear all items from all baskets
-        for (ShoppingBasket basket : baskets.values()) {
-            basket.clearBasket(); // Clear the basket
+        for (ShoppingBasket basket : baskets) {
+            basket.clearBasket();
         }
     }
-
     public List<ShoppingBasket> getBaskets() {
-        return baskets.values().stream().toList();
+        return baskets;
     }
     public List<Integer> getShopIDs() {
-        return new ArrayList<>(baskets.keySet());
+        List<Integer> shopIDs = new ArrayList<>();
+        for (ShoppingBasket basket : baskets) {
+            shopIDs.add(basket.getShopID());
+        }
+        return shopIDs;
     }
 }
 
