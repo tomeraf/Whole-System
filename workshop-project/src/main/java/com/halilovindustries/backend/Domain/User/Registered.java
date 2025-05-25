@@ -17,7 +17,6 @@ import jakarta.persistence.*;
 public class Registered extends Guest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "user_name", nullable = false, unique = true)
@@ -50,6 +49,11 @@ public class Registered extends Guest {
         this.suspension = new Suspension();
     }
 
+
+    public Registered() {
+        super(); 
+    }
+
     public IRole getRoleInShop(int shopID) {
         return roleInShops.stream()
             .filter(role -> role.getShopID() == shopID)
@@ -58,9 +62,9 @@ public class Registered extends Guest {
     }
 
     public boolean logout() {
-        if (!isInSession()) {
-            throw new IllegalArgumentException("Unauthorized Action: already logged out.");
-        }
+        // if (!isInSession()) {
+        //     throw new IllegalArgumentException("Unauthorized Action: already logged out.");
+        // }
         this.sessionToken = null;
         return true;
     }
@@ -232,9 +236,12 @@ public class Registered extends Guest {
         return isSystemManager;
     }
 
-    // public void setId(Long id) {
-    //     this.id = id;
-    // }
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public void setUsername(String username) {
         this.username = username;

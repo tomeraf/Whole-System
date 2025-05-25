@@ -10,6 +10,10 @@ import jakarta.persistence.*;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role_type")
 public abstract class IRole {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "role_id")
+    protected Long id;
     
     @Column(name = "appointer_id")
     protected int appointerID; //-1 for founder

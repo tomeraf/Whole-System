@@ -6,13 +6,14 @@ import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
+@Primary
 @Repository
-@Transactional
 public class DBUserRepository implements IUserRepository {
 
     @PersistenceContext

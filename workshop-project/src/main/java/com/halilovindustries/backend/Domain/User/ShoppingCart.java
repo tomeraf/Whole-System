@@ -17,6 +17,9 @@ public class ShoppingCart {
     private List<ShoppingBasket> baskets;
 
 
+    public ShoppingCart() {
+        this.baskets = new ArrayList<>();
+    }
     public ShoppingCart(List<ShoppingBasket> baskets, int cartID) {
         this.baskets = baskets;
         this.cartID = cartID;
