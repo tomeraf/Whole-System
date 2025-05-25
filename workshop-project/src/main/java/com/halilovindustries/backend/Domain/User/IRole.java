@@ -3,54 +3,65 @@ package com.halilovindustries.backend.Domain.User;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.persistence.*;
+
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "role_type")
 public abstract class IRole {
+    
+    @Column(name = "appointer_id")
     protected int appointerID; //-1 for founder
+
+    @Column(name = "shop_id")
     protected int shopID;
-    protected Map<Integer,IRole> appointments;
-    protected Registered user; // The user that has this role
+    
+    @Transient// This field is not persisted in the database
+    protected   List<IRole> appointments;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registered_id")
+    protected Registered user;
 
     abstract boolean hasPermission(Permission permission);
     abstract void addPermission(Permission permission);
     abstract void removePermission(Permission permission);
-    abstract void addOwner(int nomineeID, IRole role);
+    abstract void addOwner(IRole role);
     public void setUser(Registered user) {
         this.user = user;
     }
     //abstract void addAppointment(int nomineeID, IRole role );
-    public void addManager(int nomineeID, IRole role)  {
+    public void addManager(IRole role) {
         if (hasPermission(Permission.APPOINTMENT)) {
-            appointments.put(nomineeID, role);
+            appointments.add(role);
         } else {
             throw new IllegalArgumentException("No permission to add appointment");
         }
     }
     
     public List<Integer> removeAppointment(int appointeeID) throws IllegalArgumentException {
-        if (!appointments.containsKey(appointeeID)) {
-            throw new IllegalArgumentException("No appointment found for user ID: " + appointeeID);
-        }
         List<Integer> idsToRemove = new ArrayList<>();
-        List<Integer> ids = appointments.get(appointeeID).removeAllAppointments();
-        idsToRemove.addAll(ids);
-        Registered registered = appointments.get(appointeeID).getUser();
-        registered.removeRoleFromShop(appointments.get(appointeeID).shopID);
-        appointments.remove(appointeeID);
         idsToRemove.add(appointeeID);
+        for (IRole role : appointments) {
+            idsToRemove.addAll(role.removeAllAppointments());
+            Registered registered = role.getUser();
+            registered.removeRoleFromShop(role.getShopID());
+        }
+        appointments.clear();
         return idsToRemove;
     }
 
     public List<Integer> removeAllAppointments() {
         List<Integer> idsToRemove = new ArrayList<>();
-        List<Integer> appointeeIDs = new ArrayList<>(appointments.keySet());
-        if(appointeeIDs.isEmpty()) {
+        List<IRole> appointees = new ArrayList<>(appointments);
+        if(appointees.isEmpty()) {
             return new ArrayList<>();
         }
-        for (int appointeeID : appointeeIDs) {
-            List<Integer> ids = appointments.get(appointeeID).removeAllAppointments();
-            idsToRemove.addAll(ids);
-            appointments.get(appointeeID).user.removeRoleFromShop(appointments.get(appointeeID).shopID);
-            appointments.remove(appointeeID);
-            idsToRemove.add(appointeeID);
+        for(IRole role : appointees) {
+            idsToRemove.addAll(role.removeAllAppointments());
+            role.user.removeRoleFromShop(role.shopID);
+            idsToRemove.add(role.user.getUserID());
         }
         return idsToRemove;
     }
