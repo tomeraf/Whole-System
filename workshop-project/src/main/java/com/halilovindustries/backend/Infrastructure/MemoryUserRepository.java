@@ -70,11 +70,6 @@ public class MemoryUserRepository implements IUserRepository {
     }
 
     @Override
-    public Map<Integer, Guest> getAllUsers() {
-        return users;
-    }
-
-    @Override
     public List<Registered> getAllRegisteredUsers() {
         List<Registered> registeredUsers = new ArrayList<>();
         for (Guest user : users.values()) {
@@ -108,10 +103,5 @@ public class MemoryUserRepository implements IUserRepository {
             }
         }
         return registeredUsers;
-    }
-
-    @Override
-    public List<Integer> getRemovedIds() {
-        return removedIds;
     }
 }
