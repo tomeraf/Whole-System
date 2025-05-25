@@ -1,6 +1,7 @@
 package com.halilovindustries.backend.Domain.User;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import jakarta.persistence.*;
 
@@ -15,13 +16,10 @@ public class ShoppingBasket {
     private int shopID;
 
     @ElementCollection
-    @CollectionTable(
-        name = "basket_items", 
-        joinColumns = @JoinColumn(name = "basket_id")
-    )
     @MapKeyColumn(name = "item_id")
     @Column(name = "quantity")
-    private HashMap<Integer,Integer> items; //<itemID, Quantity> 
+    @CollectionTable(name = "basket_items", joinColumns = @JoinColumn(name = "basket_id"))
+    private Map<Integer,Integer> items= new HashMap<>(); //<itemID, Quantity> 
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "cart_id")
@@ -40,7 +38,7 @@ public class ShoppingBasket {
         return shopID;
     }
 
-    public HashMap<Integer,Integer> getItems() {
+    public Map<Integer,Integer> getItems() {
         return items;
     }
 

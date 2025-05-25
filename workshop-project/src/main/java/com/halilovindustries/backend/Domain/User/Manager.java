@@ -9,16 +9,22 @@ import java.util.Set;
 import jakarta.persistence.*;
 
 @Entity 
+@DiscriminatorValue("MANAGER")
 public class Manager extends IRole {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private Set<Permission> permission; //hashSet-to prevents duplication
+    private Set<Permission> permission= Set.of(); //hashSet-to prevents duplication
 
     public Manager(int appointerID, int shopID, Set<Permission> permission) {
         this.appointerID = appointerID;
         this.shopID = shopID;
         this.permission = permission;
+        this.appointments = new ArrayList<>();
+    }
+
+    public Manager() {
+        super();
         this.appointments = new ArrayList<>();
     }
     @Override

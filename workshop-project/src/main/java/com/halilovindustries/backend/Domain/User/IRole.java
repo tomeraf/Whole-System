@@ -45,12 +45,14 @@ public abstract class IRole {
     }
     
     public List<Integer> removeAppointment(int appointeeID) throws IllegalArgumentException {
+        List<IRole> appointments2 = new ArrayList<>(appointments);
         List<Integer> idsToRemove = new ArrayList<>();
         idsToRemove.add(appointeeID);
-        for (IRole role : appointments) {
+        for (IRole role : appointments2) {
             idsToRemove.addAll(role.removeAllAppointments());
             Registered registered = role.getUser();
             registered.removeRoleFromShop(role.getShopID());
+            setUser(null);
         }
         appointments.clear();
         return idsToRemove;

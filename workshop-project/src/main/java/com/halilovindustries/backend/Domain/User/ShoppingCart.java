@@ -3,6 +3,7 @@ package com.halilovindustries.backend.Domain.User;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.persistence.*;
 
@@ -54,13 +55,14 @@ public class ShoppingCart {
 
     // Use case #2.4.a: Check cart content
     // Use case #2.5: Buy items in cart - get all items in cart
-    public HashMap<Integer, HashMap<Integer, Integer>> getItems() {
-        HashMap<Integer, HashMap<Integer, Integer>> items = new HashMap<>();
+    public Map<Integer, Map<Integer, Integer>> getItems() {
+        Map<Integer, Map<Integer, Integer>> items = new HashMap<>();
         for (ShoppingBasket basket : baskets) {
             items.put(basket.getShopID(), basket.getItems());
         }
         return items;
     }
+
 
     // Use case #2.4.b: Change cart content
     public boolean deleteItem(int shopID, int itemID) {

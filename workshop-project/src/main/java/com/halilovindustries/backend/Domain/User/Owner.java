@@ -7,7 +7,8 @@ import java.util.Map;
 
 import jakarta.persistence.*;
 
-@Entity 
+@Entity
+@DiscriminatorValue("OWNER")
 public class Owner extends IRole {
 
     public enum OwnerType {
@@ -23,6 +24,10 @@ public class Owner extends IRole {
         this.shopID = shopID;
         this.appointments = new ArrayList<>();
         this.type = (appointerID == -1) ? OwnerType.FOUNDER : OwnerType.REGULAR;
+    }
+    public Owner() {
+        super();
+        this.appointments = new ArrayList<>();
     }
 
     @Override

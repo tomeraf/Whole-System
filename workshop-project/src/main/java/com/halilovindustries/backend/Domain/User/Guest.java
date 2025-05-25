@@ -11,7 +11,7 @@ public class Guest {
     @JoinColumn(name = "cart_id")
     protected ShoppingCart cart;   
     
-    @Transient
+    @Transient // This field is not persisted in the database
     protected String sessionToken = null; // Flag to check if the guest is in session.
     
     public Guest() {}
