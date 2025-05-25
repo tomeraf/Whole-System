@@ -25,6 +25,14 @@ public class PurchaseService {
         else
             throw new IllegalArgumentException("Error: item cannot be added to cart.");
     }
+
+    public void removeItemsFromCart(Guest user, HashMap<Integer, List<Integer>>  userItems) {
+        ShoppingCart cart = user.getCart();
+        for(int shopid : userItems.keySet())
+            for(int itemid : userItems.get(shopid))
+                if(!cart.deleteItem(shopid,itemid))
+                    throw new IllegalArgumentException("Error: item: "+ itemid +" cannot be removed from the cart.");
+    }
     
     // use case 2.5
     public Order buyCartContent(Guest user, List<Shop> shops, IShipment ship, IPayment pay, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
@@ -49,25 +57,22 @@ public class PurchaseService {
                 throw new IllegalArgumentException("Error: cant purchase items.");
             }
         }
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
-        for(Shop shop : itemsToBuy.keySet()) {
-            itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)));
-        }
-        Double total = 0.0;
         List<ItemDTO> itemsList = new ArrayList<>();
+        for(Shop shop : itemsToBuy.keySet()) {
+            itemsList.addAll(checkCartContent(user, List.of(shop)));
+        }
+        double total = 0.0;
+
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
             total=+shop.purchaseBasket(itemsMap);
         }
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-            List<ItemDTO> itemsList = new ArrayList<>();
             for(Integer itemId : itemsMap.keySet()) {
                 Item item = shop.getItem(itemId);
                 itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription(), item.getNumOfOrders()));
             }
-            itemsToShip.put(shop.getId(), itemsList);
         }
         ship.processShipment(total*0.1, shipmentDetails);
         pay.processPayment(total, paymentDetails);
