@@ -189,7 +189,7 @@ public class ShopPresenter extends AbstractPresenter {
         });        
     } 
 
-    public void addItemsToCart(HashMap<Integer, HashMap<Integer, Integer>> userItems, Consumer<Boolean> onFinish) {
+    public void addItemToCart(int shopId,int itemId,int quantity, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;
@@ -200,7 +200,7 @@ public class ShopPresenter extends AbstractPresenter {
                 onFinish.accept(false);
                 return;
             }
-            Response<Void> response = orderService.addItemsToCart(token, userItems);
+            Response<Void> response = orderService.addItemToCart(token, shopId, itemId,quantity);
             if (!response.isOk()) {
                 Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

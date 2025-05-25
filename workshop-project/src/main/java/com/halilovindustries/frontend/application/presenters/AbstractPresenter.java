@@ -63,14 +63,9 @@ public abstract class AbstractPresenter {
                 return;
                 }
 
-                // build the nested map: { shopId → { itemId → qty } }
-                HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-                HashMap<Integer, Integer> itemsForShop = new HashMap<>();
-                itemsForShop.put(item.getItemID(), item.getQuantity());
-                userItems.put(item.getShopId(), itemsForShop);
 
                 // call your batch‐add method
-                Response<Void> resp = orderService.addItemsToCart(token, userItems);
+                Response<Void> resp = orderService.addItemToCart(token, item.getShopId(),item.getItemID(),item.getQuantity());
                 if (resp.isOk()) {
                 Notification.show("Added \"" + item.getName() + "\" to cart", 2000, Position.TOP_CENTER);
                 } else {

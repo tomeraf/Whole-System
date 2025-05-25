@@ -36,6 +36,7 @@ import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -50,7 +51,6 @@ public class OrderService {
 
     private final ConcurrencyHandler ConcurrencyHandler;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
-
 
     @Autowired
     public OrderService(IUserRepository userRepository, IShopRepository shopRepository, IOrderRepository orderRepository, IAuthentication authenticationAdapter,
@@ -80,14 +80,8 @@ public class OrderService {
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             
             Guest guest = userRepository.getUserById(userID);
-            List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest);
-            itemDTOs.removeIf(item -> {
-                Shop shop = shopRepository.getShopById(item.getShopId());
-                Item underlying = shop.getItems().get(item.getItemID());
-                // if the shop has no such item, or it's out of stock, drop it
-                return underlying == null || underlying.getQuantity() <= 0;
-            });
-
+            List<Shop> shops= shopRepository.getAllShops().values().stream().filter(shop ->guest.getCart().getShopIDs().contains(shop.getId())).collect(Collectors.toList());
+            List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest,shops);
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
         } 
@@ -101,12 +95,12 @@ public class OrderService {
      * Adds items to the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param userItems list of items to add
+     * @param itemID list of items to add
      */
     // items = shopId, itemID
     @Transactional
-    public Response<Void> addItemsToCart(String sessionToken, HashMap<Integer, HashMap<Integer, Integer>> userItems) {
-        List<Lock> acquiredLocks = new ArrayList<>();
+    public Response<Void> addItemToCart(String sessionToken, int shopId,int itemID, int quantity) {
+        Lock shopLock=null;
 
 
         try {
@@ -121,27 +115,10 @@ public class OrderService {
 
 
             
-            Set<Integer> shopIds = userItems.keySet(); // Get the set of shop IDs
-            
-            List<Integer> sortedShopIds = new ArrayList<>(shopIds);
-            Collections.sort(sortedShopIds);
-
-            // Lock all needed shops
-            for (int shopId : sortedShopIds) {
-                Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
-                shopRead.lock();
-                acquiredLocks.add(shopRead);
-            }
-
-            HashMap<Shop, HashMap<Integer, Integer>> items = new HashMap<>(); 
-            for (int shopId : sortedShopIds) {
-                HashMap<Integer, Integer> itemIDs = userItems.get(shopId); // Get the item IDs for the current shop
-                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                items.put(shop, itemIDs); // Add the shop and its items to the map
-            }
-            
-
-            purchaseService.addItemsToCart(guest, items); // Add items to the cart
+            shopLock = ConcurrencyHandler.getShopReadLock(shopId);
+            shopLock.lock();
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            purchaseService.addItemsToCart(guest, shop,itemID,quantity); // Add items to the cart
 
             logger.info(() -> "Items added to cart successfully");
             return Response.ok();
@@ -151,10 +128,8 @@ public class OrderService {
             return Response.error("Error adding items to cart: " + e.getMessage());
         }
         finally {
-            // Unlock in reverse order
-            Collections.reverse(acquiredLocks);
-            for (Lock lock : acquiredLocks) {
-                lock.unlock();
+            if (shopLock != null) {
+                shopLock.unlock();
             }
         }
     }
@@ -228,8 +203,8 @@ public class OrderService {
             // Then add items
             for (ShoppingBasket basket : guest.getCart().getBaskets()) {
                 int shopID = basket.getShopID();
-                for (ItemDTO item : basket.getItems()) {
-                    locksToAcquire.add(new Pair<>(shopID, item.getItemID()));
+                for (Integer item : basket.getItems().keySet()) {
+                    locksToAcquire.add(new Pair<>(shopID, item));
                 }
             }
 

@@ -1,4 +1,5 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "spring-boot.ls.java.debug.jmx.enabled": false
+    "spring-boot.ls.java.debug.jmx.enabled": false,
+    "java.debug.settings.onBuildFailureProceed": true
 }

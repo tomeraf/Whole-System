@@ -1,69 +1,45 @@
 package com.halilovindustries.backend.Domain.User;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 
 public class ShoppingBasket {
     private int shopID;
-    private List<ItemDTO> items;
-
-
-    public ShoppingBasket(int shopID, List<ItemDTO> items) {
-        this.shopID = shopID;
-        this.items = items;
-    }
-
+    private HashMap<Integer,Integer> items; //<itemID, Quantity> 
 
     public ShoppingBasket(int shopID) {
         this.shopID = shopID;
-        this.items = new java.util.ArrayList<>();
+        this.items = new HashMap<Integer,Integer>();
     }
-
 
     public int getShopID() {
         return shopID;
     }
 
-
-    public List<ItemDTO> getItems() {
+    public HashMap<Integer,Integer> getItems() {
         return items;
     }
 
-
-    public boolean isItemIn(int itemID) {
-        // Check if the itemID is in the list of items
-        for (int i = 0; i < items.size(); i++) {
-            int tempID = ((ItemDTO) items.get(i)).getItemID();
-            if (tempID == itemID) {
-                return true; // Item found
-            }
+    public void addItem(int itemID, int quantity) {
+        if(quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than zero.");
         }
-        return false; // Item not found
-    }
-
-
-    public boolean addItem(ItemDTO item) {
-        // Check if the itemID is already in the list of items
-        for (int i = 0; i < items.size(); i++) {
-            int tempID = ((ItemDTO) items.get(i)).getItemID();
-            if (tempID == item.getItemID()) {
-                return false; // Item already exists, not added
-            }
+        if(items.containsKey(itemID)) {
+            items.put(itemID, items.get(itemID) + quantity); // Increase quantity if item already exists
+        } else {
+            items.put(itemID, quantity); // Add new item with its quantity
         }
-        items.add(item); // Add the new item to the list
-        return true; // Item added successfully
     }
 
 
     public boolean removeItem(int itemID) {
         // Check if the itemID is in the list of items
-        for (int i = 0; i < items.size(); i++) {
-            int tempID = ((ItemDTO) items.get(i)).getItemID();
-            if (tempID == itemID) {
-                items.remove(i);
-                return true; // Item removed successfully
-            }
+        if (items.containsKey(itemID)) {
+            items.remove(itemID); // Remove the item from the basket
+            return true; // Item removed successfully
         }
         return false; // Item not found, nothing removed
     }

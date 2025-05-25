@@ -420,6 +420,7 @@ public class Shop {
                 if (!getItem(auctionPurchase.getItemId()).quantityCheck(1)) {
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
+                items.get(auctionPurchase.getItemId()).buyItem(1);
                 return auctionPurchase.purchaseAuctionItem(userID);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Auction purchase failed: " + e.getMessage());
@@ -558,6 +559,23 @@ public class Shop {
 
     public List<DiscountType> getDiscountTypes() { 
         return discountPolicy.getDiscountTypes();
+    }
+
+    public HashMap<Item, Double> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
+        HashMap<Item, Integer> allItems = new HashMap<>();
+        for(Integer itemId : itemsMap.keySet()) {
+            if(!items.containsKey(itemId))
+            {
+                throw new IllegalArgumentException("Item ID does not exist in the shop.");
+            }
+            Item item = items.get(itemId);
+            if(item.getQuantity() < itemsMap.get(itemId)) {
+                itemsMap.remove(itemId);
+            }
+            allItems.put(item, itemsMap.get(itemId));
+        }
+
+        return discountPolicy.getPricePerItem(allItems);
     }
 }
 

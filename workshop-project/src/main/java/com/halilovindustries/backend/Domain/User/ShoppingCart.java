@@ -8,11 +8,11 @@ import java.util.Map;
 import com.halilovindustries.backend.Domain.DTOs.*;
 
 public class ShoppingCart {
-    private List<ShoppingBasket> baskets;
+    private HashMap<Integer,ShoppingBasket> baskets;//<shopId, basket>
     private int cartID;
 
 
-    public ShoppingCart(List<ShoppingBasket> baskets, int cartID) {
+    public ShoppingCart(HashMap<Integer,ShoppingBasket> baskets, int cartID) {
         this.baskets = baskets;
         this.cartID = cartID;
     }
@@ -20,7 +20,7 @@ public class ShoppingCart {
 
     public ShoppingCart(int cartID) {
         this.cartID = cartID;
-        this.baskets = new java.util.ArrayList<>();
+        this.baskets = new HashMap();
     }
 
 
@@ -30,133 +30,67 @@ public class ShoppingCart {
 
 
     // Use case #2.3: Add item to cart
-    public boolean addItems(List<ItemDTO> items) {
-        // Check if all items are not in the baskets (cant add any item if even one already in the cart)
-        for (ItemDTO item : items) {
-            for (ShoppingBasket basket : baskets) {
-                if (basket.isItemIn(item.getItemID()) && basket.getShopID() == item.getShopId())
-                    throw new RuntimeException("Error: item " + item.getName() + " from this shop already exists in cart.");
-                    //
-                        //return false; // there is item that already exists, nothing added
-            }
-        }
-        
-        List<Integer> shopsIds = new ArrayList<>(); // List to store baskets ids
-        for (ShoppingBasket basket : baskets) {
-            shopsIds.add(basket.getShopID()); // Add the shopID to the list
+    public void addItem(int shopID,int itemID,int quantity) {
+        // Check if the basket for the given shopID already exists
+        ShoppingBasket basket = baskets.get(shopID);
+        if (basket == null) {
+            // If not, create a new basket for the shopID
+            basket = new ShoppingBasket(shopID);
+            baskets.put(shopID, basket);
         }
 
-        // Add items to all baskets
-        boolean basketFound = false;
-        for (ItemDTO item : items) {
-            for (ShoppingBasket basket : baskets) {
-                if (basket.getShopID() == item.getShopId()) {
-                    if (!basket.addItem(item)) {
-                        throw new RuntimeException("Error: item " + item.getName() + " from this shop already exists in cart.");
-                        //return false; // Item already exists, not added
-                    }
-                    else {
-                        basketFound = true; // Item added successfully
-                        break; // Item added successfully, exit the loop
-                    }
-                } 
-            }
-            if (!basketFound) {
-                // If the basket is not found, create a new one and add the item
-                addBasket(item.getShopId()); // Create a new basket for the shopID
-                ShoppingBasket newBasket = baskets.get(baskets.size() - 1); // Get the newly created basket
-                newBasket.addItem(item); // Add the item to the new basket
-            }
-            basketFound = false; // Reset the flag for the next item
-        }
-        return true;
+        // Add the item to the basket
+        basket.addItem(itemID, quantity);
     }
 
 
     // Use case #2.4.a: Check cart content
     // Use case #2.5: Buy items in cart - get all items in cart
-    // map<Integer, Integer> items: itemID, basketID
-    public List<ItemDTO> getItems() {
-        List<ItemDTO> items = new ArrayList<>(); // List to store items
+    public HashMap<Integer,HashMap<Integer,Integer>> getItems() {//<shopID, <itemID, quantity>>
+        HashMap<Integer,HashMap<Integer,Integer>> items = new HashMap<>();
 
-        // Iterate through each basket and add items to the List
-        for (int i = 0; i < baskets.size(); i++) {
-            ShoppingBasket basket = baskets.get(i);
-            for (ItemDTO item : basket.getItems()) {
-                items.add(item);
-            }
+        // Iterate through each basket
+        for (Map.Entry<Integer, ShoppingBasket> entry : baskets.entrySet()) {
+            int shopID = entry.getKey();
+            ShoppingBasket basket = entry.getValue();
+
+            // Get the items in the basket
+            HashMap<Integer,Integer> itemList = basket.getItems();
+
+            // Add the items to the result map
+            items.put(shopID, itemList);
         }
+
         return items;
     }
 
 
     // Use case #2.4.b: Change cart content
     // map<Integer, Integer> items: shopID, List<ItemID>
-    public boolean deleteItems(HashMap<Integer, List<Integer>> items) {
-        // Check if all items exist in the relevant baskets
-        for (Map.Entry<Integer, List<Integer>> entry : items.entrySet()) {
-            int shopID = entry.getKey();
-            List<Integer> itemIDs = entry.getValue();
-
-            // Find the basket for the given shopID
-            ShoppingBasket basket = null;
-            for (ShoppingBasket b : baskets) {
-                if (b.getShopID() == shopID) {
-                    basket = b;
-                    break;
-                }
-            }
-
-            // If no basket exists for the shopID, return false
-            if (basket == null) {
-                throw new IllegalArgumentException("Error: no basket exists for the shopID:" + shopID);
-            }
-
-            // Check if all itemIDs exist in the basket
-            for (int itemID : itemIDs) {
-                if (!basket.isItemIn(itemID)) {
-                    throw new IllegalArgumentException("Error: item " + itemID + " not found in basket for shop ID " + shopID);
-                }
-            }
+    public boolean deleteItem(int shopID, int itemID) {
+        // Check if the basket for the given shopID exists
+        ShoppingBasket basket = baskets.get(shopID);
+        if (basket != null) {
+            // Remove the item from the basket
+            return basket.removeItem(itemID);
         }
-
-        // Remove items from the relevant baskets
-        for (Map.Entry<Integer, List<Integer>> entry : items.entrySet()) {
-            int shopID = entry.getKey();
-            List<Integer> itemIDs = entry.getValue();
-
-            // Find the basket for the given shopID
-            for (ShoppingBasket basket : baskets) {
-                if (basket.getShopID() == shopID) {
-                    for (int itemID : itemIDs) {
-                        basket.removeItem(itemID);
-                    }
-                    break;
-                }
-            }
-        }
-
-        return true;
+        return false; // Basket not found, nothing removed
     }
 
 
     // Use case #2.5: Buy items in cart - after confirmation, the items are removed from the cart
     public void clearCart() {
         // Clear all items from all baskets
-        for (ShoppingBasket basket : baskets) {
+        for (ShoppingBasket basket : baskets.values()) {
             basket.clearBasket(); // Clear the basket
         }
     }
-    
 
-    private void addBasket(int shopID) {
-        ShoppingBasket basket = new ShoppingBasket(shopID);
-        baskets.add(basket);
+    public List<ShoppingBasket> getBaskets() {
+        return baskets.values().stream().toList();
     }
-
-    public List<ShoppingBasket> getBaskets()
-    {
-        return baskets;
+    public List<Integer> getShopIDs() {
+        return new ArrayList<>(baskets.keySet());
     }
 }
 
