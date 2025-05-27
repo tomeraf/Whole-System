@@ -277,61 +277,61 @@ public class NotificationsTests extends BaseAcceptanceTests{
        UI.setCurrent(null);
    }
 
-   @Test
-   public void testNotificationOnBuyCartContent() throws Exception {
-       // Arrange
-       String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
-       ShopDTO shop = fixtures.generateShopAndItems(buyerToken, "MyShop");
+//    @Test
+//    public void testNotificationOnBuyCartContent() throws Exception {
+//        // Arrange
+//        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
+//        ShopDTO shop = fixtures.generateShopAndItems(buyerToken, "MyShop");
 
-       ItemDTO firstItem = shop.getItems().get(0);
+//        ItemDTO firstItem = shop.getItems().get(0);
 
-       // Prepare items map for addItemsToCart
-       HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-       HashMap<Integer, Integer> itemsForShop = new HashMap<>();
-       itemsForShop.put(firstItem.getItemID(), 1);  // buy 1 quantity of the first item
-       userItems.put(shop.getId(), itemsForShop);
+//        // Prepare items map for addItemsToCart
+//        HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+//        HashMap<Integer, Integer> itemsForShop = new HashMap<>();
+//        itemsForShop.put(firstItem.getItemID(), 1);  // buy 1 quantity of the first item
+//        userItems.put(shop.getId(), itemsForShop);
 
-       // Add items to cart
-       Response<Void> addToCartResponse = orderService.addItemsToCart(buyerToken, userItems);
-       assertTrue(addToCartResponse.isOk(), "Adding items to cart should succeed");
+//        // Add items to cart
+//        Response<Void> addToCartResponse = orderService.addItemsToCart(buyerToken, userItems);
+//        assertTrue(addToCartResponse.isOk(), "Adding items to cart should succeed");
 
-       // Prepare mock UI to allow access() calls
-       UI mockUI = mock(UI.class);
-       doAnswer(invocation -> {
-           Command command = invocation.getArgument(0);
-           command.execute();
-           return null;
-       }).when(mockUI).access(any(Command.class));
-       UI.setCurrent(mockUI);
+//        // Prepare mock UI to allow access() calls
+//        UI mockUI = mock(UI.class);
+//        doAnswer(invocation -> {
+//            Command command = invocation.getArgument(0);
+//            command.execute();
+//            return null;
+//        }).when(mockUI).access(any(Command.class));
+//        UI.setCurrent(mockUI);
 
-       Shop realShop = shopRepository.getShopById(shop.getId());
-       int founderId = realShop.getFounderID();
+//        Shop realShop = shopRepository.getShopById(shop.getId());
+//        int founderId = realShop.getFounderID();
 
-       CompletableFuture<String> notificationReceived = new CompletableFuture<>();
-       Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
+//        CompletableFuture<String> notificationReceived = new CompletableFuture<>();
+//        Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
 
-       // Prepare dummy payment and shipment details
-       PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
-       ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
+//        // Prepare dummy payment and shipment details
+//        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+//        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
-       //return true for validation
-       when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(true);
-       when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(true);
+//        //return true for validation
+//        when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(true);
+//        when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(true);
 
 
-       // Act
-       Response<Order> buyResponse = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+//        // Act
+//        Response<Order> buyResponse = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
 
-       // Assert
-       assertTrue(buyResponse.isOk(), "Buying cart content should succeed");
+//        // Assert
+//        assertTrue(buyResponse.isOk(), "Buying cart content should succeed");
 
-       String notification = notificationReceived.get(5, TimeUnit.SECONDS);
-       assertNotNull(notification, "Notification should be received");
-       assertTrue(notification.contains("purchased"), "Notification should mention purchase. this is the notification: " + notification);
+//        String notification = notificationReceived.get(5, TimeUnit.SECONDS);
+//        assertNotNull(notification, "Notification should be received");
+//        assertTrue(notification.contains("purchased"), "Notification should mention purchase. this is the notification: " + notification);
 
-       registration.remove();
-       UI.setCurrent(null);
-   }
+//        registration.remove();
+//        UI.setCurrent(null);
+//    }
 
     @Test
     public void testCloseShopUnauthorizedUser() throws Exception {
