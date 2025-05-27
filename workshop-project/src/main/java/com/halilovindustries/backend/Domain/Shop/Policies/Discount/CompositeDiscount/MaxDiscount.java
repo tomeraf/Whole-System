@@ -7,6 +7,9 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.BaseDiscount;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class MaxDiscount extends CompositeDiscount {
     
     public MaxDiscount(BaseDiscount discount1, BaseDiscount discount2) {

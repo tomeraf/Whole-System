@@ -25,12 +25,6 @@ public class ManagementService {
         }
         return instance;
     }
-
-    public Shop createShop(int shopId, Registered user, String name, String description) {
-        Shop shop = new Shop(shopId,user.getUserID(), name, description);
-        user.setRoleToShop(shopId, new Founder(shopId));
-        return shop;
-    }
     
     public void addOwner(Registered appointer, Shop shop, Registered appointee) {
         Owner owner = new Owner(appointer.getUserID(),shop.getId());

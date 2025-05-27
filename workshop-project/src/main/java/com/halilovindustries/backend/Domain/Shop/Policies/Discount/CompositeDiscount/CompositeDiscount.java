@@ -3,17 +3,31 @@ package com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDis
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
+
 import com.halilovindustries.backend.Domain.Shop.Category;
 
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class CompositeDiscount extends Discount {
-    private HashMap<Integer,Discount> discounts;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "discountId")
+    private Map<Integer,Discount> discounts;
+
     private int firstId;
     private int secondId;
-    
     public CompositeDiscount() {
         this.discounts = new HashMap<>();
     }
@@ -26,7 +40,7 @@ public abstract class CompositeDiscount extends Discount {
         
     }
     public HashMap<Integer, Discount> getDiscounts() {
-        return discounts;
+        return (HashMap)discounts;
     }
     public List<Discount> getDiscountsList() {
         return new ArrayList<>(discounts.values());

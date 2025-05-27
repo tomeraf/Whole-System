@@ -9,13 +9,37 @@ import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount.CombinedDiscount;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+
 import com.halilovindustries.backend.Domain.Shop.Category;
 
+@Entity
 public class DiscountPolicy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "discount_types", joinColumns = @JoinColumn(name = "policy_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discount_type")
     private List<DiscountType> discountTypes;
+    @OneToOne(cascade= CascadeType.ALL, fetch = FetchType.EAGER)
     private CombinedDiscount discounts;
     
-    public DiscountPolicy(){
+    public DiscountPolicy() {
         this.discountTypes = new ArrayList<>();
         this.discountTypes.add(DiscountType.BASE);
         this.discountTypes.add(DiscountType.CONDITIONAL);

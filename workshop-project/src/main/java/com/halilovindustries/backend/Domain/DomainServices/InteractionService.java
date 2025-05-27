@@ -25,7 +25,7 @@ public class InteractionService {
         if(title == null || content == null||title.isEmpty() || content.isEmpty()) {
             throw new IllegalArgumentException("Title and content cannot be null");
         }
-        Message message = new Message(shop.getNextMessageId(),sender.getUsername(),shop.getName(),LocalDateTime.now(),title,content, true);
+        Message message = new Message(sender.getUsername(),shop.getName(),LocalDateTime.now(),title,content, true);
         shop.addMessage(message);
         sender.addMessage(message);
     }
@@ -44,7 +44,7 @@ public class InteractionService {
         if(!message.needResponse()) {
             throw new IllegalArgumentException("This message has already been responded to.");
         }
-        Message response = new Message(shop.getNextMessageId(),message.getUserName(),shop.getName(),LocalDateTime.now(),"(Re: " + message.getTitle() + "), " + title ,content, false);
+        Message response = new Message(message.getUserName(),shop.getName(),LocalDateTime.now(),"(Re: " + message.getTitle() + "), " + title ,content, false);
         message.setRespondId(response.getId());
         shop.addMessage(response);
         message.setRespondId(response.getId());

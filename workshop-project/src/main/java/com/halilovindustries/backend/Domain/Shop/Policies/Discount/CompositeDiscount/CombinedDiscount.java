@@ -7,6 +7,9 @@ import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class CombinedDiscount extends CompositeDiscount {
 
     public CombinedDiscount() {

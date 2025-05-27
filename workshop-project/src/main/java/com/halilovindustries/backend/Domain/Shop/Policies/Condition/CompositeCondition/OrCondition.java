@@ -5,6 +5,9 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+
+import jakarta.persistence.Entity;
+@Entity
 public class OrCondition extends CompositeCondition {
     public OrCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);

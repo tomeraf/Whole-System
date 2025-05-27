@@ -8,9 +8,18 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public class BaseDiscount extends Discount {
     private int percentage;
     private int itemId;
+    @Enumerated(EnumType.STRING)
     private Category category;
 
         public BaseDiscount(int percentage,Category category,int itemId) {

@@ -5,11 +5,23 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.SequenceGenerator;
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Discount {
-    private static int idCounter = 0;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int discountId;
-    public Discount() {
-        this.discountId = idCounter++;
+    public Discount() {//Default constructor for JPA
+        
     }
     public int getDiscountId() {
         return discountId;

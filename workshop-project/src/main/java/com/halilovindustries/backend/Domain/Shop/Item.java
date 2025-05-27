@@ -1,29 +1,44 @@
 package com.halilovindustries.backend.Domain.Shop;
 
-import java.util.HashMap;
 
+import java.util.HashMap;
+import java.util.Map;
+import jakarta.persistence.*;
+
+@Entity
 public class Item {
+    @Id
+    private int id;
+
     private String name;
+
+    @Enumerated(EnumType.STRING)
     private Category category;
+
     private double price;
     private int quantity;
     private String description;
+
     private int shopId;
-    private int id;
-    //private double rating;
+    
     private int numOfOrders;
-    private HashMap<Integer, Double> ratedIds;
 
+    @ElementCollection
+    @CollectionTable(name = "item_ratings", joinColumns = @JoinColumn(name = "item_id"))
+    @MapKeyColumn(name = "rater_id")
+    @Column(name = "rating")
+    private Map<Integer, Double> ratedIds = new HashMap<>();
 
-    public Item(String name,Category category, double price, int shopId, int id, String description) {
+    public Item() {} // JPA requires a no-args constructor
+
+    public Item(int id,String name, Category category, double price, int shopId, String description) {
+        this.id = id;
         this.name = name;
         this.category = category;
         this.price = price;
         this.shopId = shopId;
-        this.id = id;
-        this.description=description;
+        this.description = description;
         this.quantity = 0;
-        //this.rating = 0.0;
         this.numOfOrders = 0;
         this.ratedIds = new HashMap<>();
     }
@@ -91,9 +106,6 @@ public class Item {
         }
         return rating / ratedIds.size();
     }
-    // public void setRating(double rating) {
-    //     this.rating = rating;
-    // }
     public int getNumOfOrders(){
         return numOfOrders;
     }

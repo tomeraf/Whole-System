@@ -1,13 +1,26 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Condition;
 
 import java.util.HashMap;
+
+import com.github.javaparser.ast.Generated;
 import com.halilovindustries.backend.Domain.Shop.*;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.InheritanceType;
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Condition {
-    private static int idCounter = 0;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    public Condition() {
-        this.id = idCounter++;
+    public Condition() {// Default constructor for JPA
     }
     public int getId() {
         return id;

@@ -5,12 +5,21 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+
 import com.halilovindustries.backend.Domain.Shop.Category;
 
 
-
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class BaseCondition extends Condition {
     private int itemId;
+    @Enumerated(EnumType.STRING)
     private Category category;
     
     public BaseCondition(int itemId, Category category) {

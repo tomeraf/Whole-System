@@ -3,17 +3,46 @@ package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.github.javaparser.ast.Generated;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DTOtoDomainFactory;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 
-public class PurchasePolicy {
-    private List<PurchaseType> purchaseTypes;
-    private HashMap<Integer,Condition> purchaseConditions;
-    
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
 
-    public PurchasePolicy(){
+@Entity
+public class PurchasePolicy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int shopId;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "purchase_types", joinColumns = @JoinColumn(name = "policy_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purchase_type")
+    private List<PurchaseType> purchaseTypes;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @MapKeyColumn(name = "condition_id")
+    private Map<Integer,Condition> purchaseConditions;
+
+
+    public PurchasePolicy() {
         this.purchaseTypes = new ArrayList<>();
         this.purchaseTypes.add(PurchaseType.BID);
         this.purchaseTypes.add(PurchaseType.AUCTION);
@@ -74,5 +103,8 @@ public class PurchasePolicy {
     }
     public List<PurchaseType> getPurchaseTypes() {
         return purchaseTypes;
+    }
+    public int getShopId() {
+        return shopId;
     }
 }

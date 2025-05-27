@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,6 +21,8 @@ import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.User.*;
+
+import jakarta.transaction.Transactional;
 
 import com.halilovindustries.backend.Domain.Message;
 
@@ -68,7 +71,7 @@ public class ShopService {
     }
 
     // show and filter
-
+    @Transactional
     public Response<List<ShopDTO>> showAllShops(String sessionToken) {
         if (!authenticationAdapter.validateToken(sessionToken)) {
             return Response.error("User not logged in");
@@ -77,7 +80,7 @@ public class ShopService {
                 shopRepository.getAllShops().values().stream().filter((shop) -> shop.isOpen()).toList());
         List<ShopDTO> shopDTOs = new ArrayList<>();
         for (Shop shop : s) {
-            HashMap<Integer, Item> items = shop.getItems();
+            Map<Integer, Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : items.values()) {
                 ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
@@ -92,6 +95,7 @@ public class ShopService {
         return Response.ok(shopDTOs);
     }
 
+    @Transactional
     public Response<List<ShopDTO>> showUserShops(String sessionToken) {
         if (!authenticationAdapter.validateToken(sessionToken)) {
             return Response.error("User not logged in");
@@ -99,8 +103,11 @@ public class ShopService {
         int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
 
         List<ShopDTO> shopDTOs = new ArrayList<>();
-        for (Shop shop : shopRepository.getUserShops(userID)) {
-            HashMap<Integer, Item> items = shop.getItems();
+        List<Shop> userShops = shopRepository.getUserShops(userID).stream()
+                .filter(Shop::isOpen)
+                .toList();
+        for (Shop shop : userShops) {
+            Map<Integer, Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : items.values()) {
                 ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
@@ -115,6 +122,7 @@ public class ShopService {
         return Response.ok(shopDTOs);
     }
 
+    @Transactional
     public Response<List<ItemDTO>> showShopItems(String sessionToken, int shopId) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -135,7 +143,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<List<ItemDTO>> filterItemsAllShops(String sessionToken, HashMap<String, String> filters) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -165,7 +173,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<List<ItemDTO>> filterItemsInShop(String sessionToken, int shopId, HashMap<String, String> filters) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -192,7 +200,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<ShopDTO> getShopInfo(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -218,7 +226,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<List<UserDTO>> getShopMembers(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -259,7 +267,7 @@ public class ShopService {
     }
 
     // shop management
-
+    @Transactional
     public Response<ShopDTO> createShop(String sessionToken, String name, String description) {
         Lock creationLock = concurrencyHandler.getGlobalShopCreationLock();
         try {
@@ -275,10 +283,10 @@ public class ShopService {
             if (shopRepository.getShopByName(name) != null) {
                 return Response.error("Shop name already exists");
             }
-            Shop shop = managementService.createShop(shopRepository.getAllShops().size(),
-                    user, name, description);
+            Shop shop = new Shop(user.getUserID(), name, description);
             shopRepository.addShop(shop);
-            HashMap<Integer, Item> items = shop.getItems();
+            user.setRoleToShop(shop.getId(), new Founder(shop.getId()));
+            Map<Integer, Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
             for (Item item : items.values()) {
                 ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
@@ -297,7 +305,7 @@ public class ShopService {
             creationLock.unlock();
         }
     }
-
+    @Transactional
     public Response<Void> closeShop(String sessionToken, int shopID) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -330,7 +338,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<ItemDTO> addItemToShop(String sessionToken, int shopID, String itemName, Category category,
             double itemPrice, String description) {
         // need to add the Check if the user is logged in
@@ -358,7 +366,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Void> removeItemFromShop(String sessionToken, int shopID, int itemID) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -396,7 +404,7 @@ public class ShopService {
             shopRead.unlock();
         }
     }
-
+    @Transactional
     public Response<Void> changeItemName(String sessionToken, int shopID, int itemID, String newName) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -434,7 +442,7 @@ public class ShopService {
             shopRead.unlock();
         }
     }
-
+    @Transactional
     public Response<Void> changeItemQuantityInShop(String sessionToken, int shopID, int itemID, int newQuantity) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -472,7 +480,7 @@ public class ShopService {
             shopRead.unlock();
         }
     }
-
+    @Transactional
     public Response<Void> changeItemPriceInShop(String sessionToken, int shopID, int itemID, double newPrice) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -512,7 +520,7 @@ public class ShopService {
         }
 
     }
-
+    @Transactional
     public Response<Void> changeItemDescriptionInShop(String sessionToken, int shopID, int itemID,
             String newDescription) {
         // Check if the user is logged in
@@ -554,7 +562,7 @@ public class ShopService {
     }
 
     // customer interaction
-
+    @Transactional
     public Response<Void> rateShop(String sessionToken, int shopID, int rating) {
         // If logged in, rate the shop with the provided rating
         try {
@@ -577,7 +585,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> rateItem(String sessionToken, int shopID, int itemID, int rating) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -601,7 +609,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> sendMessage(String sessionToken, int shopId, String title, String content) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -621,7 +629,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title,
             String content) {
         ReentrantLock messageLock = concurrencyHandler.getBidLock(shopId, messageId);
@@ -658,7 +666,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<List<Message>> getInbox(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -676,6 +684,7 @@ public class ShopService {
     }
 
     // management
+    @Transactional
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
@@ -709,7 +718,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> removeAppointment(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
 
@@ -745,7 +754,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName,
             Set<Permission> permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
@@ -780,7 +789,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> addShopManagerPermission(String sessionToken, int shopID, String appointeeName,
             Permission permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
@@ -815,7 +824,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> removeShopManagerPermission(String sessionToken, int shopID, String appointeeName,
             Permission permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
@@ -850,7 +859,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<List<Permission>> getMemberPermissions(String sessionToken, int shopID, String memberName) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -872,7 +881,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     // bids and auctions
     public Response<Void> answerBid(String sessionToken, int shopID, int bidID, boolean accept) {
         ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
@@ -940,7 +949,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Void> openAuction(String sessionToken, int shopID, int itemID, double startingPrice,
             LocalDateTime startDate, LocalDateTime endDate) {
         try {
@@ -961,7 +970,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     // policies
     public Response<Void> addDiscount(String sessionToken, int shopID, DiscountDTO discountDetails) {
         try {
@@ -983,7 +992,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> removeDiscount(String sessionToken, int shopID, int discountID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1004,7 +1013,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> updateDiscountType(String sessionToken, int shopID, DiscountType discountType) {
         // Check if the user is logged in
         // If not, prompt to log in or register
@@ -1028,7 +1037,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     // purchase policy
     public Response<Void> updatePurchaseType(String sessionToken, int shopID, PurchaseType purchaseType) {
         // Check if the user is logged in
@@ -1053,7 +1062,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> addPurchaseCondition(String sessionToken, int shopID, ConditionDTO condition) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1073,7 +1082,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<Void> removePurchaseCondition(String sessionToken, int shopID, int conditionID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1093,7 +1102,7 @@ public class ShopService {
         }
         return Response.ok();
     }
-
+    @Transactional
     public Response<List<ConditionDTO>> getPurchaseConditions(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1113,6 +1122,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+    @Transactional
     public Response<List<DiscountDTO>> getDiscounts(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1131,7 +1141,8 @@ public class ShopService {
             logger.error(() -> "Error retrieving discounts: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
-    } 
+    }
+    @Transactional 
     public Response<List<AuctionDTO>> getActiveAuctions(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1151,7 +1162,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<List<AuctionDTO>> getFutureAuctions(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1171,7 +1182,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<List<BidDTO>> getBids(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1191,7 +1202,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Integer> getShopId(String sessionToken, String shopName) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1209,6 +1220,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }   
     }
+    @Transactional
     public Response<List<AuctionDTO>> getWonAuctions(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1229,6 +1241,7 @@ public class ShopService {
         }
 
     }
+    @Transactional
     public Response<List<PurchaseType>> getPurchaseTypes(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1244,6 +1257,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+    @Transactional
     public Response<List<DiscountType>> getDiscountTypes(String sessionToken, int shopID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {

@@ -7,6 +7,9 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class QuantityCondition extends BaseCondition {
     private int minQuantity;
     private int maxQuantity;

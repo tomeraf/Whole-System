@@ -15,56 +15,74 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.*;
 import com.halilovindustries.backend.Domain.User.Registered;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.*;
 
+@Entity
 public class Shop {
 
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id; // You can change this to @GeneratedValue if you want it auto-generated
+
     private String name;
     private String description;
-    private PurchasePolicy purchasePolicy;
-    private DiscountPolicy discountPolicy;
-    private HashMap<Integer, Item> items; // itemId -> item
-    private Set<Integer> ownerIDs;
-    private Set<Integer> managerIDs;
     private int founderID;
     private boolean isOpen;
-    private int counterItemId; // Counter for item IDs
     private double rating;
     private int ratingCount;
-    private HashMap<Integer, BidPurchase> bidPurchaseItems; // <BidId, BidPurchase>
-    private HashMap<Integer, AuctionPurchase> auctionPurchaseItems; // <AuctionId, AuctionPurchase>
-    private int bidPurchaseCounter; // Counter for bid purchases
-    private int auctionPurchaseCounter; // Counter for auction purchases
-    private HashMap<Integer, Message> inbox; // 
-    int messageIdCounter = 1; // Counter for message IDs
-    private HashMap<Integer, Double> ratedIds;
+    //ids counters
+    private int itemIdCounter=0;
+    private int bidPurchaseIdCounter=0;
+    private int auctionPurchaseIdCounter=0;
 
-    public Shop(int id,int founderID, String name, String description) {
-        this.id = id;
+
+    @ElementCollection
+    private Set<Integer> ownerIDs = new HashSet<>();
+
+    @ElementCollection
+    private Set<Integer> managerIDs = new HashSet<>();
+
+    @ElementCollection
+    private Map<Integer, Double> ratedIds = new HashMap<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "id")
+    private Map<Integer, Item> items = new HashMap<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "id")
+    private Map<Integer, BidPurchase> bidPurchaseItems = new HashMap<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "id")
+    private Map<Integer, AuctionPurchase> auctionPurchaseItems = new HashMap<>();
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "id")
+    private Map<Integer, Message> inbox = new HashMap<>();
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    private PurchasePolicy purchasePolicy;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    private DiscountPolicy discountPolicy;
+
+    public Shop() {
+        // Required by JPA
+    }
+    public Shop(int founderID,String name, String description) {
+        this.founderID = founderID;
+        ownerIDs.add(founderID); // Founder is also an owner
         this.name = name;
         this.description = description;
+        this.isOpen = true; // Default to open
+        this.rating = 0.0; // Default rating
+        this.ratingCount = 0; // Default rating count
         this.purchasePolicy = new PurchasePolicy();
         this.discountPolicy = new DiscountPolicy();
-        this.items = new HashMap<>();
-        this.ownerIDs = new HashSet<>();
-        this.managerIDs = new HashSet<>();
-        ownerIDs.add(founderID); // Add the founder as an owner
-        this.founderID = founderID;
-        this.isOpen = true;
-        this.counterItemId = 0; // Initialize the item ID counter
-        this.rating = 0.0;
-        this.ratingCount = 0;
-        this.bidPurchaseItems = new HashMap<>();
-        this.auctionPurchaseItems = new HashMap<>();
-        this.bidPurchaseCounter = 1; 
-        this.auctionPurchaseCounter = 1; 
-        this.inbox = new HashMap<>();
-        this.ratedIds = new HashMap<>();
+        
     }
 
     public int getId() { return id; }
@@ -73,7 +91,9 @@ public class Shop {
     public boolean isOpen() { return isOpen; }
     public PurchasePolicy getPurchasePolicy() { return purchasePolicy; }
     public DiscountPolicy getDiscountPolicy() { return discountPolicy; }
-    public HashMap<Integer, Item> getItems() { return items; }
+    public Map<Integer, Item> getItems() { 
+        return items; 
+    }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
     public Set<Integer> getManagerIDs() { return managerIDs; }
     public double getRating() { 
@@ -101,9 +121,9 @@ public class Shop {
             throw new IllegalArgumentException("Item name already exists or price cannot be negative.");
         } 
         else{
-            Item item = new Item(name, category, price, this.id, counterItemId, description);
+            Item item = new Item(itemIdCounter,name, category, price, this.id, description);
+            itemIdCounter++;
             items.put(item.getId(), item);
-            counterItemId++; // Increment the item ID counter for the next item
             return item;
         }
     }
@@ -265,8 +285,8 @@ public class Shop {
 
     public void addBidPurchase(int itemId, double bidAmount, int buyerId) {  
         if (items.containsKey(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.BID)) {
-            BidPurchase bidPurchase = new BidPurchase(bidPurchaseCounter, bidAmount, itemId, buyerId, buyerId);
-            bidPurchaseCounter++;
+            BidPurchase bidPurchase = new BidPurchase(bidPurchaseIdCounter,bidAmount, itemId, buyerId, buyerId);
+            bidPurchaseIdCounter++;
             bidPurchaseItems.put(bidPurchase.getId(), bidPurchase);
         } else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -340,8 +360,8 @@ public class Shop {
 	public void submitCounterBid(int userID, int bidID, double offerAmount) {
         if (bidPurchaseItems.containsKey(bidID)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidID);
-            BidPurchase counter= bidPurchase.submitCounterBid(userID,offerAmount,bidPurchaseCounter);
-            bidPurchaseCounter++;
+            BidPurchase counter= bidPurchase.submitCounterBid(userID,offerAmount, bidPurchaseIdCounter);
+            bidPurchaseIdCounter++;
             bidPurchaseItems.put(counter.getId(), counter);
         } else {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
@@ -396,8 +416,8 @@ public class Shop {
 
     public void openAuction(int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate) {
         if (items.containsKey(itemID)&& purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
-            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseCounter, startingPrice, itemID, startDate, endDate);
-            auctionPurchaseCounter++;
+            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseIdCounter,startingPrice, itemID, startDate, endDate);
+            auctionPurchaseIdCounter++;
             auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);
         } else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
@@ -486,12 +506,9 @@ public class Shop {
     }
 
     public HashMap<Integer, Message> getAllMessages() {
-        return inbox;
+        return new HashMap<>(inbox);
     }
 
-    public int getNextMessageId() {
-        return messageIdCounter++;
-    }
     
     public void addMessage(Message message) {
         inbox.put(message.getId(), message);
@@ -519,7 +536,7 @@ public class Shop {
         List<AuctionDTO> activeAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if (auction.isAuctionActive()) {
-                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return activeAuctions;
@@ -529,7 +546,7 @@ public class Shop {
         List<AuctionDTO> auctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
-                auctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                auctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return auctions;
@@ -547,7 +564,7 @@ public class Shop {
         List<AuctionDTO> wonAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems.values()) {
             if (auction.isAuctionEnded() && auction.getBuyerId() == userId && !auction.isDone()) {
-                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getAmount(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
         }
         return wonAuctions;

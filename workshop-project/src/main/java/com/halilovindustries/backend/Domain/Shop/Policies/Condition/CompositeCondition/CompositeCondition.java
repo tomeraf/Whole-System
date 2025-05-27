@@ -4,8 +4,18 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.OneToOne;
+
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class CompositeCondition extends Condition {
+    @OneToOne(cascade = CascadeType.ALL)
     private Condition condition1;
+    @OneToOne(cascade = CascadeType.ALL)
     private Condition condition2;
 
     public CompositeCondition(Condition condition1, Condition condition2) {
