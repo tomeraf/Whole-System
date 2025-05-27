@@ -1,6 +1,7 @@
 package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.frontend.application.presenters.SupplyPresenter;
+import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -10,6 +11,7 @@ import com.vaadin.flow.component.html.Header;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.SvgIcon;
 import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
@@ -29,15 +31,65 @@ public class MainLayout extends AppLayout {
 
     private H1 viewTitle;
     private SupplyPresenter presenter;
+    private VerticalLayout drawerContent;
+    private Header header;
+    private Scroller scroller;
+    private Span greeting;
+
+
 
     public MainLayout(SupplyPresenter presenter) {
 
     this.presenter = presenter;
+    setPrimarySection(Section.DRAWER);          // Set the primary section to the drawer
+    this.drawerContent = new VerticalLayout();   // init
+    //drawerContent.setPadding(false);
+    //drawerContent.setSpacing(false);
+    //drawerContent.setWidthFull();
+    //addToDrawer(drawerContent);                 // Add it here!
+    //refreshDrawer();                            // Build it initially
+    addHeaderContent();                         // Add header
+    }
+    
+    /** Rebuilds header + nav + footer in the drawer */
+    public void refreshDrawer() {
+        if(scroller != null) {
+            remove(scroller);
+        }
+        if(header != null) {
+            remove(header);
+        }
+        if(greeting != null) {
+            remove(greeting);
+        }
+        
+        presenter.getSessionToken(token -> {
+            if (token == null || !presenter.validateToken(token)) {
+                // // invalid token → build empty drawer
+                // UI.getCurrent().access(() -> {
+                //     Scroller scroller = new Scroller(createNavigation());
+                //     addToDrawer(scroller);
+                // });
+                return;   
+            }
 
-        setPrimarySection(Section.DRAWER);
-        addDrawerContent();
-        addHeaderContent();
-        getStyle().setWidth("100%");
+            // valid token → build full drawer
+            UI.getCurrent().access(() -> {
+                // 1) Greeting
+                greeting = new Span(presenter.isLoggedIn(token)
+                    ? "Hello, " + presenter.getUsername(token)
+                    : "Hello, sign in");
+                greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+                
+                greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+                header = new Header(greeting);
+
+                scroller = new Scroller(createNavigation());
+
+                addToDrawer(header, scroller, createFooter());   
+            
+            });
+        });
     }
 
     private void addHeaderContent() {
@@ -50,24 +102,24 @@ public class MainLayout extends AppLayout {
         addToNavbar(true, toggle, viewTitle);
     }
 
-    private void addDrawerContent() {
-        presenter.getSessionToken(token -> {
-            if (token != null && presenter.validateToken(token)) {
-                 Span appName;
-                if (presenter.isLoggedIn(token)) {
-                    appName = new Span("Hello, " + presenter.getUsername(token));
-                } else {
-                    appName = new Span("Hello, sign in");
-                }
-                appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
-                Header header = new Header(appName);
+    // private void addDrawerContent() {
+        // presenter.getSessionToken(token -> {
+        //     if (token != null && presenter.validateToken(token)) {
+        //          Span appName;
+        //         if (presenter.isLoggedIn(token)) {
+        //             appName = new Span("Hello, " + presenter.getUsername(token));
+        //         } else {
+        //             appName = new Span("Hello, sign in");
+        //         }
+            //     appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+            //     Header header = new Header(appName);
 
-                Scroller scroller = new Scroller(createNavigation());
+            //     Scroller scroller = new Scroller(createNavigation());
 
-                addToDrawer(header, scroller, createFooter());   
-            }
-        });
-    }
+            //     addToDrawer(header, scroller, createFooter());   
+            // }
+        // });
+    // }
 
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
@@ -120,6 +172,8 @@ public class MainLayout extends AppLayout {
     protected void afterNavigation() {
         super.afterNavigation();
         viewTitle.setText(getCurrentPageTitle());
+        //refreshDrawer();
+        
     }
 
     private String getCurrentPageTitle() {

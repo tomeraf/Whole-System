@@ -1,7 +1,5 @@
 package com.halilovindustries.websocket;
 
-import com.vaadin.flow.component.UI;
-
 // Functional interface for a registration that can be removed.
 
 import com.vaadin.flow.shared.Registration;
@@ -37,24 +35,11 @@ public class Broadcaster {
      * @param listener a consumer to handle messages
      * @return a Registration to remove the listener
      */
-public static synchronized Registration register(String userUuid, Consumer<String> listener) {
-    UI ui = UI.getCurrent();  // Capture the UI from the Vaadin thread
-    if (ui == null) {
-        throw new IllegalStateException("UI.getCurrent() is null during listener registration.");
+    public static synchronized Registration register(String userUuid, Consumer<String> listener) {
+        listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
+        System.out.println("Listener registered for user: " + userUuid);
+        return () -> removeListener(userUuid, listener);
     }
-
-    Consumer<String> wrappedListener = (message) -> {
-        if (ui.isAttached()) {
-            ui.access(() -> listener.accept(message));
-        } else {
-            System.out.println("UI is detached for user: " + userUuid + ", skipping notification.");
-        }
-    };
-    System.out.println("Registering listener for user: " + userUuid);
-    listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(wrappedListener);
-    return () -> removeListener(userUuid, wrappedListener);
-}
-
 
     /**
      * Broadcasts a message to all listeners registered for the given user UUID.
