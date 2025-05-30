@@ -22,7 +22,9 @@ import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class DiscountsTests extends BaseAcceptanceTests {
     @BeforeEach
     public void setUp() {

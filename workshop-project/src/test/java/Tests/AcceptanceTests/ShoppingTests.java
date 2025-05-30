@@ -33,7 +33,9 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void getShopsAndItems() {
@@ -425,11 +427,10 @@ public class ShoppingTests extends BaseAcceptanceTests {
         itemMap1.put(shop.getId(), List.of(shopItems.get(0).getItemID()));
 
         // 4) Remove the first item
-        Response<Void> removeResp = orderService.removeItemFromCart(
-            guestToken,
-            shop.getId(),
-            shopItems.get(0).getItemID()
-        );
+        HashMap<Integer,List<Integer>> removeItems = new HashMap<>();
+        removeItems.put(shop.getId(), new ArrayList<>());
+        removeItems.get(shop.getId()).add(shopItems.get(0).getItemID());
+        Response<Void> removeResp = orderService.removeItemsFromCart(guestToken,removeItems);
         assertTrue(removeResp.isOk(), "removeItemsFromCart should succeed");
 
         // 5) Re-fetch and verify

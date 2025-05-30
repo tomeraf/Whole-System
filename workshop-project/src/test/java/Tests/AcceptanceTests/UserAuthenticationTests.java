@@ -16,11 +16,13 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Acceptance tests for user authentication functionality.
  * Tests guest operations, registration, login, and logout processes.
  */
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class UserAuthenticationTests extends BaseAcceptanceTests {
 
     // Guest operations tests

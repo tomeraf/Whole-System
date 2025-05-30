@@ -23,11 +23,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import com.halilovindustries.backend.Domain.User.*;
+import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Acceptance tests for shop operations functionality.
  * Tests include shop viewing, item searching with filters, and shop-specific operations.
  */
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class ShopManagementTests extends BaseAcceptanceTests {
 
     @Test

@@ -11,6 +11,7 @@ import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,6 +24,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class NotificationsTests extends BaseAcceptanceTests{
     private String managerToken;
 

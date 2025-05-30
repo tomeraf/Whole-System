@@ -68,6 +68,13 @@
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
+    <!-- H2 is for mocking a database for testing -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- Vaadin UI -->
     <dependency>
       <groupId>com.vaadin</groupId>

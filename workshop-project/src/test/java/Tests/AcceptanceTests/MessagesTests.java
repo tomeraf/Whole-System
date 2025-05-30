@@ -7,7 +7,9 @@ import java.util.List;
 import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class MessagesTests extends BaseAcceptanceTests {
     @BeforeEach
     public void setUp() {

@@ -6,12 +6,14 @@ import org.junit.jupiter.api.Test;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.User.Registered;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
 public class SystemManagerTests extends BaseAcceptanceTests {
     private String managerToken;
     @BeforeEach

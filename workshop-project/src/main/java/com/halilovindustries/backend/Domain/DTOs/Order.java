@@ -27,7 +27,9 @@ public class Order {
         this.totalPrice = totalPrice;
         for (ItemDTO item : items) {
             item.setOrder(this);
+
         }
+        this.setItems(items);
     }
 
     public List<ItemDTO> getShopItems(int shopId) {
