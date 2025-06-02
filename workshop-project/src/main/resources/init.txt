@@ -1,4 +1,4 @@
-// System setup - initial admin
+// System setup - first registered user is system manager
 register-user(u1, u1, 1999-06-16);
 
 // Registering users

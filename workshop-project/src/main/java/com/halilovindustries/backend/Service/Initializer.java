@@ -163,7 +163,7 @@ public class Initializer {
 
                 case "remove-item": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("remove-item should have 2 args: shopId, itemId");
+                        throw new IllegalArgumentException("remove-item should have 2 args");
                     Response<Void> res = shopService.removeItemFromShop(initST, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
                     return res.isOk();
                 }
@@ -171,7 +171,7 @@ public class Initializer {
 
                 case "change-item-price": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("change-item-price should have 3 args: shopId, itemId, newPrice");
+                        throw new IllegalArgumentException("change-item-price should have 3 args");
                     Response<Void> res = shopService.changeItemPriceInShop(initST,
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
@@ -179,9 +179,21 @@ public class Initializer {
                     return res.isOk();
                 }
 
+                case "change-item-quantity": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("set-item-quantity requires 3 args");
+
+                    Response<Void> res = shopService.changeItemQuantityInShop(initST,
+                            Integer.parseInt(args[0]),
+                            Integer.parseInt(args[1]),
+                            Integer.parseInt(args[2]));
+                    return res.isOk();
+                }
+
+
                 case "change-item-name": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("change-item-name should have 3 args: shopId, itemId, newName");
+                        throw new IllegalArgumentException("change-item-name should have 3 args");
                     Response<Void> res = shopService.changeItemName(initST,
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
@@ -191,7 +203,7 @@ public class Initializer {
 
                 case "change-item-description": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("change-item-description should have 3 args: shopId, itemId, newDescription");
+                        throw new IllegalArgumentException("change-item-description should have 3 args");
                     Response<Void> res = shopService.changeItemDescriptionInShop(initST,
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
@@ -201,14 +213,14 @@ public class Initializer {
 
                 case "rate-shop": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("rate-shop should have 2 args: shopId, rating");
+                        throw new IllegalArgumentException("rate-shop should have 2 args");
                     Response<Void> res = shopService.rateShop(initST, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
                     return res.isOk();
                 }
 
                 case "rate-item": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("rate-item should have 3 args: shopId, itemId, rating");
+                        throw new IllegalArgumentException("rate-item should have 3 args");
                     Response<Void> res = shopService.rateItem(initST,
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
@@ -218,14 +230,14 @@ public class Initializer {
 
                 case "close-shop": {
                     if (args.length != 1)
-                        throw new IllegalArgumentException("close-shop should have 1 arg: shopId");
+                        throw new IllegalArgumentException("close-shop should have 1 arg");
                     Response<Void> res = shopService.closeShop(initST, Integer.parseInt(args[0]));
                     return res.isOk();
                 }
 
                 case "send-message": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("send-message should have 3 args: shopId, title, content");
+                        throw new IllegalArgumentException("send-message should have 3 args");
                     Response<Void> res = shopService.sendMessage(initST,
                             Integer.parseInt(args[0]),
                             args[1],
@@ -235,7 +247,7 @@ public class Initializer {
 
                 case "respond-to-message": {
                     if (args.length != 4)
-                        throw new IllegalArgumentException("respond-to-message should have 4 args: shopId, messageId, title, content");
+                        throw new IllegalArgumentException("respond-to-message should have 4 args");
                     Response<Void> res = shopService.respondToMessage(initST,
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
@@ -246,7 +258,7 @@ public class Initializer {
 
                 case "open-auction": {
                     if (args.length != 5)
-                        throw new IllegalArgumentException("open-auction requires 5 args: shopId, itemId, startingPrice, startDate, endDate");
+                        throw new IllegalArgumentException("open-auction requires 5 args");
 
                     int shopId = Integer.parseInt(args[0]);
                     int itemId = Integer.parseInt(args[1]);
@@ -272,7 +284,7 @@ public class Initializer {
 
                 case "submit-counter-bid": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("submit-counter-bid requires 3 args: shopId, bidId, newPrice");
+                        throw new IllegalArgumentException("submit-counter-bid requires 3 args");
 
                     Response<Void> res = shopService.submitCounterBid(initST,
                             Integer.parseInt(args[0]),
@@ -281,10 +293,10 @@ public class Initializer {
                     return res.isOk();
                 }
 
-                /*
+                /* dto cant rly give
                 case "add-discount": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("add-discount requires 2 args: shopId, discountType");
+                        throw new IllegalArgumentException("add-discount requires 2 args");
 
                     DiscountDTO dto = new DiscountDTO(); // set more if needed
                     dto.setType(DiscountType.valueOf(args[1]));
@@ -297,7 +309,7 @@ public class Initializer {
                  */
                 case "update-discount-type": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("update-discount-type requires 2 args: shopId, type");
+                        throw new IllegalArgumentException("update-discount-type requires 2 args");
 
                     Response<Void> res = shopService.updateDiscountType(initST, Integer.parseInt(args[0]), DiscountType.valueOf(args[1]));
                     return res.isOk();
@@ -305,7 +317,7 @@ public class Initializer {
 
                 case "update-purchase-type": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("update-purchase-type requires 2 args: shopId, type");
+                        throw new IllegalArgumentException("update-purchase-type requires 2 args");
 
                     Response<Void> res = shopService.updatePurchaseType(initST, Integer.parseInt(args[0]), PurchaseType.valueOf(args[1]));
                     return res.isOk();
@@ -313,7 +325,7 @@ public class Initializer {
 
                 case "add-permission": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("add-permission requires 3 args: shopId, username, permission");
+                        throw new IllegalArgumentException("add-permission requires 3 args");
 
                     Response<Void> res = shopService.addShopManagerPermission(initST,
                             Integer.parseInt(args[0]),
@@ -324,7 +336,7 @@ public class Initializer {
 
                 case "remove-permission": {
                     if (args.length != 3)
-                        throw new IllegalArgumentException("remove-permission requires 3 args: shopId, username, permission");
+                        throw new IllegalArgumentException("remove-permission requires 3 args");
 
                     Response<Void> res = shopService.removeShopManagerPermission(initST,
                             Integer.parseInt(args[0]),
@@ -335,11 +347,46 @@ public class Initializer {
 
                 case "remove-appointment": {
                     if (args.length != 2)
-                        throw new IllegalArgumentException("remove-appointment requires 2 args: shopId, username");
+                        throw new IllegalArgumentException("remove-appointment requires 2 args");
 
                     Response<Void> res = shopService.removeAppointment(initST, Integer.parseInt(args[0]), args[1]);
                     return res.isOk();
                 }
+
+                case "add-to-cart": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("add-to-cart should have 3 args");
+
+                    Response<Void> res = orderService.addItemToCart(initST,
+                            Integer.parseInt(args[0]),
+                            Integer.parseInt(args[1]),
+                            Integer.parseInt(args[2]));
+                    return res.isOk();
+                }
+
+                case "remove-from-cart": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("remove-from-cart should have 2 args");
+
+                    Response<Void> res = orderService.removeItemFromCart(initST,
+                            Integer.parseInt(args[0]),
+                            Integer.parseInt(args[1]));
+                    return res.isOk();
+                }
+
+                /*  dtos cant rly give
+                case "buy-cart": {
+                    if (args.length != 0)
+                        throw new IllegalArgumentException("buy-cart should have no arguments");
+
+                    Response<Void> res = orderService.purchaseCart(initST);
+                    return res.isOk();
+                }
+
+                 */
+
+
+
 
 
 
