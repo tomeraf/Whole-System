@@ -80,10 +80,10 @@ public class ShopService {
                 shopRepository.getAllShops().values().stream().filter((shop) -> shop.isOpen()).toList());
         List<ShopDTO> shopDTOs = new ArrayList<>();
         for (Shop shop : s) {
-            Map<Integer, Item> items = shop.getItems();
+            List<Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : items.values()) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+            for (Item item : items) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.put(item.getId(), itemDTO);
@@ -107,10 +107,10 @@ public class ShopService {
                 .filter(Shop::isOpen)
                 .toList();
         for (Shop shop : userShops) {
-            Map<Integer, Item> items = shop.getItems();
+            List<Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : items.values()) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+            for (Item item : items) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.put(item.getId(), itemDTO);
@@ -129,10 +129,10 @@ public class ShopService {
                 throw new Exception("User not logged in");
             }
             Shop shop = shopRepository.getShopById(shopId);
-            List<Item> items = shop.getItems().values().stream().toList();
+            List<Item> items = shop.getItems();
             List<ItemDTO> itemDTOs = new ArrayList<>();
             for (Item item : items) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.add(itemDTO);
@@ -156,16 +156,14 @@ public class ShopService {
             int minRating = filters.get("minRating") != null ? Integer.parseInt(filters.get("minRating")) : 0;
             double shopRating = filters.get("shopRating") != null ? Double.parseDouble(filters.get("shopRating")) : 0;
             List<Item> filteredItems = new ArrayList<>();
-            System.out.println("Max price is: " + maxPrice);
-            for (Shop shop : shopRepository.getAllShops().values()) {
-                filteredItems.addAll(shop.filter(name, category, minPrice, maxPrice, minRating, shopRating));
-            }
             List<ItemDTO> itemDTOs = new ArrayList<>();
-            for (Item item : filteredItems) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
-                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
-                        item.getNumOfOrders());
-                itemDTOs.add(itemDTO);
+            for (Shop shop : shopRepository.getAllShops().values()) {
+                for (Item item : shop.filter(name, category, minPrice, maxPrice, minRating, shopRating)) {
+                    ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
+                            item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
+                            item.getNumOfOrders());
+                    itemDTOs.add(itemDTO);
+                }
             }
             return Response.ok(itemDTOs);
         } catch (Exception e) {
@@ -189,7 +187,7 @@ public class ShopService {
             filteredItems.addAll(shop.filter(name, category, minPrice, maxPrice, minRating, 0));
             List<ItemDTO> itemDTOs = new ArrayList<>();
             for (Item item : filteredItems) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.add(itemDTO);
@@ -210,8 +208,8 @@ public class ShopService {
             Guest user = this.userRepository.getUserById(userID);
             Shop shop = this.shopRepository.getShopById(shopID);
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : shop.getItems().values()) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+            for (Item item : shop.getItems()) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.put(item.getId(), itemDTO);
@@ -286,10 +284,10 @@ public class ShopService {
             Shop shop = new Shop(user.getUserID(), name, description);
             shopRepository.addShop(shop);
             user.setRoleToShop(shop.getId(), new Founder(shop.getId()));
-            Map<Integer, Item> items = shop.getItems();
+            List<Item> items = shop.getItems();
             HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : items.values()) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), item.getShopId(),
+            for (Item item : items) {
+                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                         item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
                         item.getNumOfOrders());
                 itemDTOs.put(item.getId(), itemDTO);
@@ -356,7 +354,7 @@ public class ShopService {
             Shop shop = this.shopRepository.getShopById(shopID);
             Item newItem = managementService.addItemToShop(user, shop, itemName, category, itemPrice, description);
             ItemDTO itemDto = new ItemDTO(newItem.getName(), newItem.getCategory(), newItem.getPrice(),
-                    newItem.getShopId(), newItem.getId(), newItem.getQuantity(), newItem.getRating(),
+                    shop.getId(), newItem.getId(), newItem.getQuantity(), newItem.getRating(),
                     newItem.getDescription(), newItem.getNumOfOrders());
             logger.info(
                     () -> "Item added to shop: " + itemName + " in shop: " + shop.getName() + " by user: " + userID);
