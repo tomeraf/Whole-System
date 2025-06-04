@@ -12,5 +12,5 @@ public interface IOrderRepository {
     Order getOrder(int orderId);
     HashMap<Integer,Order> getAllOrders();
     List<Order> getOrdersByCustomerId(int userID);
-    List<Order> getOrdersByShopId(int shopId);
+    List<ItemDTO> getOrdersByShopId(int shopId);
 }

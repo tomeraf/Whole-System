@@ -1,107 +1,47 @@
 package com.halilovindustries.backend.Domain.DTOs;
 
-import jakarta.persistence.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-
-@Entity
-@Table(name = "orders")
 public class Order {
+    private final int orderID;
+    private final int userId;
+    private final double totalPrice;
+    private final HashMap<Integer, List<ItemDTO>> items; // <Integer, List<ItemDTO> = shopId, List<ItemDTO> = items in the shop
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int orderID;
-    private int userId;
-    private double totalPrice;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ItemDTO> items = new ArrayList<>();
-
-    public Order(){}
-
-    public Order(int userId, double totalPrice, List<ItemDTO> items) {
-        this.userId = userId;
+    public Order(int orderID, int userId, double totalPrice, HashMap<Integer, List<ItemDTO>> items) {
+        this.orderID = orderID;
         this.totalPrice = totalPrice;
-        for (ItemDTO item : items) {
-            item.setOrder(this);
+        this.items = items;
+        this.userId = userId;
+    }
 
-        }
-        this.setItems(items);
+    public List<ItemDTO> getItems() {
+        return items.values().stream().flatMap(List::stream).toList(); // Flatten the list of lists into a single list
     }
 
     public List<ItemDTO> getShopItems(int shopId) {
-        List<ItemDTO> result = new ArrayList<>();
-        for (ItemDTO item : items) {
-            if (item.getShopId() == shopId) {
-                result.add(item);
-            }
-        }
-        return result;
+        return items.get(shopId); // Return the list of items for the specified shop ID or null if not found
     }
-
-    public String getOrderDetails() {
-        StringBuilder details = new StringBuilder(
-                "Order ID: " + orderID +
-                        "\nUserId: " + userId +
-                        "\nTotal Price: " + totalPrice +
-                        "\nItems:\n"
-        );
-
-        // Group items by shopId
-        Map<Integer, List<ItemDTO>> itemsByShop = new HashMap<>();
-        for (ItemDTO item : items) {
-            itemsByShop.computeIfAbsent(item.getShopId(), k -> new ArrayList<>()).add(item);
-        }
-
-        // Append details for each shop
-        for (int shopId : itemsByShop.keySet()) {
-            details.append("Shop ID: ").append(shopId).append("\nItems:\n");
-            for (ItemDTO item : itemsByShop.get(shopId)) {
-                details.append(item.toString()).append("\n");
-            }
-        }
-
-        return details.toString();
-    }
-
-
-    public Integer getOrderID() {
+    
+    public int getId() {
         return orderID;
     }
-
-    public Integer getUserId() {
+    public int getUserID() {
         return userId;
     }
 
     public double getTotalPrice() {
         return totalPrice;
     }
-
-    public List<ItemDTO> getItems() {
-        return items;
-    }
-
-    public void setId(Integer id) {
-        this.orderID = id;
-    }
-
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
-
-    public void setTotalPrice(double totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public void setItems(List<ItemDTO> items) {
-        this.items = items;
-        for (ItemDTO item : items) {
-            item.setOrder(this);
+    public String getOrderDetails() {
+        StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
+        for (int shopId : items.keySet()) {
+            details.append("Shop ID: ").append(shopId).append("\nItems:\n");
+            for (ItemDTO item : items.get(shopId)) {
+                details.append(item.toString()).append("\n");
+            }
         }
+        return details.toString();
     }
 }
-
-
