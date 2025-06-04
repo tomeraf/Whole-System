@@ -11,6 +11,8 @@ import com.halilovindustries.backend.Domain.User.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
@@ -32,12 +34,12 @@ public class PurchaseService {
             throw new IllegalArgumentException("Error: no shops to purchase from.");    
         }
         ShoppingCart cart = user.getCart();
-        HashMap<Integer,HashMap<Integer,Integer>> items = cart.getItems();
+        Map<Integer, Map<Integer, Integer>> items = cart.getItems();
         HashMap<Shop, HashMap<Integer, Integer>> itemsToBuy = new HashMap<>();
         for(Shop shop : shops) {
-            HashMap<Integer,Integer> itemsMap = items.get(shop.getId());
+            Map<Integer,Integer> itemsMap = items.get(shop.getId());
             if(itemsMap!=null) {
-                itemsToBuy.put(shop, itemsMap);
+                itemsToBuy.put(shop, new HashMap<>(itemsMap));
             }
         }
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
@@ -69,10 +71,10 @@ public class PurchaseService {
     public List<ItemDTO> checkCartContent(Guest user,List<Shop> shops)
     {
         List<ItemDTO> cart = new ArrayList<>();
-        HashMap<Integer,HashMap<Integer,Integer>> items = user.getCart().getItems();
+        Map<Integer,Map<Integer,Integer>> items = user.getCart().getItems();
         for(Shop shop : shops) {
-            HashMap<Integer,Integer> itemsMap = items.get(shop.getId());
-            HashMap<Item,Double> discountedPrices= shop.getDiscountedPrices(itemsMap);//returns updated prices and removes items that cannot be purchased(due to quantity))
+            Map<Integer,Integer> itemsMap = items.get(shop.getId());
+            HashMap<Item,Double> discountedPrices= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
             List<ItemDTO> itemsList = new ArrayList<>();
             for(Item item : discountedPrices.keySet()) {
                 int quantity = itemsMap.get(item.getId());

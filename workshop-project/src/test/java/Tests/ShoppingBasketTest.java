@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import com.halilovindustries.backend.Domain.User.ShoppingBasket;
 
 import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -25,7 +27,7 @@ class ShoppingBasketTest {
     @Test
     void testAddItem_NewItem() {
         basket.addItem(1, 3);
-        HashMap<Integer, Integer> items = basket.getItems();
+        Map<Integer, Integer> items = basket.getItems();
         assertEquals(1, items.size());
         assertEquals(3, items.get(1));
     }

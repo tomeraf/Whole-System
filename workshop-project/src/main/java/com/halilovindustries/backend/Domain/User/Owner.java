@@ -1,16 +1,33 @@
 package com.halilovindustries.backend.Domain.User;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.persistence.*;
 
+@Entity
+@DiscriminatorValue("OWNER")
 public class Owner extends IRole {
+
+    public enum OwnerType {
+        REGULAR,
+        FOUNDER
+    }
+
+    @Enumerated(EnumType.STRING)
+    private OwnerType type = OwnerType.REGULAR;
 
     public Owner(int appointerID, int shopID) {
         this.appointerID = appointerID;
         this.shopID = shopID;
-        this.appointments = new HashMap<>();
+        this.appointments = new ArrayList<>();
+        this.type = (appointerID == -1) ? OwnerType.FOUNDER : OwnerType.REGULAR;
+    }
+    public Owner() {
+        super();
+        this.appointments = new ArrayList<>();
     }
 
     @Override
@@ -30,13 +47,17 @@ public class Owner extends IRole {
     }
 
     @Override    
-    public void addOwner(int nomineeID, IRole role) {
-        appointments.put(nomineeID, role);
+    public void addOwner(IRole role) {
+        appointments.add(role);
     }
 
     @Override
     public Map<Integer,IRole> getAppointments() {
-        return appointments;
+        Map<Integer, IRole> appointmentMap = new HashMap<>();
+        for (IRole role : appointments) {
+            appointmentMap.put(role.getUser().getUserID(), role);
+        }
+        return appointmentMap;
     }
 
     public String getPermissionsString() {

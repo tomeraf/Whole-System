@@ -1,5 +1,6 @@
 package com.halilovindustries.backend.Service;
 
+import java.beans.Transient;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,6 +21,9 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Shop.*;
 
 import com.halilovindustries.backend.Domain.User.ShoppingBasket;
+
+import jakarta.transaction.Transactional;
+
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
@@ -69,6 +73,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return list of ItemDTOs in the cart, or null on error
      */
+    @Transactional
     public Response<List<ItemDTO>> checkCartContent(String sessionToken) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -95,6 +100,7 @@ public class OrderService {
      * @param itemDTOs list of items to add
      */
     // items = shopId, itemID
+    @Transactional
     public Response<Void> addItemToCart(String sessionToken, int shopId,int itemID, int quantity) {
         Lock shopLock=null;
 
@@ -137,6 +143,7 @@ public class OrderService {
      * @param itemDTOs list of items to remove
      */
     // userItems = shopID, itemID
+    @Transactional
     public Response<Void> removeItemFromCart(String sessionToken, int shopId,int itemID) {
 
         try {
@@ -165,6 +172,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return the created Order, or null on failure
      */
+    @Transactional
     public Response<Order> buyCartContent(String sessionToken, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         List<Lock> acquiredLocks = new ArrayList<>();
         
@@ -258,6 +266,7 @@ public class OrderService {
      * @param itemID the item to bid on
      * @param offerPrice the bid amount
      */
+    @Transactional  
     public Response<Void> submitBidOffer(String sessionToken, int shopId, int itemID, double offerPrice) {
 
         Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
@@ -307,6 +316,7 @@ public class OrderService {
      * @param itemID the item to bid on
      * @param accept whether to accept the counter bid
      */
+    @Transactional
     public Response<Void> answerOnCounterBid(String sessionToken,int shopId,int bidId,boolean accept) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -338,6 +348,7 @@ public class OrderService {
      * @param sessionToken current session token
      * @return list of past Orders, or null on error
      */
+@Transactional
     public Response<List<Order>> viewPersonalOrderHistory(String sessionToken) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -352,6 +363,7 @@ public class OrderService {
             return Response.error("Error viewing personal search history: " + e.getMessage());
         }
     }
+    @Transactional
     public Response<Void> purchaseBidItem(String sessionToken,int shopId,int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -374,7 +386,7 @@ public class OrderService {
             return Response.error("Error purchasing bid item: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
 
             try {
@@ -399,6 +411,7 @@ public class OrderService {
                 return Response.error("Error submitting auction offer: " + e.getMessage());
             }
     }
+    @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {

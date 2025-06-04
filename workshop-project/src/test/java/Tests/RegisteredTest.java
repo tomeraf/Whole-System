@@ -70,13 +70,14 @@ public class RegisteredTest {
         // Owner always has APPOINTMENT permission
         Owner owner = new Owner(APPOINTER_ID, SHOP_ID);
         appointer.setRoleToShop(SHOP_ID, owner);
-
-        Manager appointeeRole = new Manager(APPOINTEE_ID, SHOP_ID, new HashSet<>());
+        Registered registered = new Registered("alice", "eve", LocalDate.of(2000, 1, 1));
+        Manager appointeeRole = new Manager(registered.getUserID(), SHOP_ID, new HashSet<>());
+        appointeeRole.setUser(registered);
         assertTrue(appointer.addManager(SHOP_ID, APPOINTEE_ID, appointeeRole));
 
         Map<Integer, IRole> apps = appointer.getAppointments(SHOP_ID);
         assertNotNull(apps);
-        assertTrue(apps.containsKey(APPOINTEE_ID));
+        assertTrue(apps.containsKey(registered.getUserID()));
         assertEquals(APPOINTER_ID, appointer.getAppointer(SHOP_ID));
     }
 
@@ -105,15 +106,19 @@ public class RegisteredTest {
     @Test
     public void testRemoveAppointmentSuccess() {
         Registered appointer = user;
+        appointer.setCart(new ShoppingCart(APPOINTER_ID));
         Owner owner = new Owner(APPOINTER_ID, SHOP_ID);
         appointer.setRoleToShop(SHOP_ID, owner);
 
+        Registered registered = new Registered("alice", "eve", LocalDate.of(2000, 1, 1));
+        registered.setCart(new ShoppingCart(APPOINTEE_ID));
+        Owner appointeeRole = new Owner(registered.getUserID(), SHOP_ID);
+        registered.setRoleToShop(SHOP_ID, appointeeRole);
+        appointeeRole.setUser(registered);
 
-        Owner appointeeRole = new Owner(APPOINTER_ID, SHOP_ID);
-        new Registered("alice", "eve", LocalDate.of(2000, 1, 1)).setRoleToShop(SHOP_ID, appointeeRole);
-        assertTrue(appointer.addOwner(SHOP_ID, APPOINTEE_ID, appointeeRole));
+        assertTrue(appointer.addOwner(SHOP_ID, registered.getUserID(), appointeeRole));
 
-        List<Integer> ids = appointer.removeAppointment(SHOP_ID, APPOINTEE_ID);
+        List<Integer> ids = appointer.removeAppointment(SHOP_ID, registered.getUserID());
         assertTrue(ids.size() == 1);
         assertTrue(appointer.getAppointments(SHOP_ID).isEmpty());
     }
@@ -162,11 +167,6 @@ public class RegisteredTest {
     @Test
     public void testRemoveShopRoleNoRole() {
         Registered user = new Registered("bob", "hunter2", LocalDate.of(1990, 1, 1));
-        try{
-            user.removeRoleFromShop(SHOP_ID);
-            fail("didnt catch");
-        }catch (IllegalArgumentException e){
-            assertFalse(false);
-        }
+            assertFalse(user.removeRoleFromShop(SHOP_ID));
     }
 }
