@@ -51,7 +51,7 @@ public class MemoryOrderRepository implements IOrderRepository {
     public List<Order> getOrdersByCustomerId(int userID) {
         List<Order> orderList = new ArrayList<>();
         for (Order order : orders.values()) {
-            if (order.getUserID() == userID) {
+            if (order.getUserId() == userID) {
                 orderList.add(order);
             }
         }

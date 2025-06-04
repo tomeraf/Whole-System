@@ -19,7 +19,7 @@ public class DBOrderRepository implements IOrderRepository {
 
     @Override
     public void addOrder(Order order) {
-        Optional<Order> existing = jpaAdapter.findById(order.getId());
+        Optional<Order> existing = jpaAdapter.findById(order.getOrderID());
         if (existing.isPresent())
             throw new RuntimeException("Order already exists in db!");
 
@@ -49,7 +49,7 @@ public class DBOrderRepository implements IOrderRepository {
         List<Order> orders = jpaAdapter.findAll();
         HashMap<Integer, Order> map = new HashMap<>();
         for (Order order : orders)
-            map.put(order.getId(), order);
+            map.put(order.getOrderID(), order);
 
         return map;
     }
@@ -59,7 +59,7 @@ public class DBOrderRepository implements IOrderRepository {
         List<Order> orders = new ArrayList<>();
         List<Order> all = jpaAdapter.findAll();
         for (Order order : all)
-            if(order.getUserID() == userID)
+            if(order.getUserId() == userID)
                 orders.add(order);
 
         return orders;
