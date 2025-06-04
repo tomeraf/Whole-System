@@ -15,7 +15,7 @@ public class MemoryOrderRepository implements IOrderRepository {
 
     @Override
     public void addOrder(Order order) {
-        orders.put(order.getId(), order);
+        orders.put(order.getOrderID(), order);
     }
 
     @Override
