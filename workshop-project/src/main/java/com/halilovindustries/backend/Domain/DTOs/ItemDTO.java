@@ -56,4 +56,7 @@ public class ItemDTO {
     public int getNumOfOrders() {
         return numOfOrders;
     }
+
+    public void setOrder(Order order) {
+    }
 }
