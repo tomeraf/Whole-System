@@ -6,17 +6,12 @@ import com.halilovindustries.backend.Domain.User.Registered;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface JpaOrderAdapter extends JpaRepository<Order, String>{
-
-}
-
-public interface JpaUserAdapter extends JpaRepository<Registered, Long> {
-    Optional<Registered> findByUsername(String username);
-
-    @Query("SELECT r FROM IRole r WHERE r.appointerID = :appointerId AND r.shopID = :shopId")
-    List<IRole> findAppointmentsByAppointerAndShop(@Param("appointerId") int appointerId, @Param("shopId") int shopId);
+@Repository
+public interface JpaOrderAdapter extends JpaRepository<Order, Integer>{
+    List<Order> findByUserId(int userID);
 }
