@@ -48,7 +48,11 @@ public class CartPresenter extends AbstractPresenter {
                 return;
             }
 
-            Response<Void> resp = orderService.removeItemFromCart(token, shopId, itemId);
+            HashMap<Integer, List<Integer>> userItems = new HashMap<>();
+            List<Integer> itemsToRemove = new ArrayList<>();
+            itemsToRemove.add(itemId);
+            userItems.put(itemId, itemsToRemove);
+            Response<Void> resp = orderService.removeItemsFromCart(token,userItems);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

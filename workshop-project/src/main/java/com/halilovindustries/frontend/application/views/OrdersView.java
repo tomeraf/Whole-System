@@ -39,7 +39,7 @@ public class OrdersView extends VerticalLayout {
 
         // Grid setup: use getId() and getTotalPrice()
         grid = new Grid<>(Order.class, false);
-        grid.addColumn(Order::getId)
+        grid.addColumn(Order::getOrderID)
             .setHeader("Order #").setAutoWidth(true);
         grid.addColumn(Order::getTotalPrice)
             .setHeader("Total Price").setAutoWidth(true);
