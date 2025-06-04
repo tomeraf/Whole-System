@@ -918,4 +918,103 @@ public class ShoppingTests extends BaseAcceptanceTests {
                 "Exactly one of removeItem or buyCartContent must succeed; succeeded=" + succeeded);
         }
     }
+
+    @Test
+    public void submitValidBidTest() {
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("owner", "pwdO");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+
+        // 2) Buyer setup
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "pwdB");
+
+        // 3) Submit a valid bid (higher than base price, e.g. base price assumed 5.0)
+        Response<Void> bidResp = orderService.submitBidOffer(buyerToken, shopId, itemId, 10.0);
+        assertTrue(bidResp.isOk(), "submitBidOffer should succeed for a valid bid");
+    }
+
+    @Test
+    public void onlyHighestBidderCanPurchaseTest() {
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("owner3", "pwdO3");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "Shop3");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+
+        // 2) Two buyers register
+        String bidder1 = fixtures.generateRegisteredUserSession("bidder1", "pwd1");
+        String bidder2 = fixtures.generateRegisteredUserSession("bidder2", "pwd2");
+
+        // 3) Submit bids
+        Response<Void> bid1 = orderService.submitBidOffer(bidder1, shopId, itemId, 8.0);
+        assertTrue(bid1.isOk(), "First bid (8.0) should succeed");
+        Response<Void> bid2 = orderService.submitBidOffer(bidder2, shopId, itemId, 12.0);
+        assertTrue(bid2.isOk(), "Second bid (12.0) should succeed");
+
+        Response<Void> answer = shopService.answerBid(ownerToken, shopId, 2, true);
+        assertTrue(answer.isOk(), "Owner acceptance of bid2 should succeed");
+
+        // We assume bid IDs are assigned sequentially: bid1 → ID=1, bid2 → ID=2
+        int bidId1 = 1;
+        int bidId2 = 2;
+
+        // 4) Mock positive payment and shipment
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1111222233334444", "Name1", "1", "123", "01", "30"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "A1", "Name1", "", "555-1234", "CountryX", "CityY", "AddressZ", "10101"
+        );
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        // 5) Non-highest bidder (bidId1) tries to purchase → should fail
+        Response<Void> purchase1 = orderService.purchaseBidItem(bidder1, shopId, bidId1, p, s);
+        assertFalse(purchase1.isOk(), "Non-highest bidder purchase should fail");
+        
+        // 6) Highest bidder (bidId2) tries to purchase → should succeed
+        Response<Void> purchase2 = orderService.purchaseBidItem(bidder2, shopId, bidId2, p, s);
+        assertTrue(purchase2.isOk(), "Highest bidder purchase should succeed");
+    }
+
+    @Test
+    public void counterBidWorkflowTest() {
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerCB", "pwdOCB");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ShopCB");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+
+        // 2) Buyer submits initial bid
+        String buyer = fixtures.generateRegisteredUserSession("buyerCB", "pwdBCB");
+        Response<Void> initialBid = orderService.submitBidOffer(buyer, shopId, itemId, 8.0);
+        assertTrue(initialBid.isOk(), "Initial bid (8.0) should succeed");
+
+        // We assume the first bid’s ID is 1
+        int bidId = 1;
+
+        // 3) Owner counters that bid (accept = false)
+        Response<Void> ownerCounter = shopService.submitCounterBid(ownerToken, shopId, bidId, 10.0);
+        assertTrue(ownerCounter.isOk(), "Owner's counter (reject) should succeed");
+
+        // 4) Buyer accepts the counter (accept = true)
+        Response<Void> buyerAccepts = orderService.answerOnCounterBid(buyer, shopId, bidId, true);
+        assertTrue(buyerAccepts.isOk(), "Buyer's acceptance of counter should succeed");
+
+        // 5) Mock positive payment and shipment
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "3333444455556666", "CB Buyer", "3", "345", "03", "32"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "CB1", "CB Buyer", "", "555-3333", "CountryCB", "CityCB", "AddressCB", "30303"
+        );
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        // 6) Buyer attempts to purchase the countered bid → should now succeed
+        Response<Void> purchaseAfterCounter = orderService.purchaseBidItem(buyer, shopId, bidId, p, s);
+        assertTrue(purchaseAfterCounter.isOk(), "Buyer should succeed purchasing after accepting counter");
+    }
 }

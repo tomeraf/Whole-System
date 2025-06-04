@@ -1198,6 +1198,26 @@ public class ShopService {
         }
     }
 
+    public Response<List<BidDTO>> getUserBids(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            List<BidDTO> bids = managementService.getUserBids(userID, shop);
+            logger.info(() -> "Active user bids retrieved in shop: " + shop.getName() + " for user: " + userID);
+            return Response.ok(bids);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active bids: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
     public Response<Integer> getShopId(String sessionToken, String shopName) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {

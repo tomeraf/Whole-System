@@ -262,5 +262,12 @@ public class ManagementService {
         }
     }
 
-
+    public List<BidDTO> getUserBids(int userId, Shop shop) {
+        if (shop.getBids() == null) {
+            throw new IllegalArgumentException("No bids found for the shop");
+        }
+        return shop.getBids().stream()
+                .filter(bid -> bid.getSubmitterId() == userId)
+                .toList();
+    }
 }

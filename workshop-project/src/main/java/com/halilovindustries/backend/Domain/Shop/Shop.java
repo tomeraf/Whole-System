@@ -538,7 +538,7 @@ public class Shop {
     public List<BidDTO> getBids() {
         List<BidDTO> bids = new ArrayList<>();
         for (BidPurchase bid : bidPurchaseItems.values()) {
-            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
+            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone(), bid.getCounterAmount()));
         }
         return bids;
     }

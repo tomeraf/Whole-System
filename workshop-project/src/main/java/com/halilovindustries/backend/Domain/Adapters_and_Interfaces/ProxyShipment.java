@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Component
-@Primary
 public class ProxyShipment implements IShipment {
 
     // This method checks if the shipment details are valid

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import java.util.*;
 
-@Primary
+//TODO: @Primary
 @Repository
 public class DBOrderRepository implements IOrderRepository {
     private final JpaOrderAdapter jpaAdapter;
