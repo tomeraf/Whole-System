@@ -281,7 +281,7 @@ public class ShopService {
             if (shopRepository.getShopByName(name) != null) {
                 return Response.error("Shop name already exists");
             }
-            Shop shop = new Shop(user.getUserID(), name, description);
+            Shop shop = new Shop(shopRepository.getNextId(),user.getUserID(), name, description);
             shopRepository.addShop(shop);
             user.setRoleToShop(shop.getId(), new Founder(shop.getId()));
             List<Item> items = shop.getItems();
@@ -991,7 +991,7 @@ public class ShopService {
         return Response.ok();
     }
     @Transactional
-    public Response<Void> removeDiscount(String sessionToken, int shopID, int discountID) {
+    public Response<Void> removeDiscount(String sessionToken, int shopID, String discountID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
@@ -1081,7 +1081,7 @@ public class ShopService {
         return Response.ok();
     }
     @Transactional
-    public Response<Void> removePurchaseCondition(String sessionToken, int shopID, int conditionID) {
+    public Response<Void> removePurchaseCondition(String sessionToken, int shopID, String conditionID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");

@@ -190,7 +190,8 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Act
         Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
         assertTrue(response.isOk(), "Owner should be able to add a discount");
-        Response<Void> removeResponse = shopService.removeDiscount(customerToken, shop.getId(), 1);
+        Response<List<DiscountDTO>> res=shopService.getDiscounts(ownerToken, shop.getId());
+        Response<Void> removeResponse = shopService.removeDiscount(customerToken, shop.getId(), res.getData().get(0).getId());
         // Assert
         assertFalse(removeResponse.isOk(), "Customer should not be able to remove a discount");
     }
@@ -199,7 +200,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Arrange
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        Response<Void> removeResponse = shopService.removeDiscount(ownerToken, shop.getId(), 1);
+        Response<Void> removeResponse = shopService.removeDiscount(ownerToken, shop.getId(), "");
         // Assert
         assertFalse(removeResponse.isOk(), "Owner should not be able to remove a discount that doesn't exist");
     }
@@ -235,7 +236,8 @@ public class DiscountsTests extends BaseAcceptanceTests {
         ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1);
         Response<Void> addRsp=shopService.addPurchaseCondition(ownerToken, shop.getId(), condition);
         assertTrue(addRsp.isOk(), "Owner should be able to add a purchase condition");
-        Response<Void> removeRsp=shopService.removePurchaseCondition(ownerToken, shop.getId(), 0);
+        Response<List<ConditionDTO>> conditionsResponse = shopService.getPurchaseConditions(ownerToken, shop.getId());
+        Response<Void> removeRsp=shopService.removePurchaseCondition(ownerToken, shop.getId(), conditionsResponse.getData().get(0).getId());
         assertTrue(removeRsp.isOk(), "Owner should be able to remove a purchase condition");
     }
 

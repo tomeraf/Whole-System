@@ -5,19 +5,32 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.SecondaryTable;
+import jakarta.persistence.Table;
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "condition_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class CompositeCondition extends Condition {
+
     @OneToOne(cascade = CascadeType.ALL)
     private Condition condition1;
     @OneToOne(cascade = CascadeType.ALL)
     private Condition condition2;
 
+    // Default constructor for JPA
+    public CompositeCondition() {
+    }
     public CompositeCondition(Condition condition1, Condition condition2) {
         super();
         this.condition1 = condition1;

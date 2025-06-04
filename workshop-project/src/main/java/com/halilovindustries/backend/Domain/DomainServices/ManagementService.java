@@ -213,7 +213,7 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to add discounts");
         }
     }
-    public void removeDiscount(Registered user, Shop shop, int discountID) {
+    public void removeDiscount(Registered user, Shop shop, String discountID) {
         if (user.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
             shop.removeDiscount(discountID);
         } else {
@@ -227,7 +227,7 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to add purchase conditions");
         }
     }
-    public void removePurchaseCondition(Registered user, Shop shop, int conditionID) {
+    public void removePurchaseCondition(Registered user, Shop shop, String conditionID) {
         if (user.hasPermission(shop.getId(), Permission.UPDATE_PURCHASE_POLICY)) {
             shop.removePurchaseCondition(conditionID);
         } else {

@@ -10,13 +10,17 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
 
 @Entity
+@DiscriminatorValue("CONDITIONAL")
 public class ConditionalDiscount extends BaseDiscount {
     @OneToOne(cascade = CascadeType.ALL)
     private Condition condition;
+    public ConditionalDiscount() {// Default constructor for JPA
+    }
     
     public ConditionalDiscount(Condition condition,int percentage,int itemID,Category category) {
         super(percentage, category,itemID);

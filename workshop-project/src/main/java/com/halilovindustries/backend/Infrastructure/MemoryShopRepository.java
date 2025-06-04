@@ -57,5 +57,9 @@ public class MemoryShopRepository implements IShopRepository {
         }
         return null;
     }
+    @Override
+    public int getNextId() {
+        return shops.size(); // Simple ID generation strategy
+    }
 
 }

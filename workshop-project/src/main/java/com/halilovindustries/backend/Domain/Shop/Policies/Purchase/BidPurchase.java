@@ -10,7 +10,6 @@ import java.util.List;
 public class BidPurchase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private double amount;

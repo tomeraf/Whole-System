@@ -6,23 +6,30 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 @Entity
+@DiscriminatorValue("PRICE")
 public class PriceCondition extends BaseCondition {
     private int minPrice;
     private int maxPrice;
 
+    public PriceCondition() { // Default constructor for JPA
+    }
+
     public PriceCondition(int minPrice, int maxPrice) {
         super();
-        buildPriceRange(minPrice, maxPrice);
+        this.minPrice = minPrice;
+        this.maxPrice = maxPrice;
     }
-    public PriceCondition(int itemID,Category category, int minPrice, int maxPrice) {
+
+    public PriceCondition(int itemID, Category category, int minPrice, int maxPrice) {
         super(itemID, category);
         buildPriceRange(minPrice, maxPrice);
-
-        
     }
+
     private void buildPriceRange(int minPrice, int maxPrice) {
         // If both minPrice and maxPrice are -1, throw an exception
         if (minPrice == -1 && maxPrice == -1) {
@@ -61,16 +68,17 @@ public class PriceCondition extends BaseCondition {
             this.maxPrice = Integer.MAX_VALUE; // Set maxPrice to the maximum possible value
         }
     }
-    @Override
+
     public int getMinPrice() {
         return minPrice;
     }
-    @Override
+
     public int getMaxPrice() {
         return maxPrice;
     }
+
     @Override
-    public ConditionLimits getConditionLimits(){
+    public ConditionLimits getConditionLimits() {
         return ConditionLimits.PRICE;
     }
 
@@ -78,26 +86,28 @@ public class PriceCondition extends BaseCondition {
     public boolean checkItemCondition(HashMap<Item, Integer> allItems) {
         for (Item item : allItems.keySet()) {
             if (item.getId() == getItemId()) {
-                return item.getPrice()*allItems.get(item) >= minPrice && item.getPrice()*allItems.get(item) <= maxPrice;
+                return item.getPrice() * allItems.get(item) >= minPrice && item.getPrice() * allItems.get(item) <= maxPrice;
             }
         }
         return false;
     }
+
     @Override
     public boolean checkCategoryCondition(HashMap<Item, Integer> allItems) {
         double totalPrice = 0;
         for (Item item : allItems.keySet()) {
             if (item.getCategory().equals(getCategory())) {
-                totalPrice += item.getPrice()*allItems.get(item);
+                totalPrice += item.getPrice() * allItems.get(item);
             }
         }
         return totalPrice >= minPrice && totalPrice <= maxPrice;
     }
+
     @Override
     public boolean checkShopCondition(HashMap<Item, Integer> allItems) {
         double totalPrice = 0;
         for (Item item : allItems.keySet()) {
-            totalPrice += item.getPrice()*allItems.get(item);
+            totalPrice += item.getPrice() * allItems.get(item);
         }
         return totalPrice >= minPrice && totalPrice <= maxPrice;
     }

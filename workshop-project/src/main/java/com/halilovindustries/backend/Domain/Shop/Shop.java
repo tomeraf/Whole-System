@@ -23,8 +23,7 @@ import java.util.*;
 public class Shop {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id; // You can change this to @GeneratedValue if you want it auto-generated
+    private int id; 
 
     private String name;
     private String description;
@@ -48,20 +47,20 @@ public class Shop {
     private Map<Integer, Double> ratedIds = new HashMap<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @MapKey(name = "id")
-    private Map<Integer, Item> items = new HashMap<>();
+    @JoinColumn(name = "shop_id", referencedColumnName = "id")
+    private List<Item> items = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @MapKey(name = "id")
-    private Map<Integer, BidPurchase> bidPurchaseItems = new HashMap<>();
+    @JoinColumn(name = "shop_id", referencedColumnName = "id")
+    private List<BidPurchase> bidPurchaseItems = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @MapKey(name = "id")
-    private Map<Integer, AuctionPurchase> auctionPurchaseItems = new HashMap<>();
+    @JoinColumn(name = "shop_id", referencedColumnName = "id")
+    private List<AuctionPurchase> auctionPurchaseItems = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @MapKey(name = "id")
-    private Map<Integer, Message> inbox = new HashMap<>();
+    @JoinColumn(name = "shop_id", referencedColumnName = "id")
+    private List<Message> inbox = new ArrayList<>();
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     private PurchasePolicy purchasePolicy;
@@ -72,7 +71,8 @@ public class Shop {
     public Shop() {
         // Required by JPA
     }
-    public Shop(int founderID,String name, String description) {
+    public Shop(int id,int founderID,String name, String description) {
+        this.id = id;
         this.founderID = founderID;
         ownerIDs.add(founderID); // Founder is also an owner
         this.name = name;
@@ -80,8 +80,8 @@ public class Shop {
         this.isOpen = true; // Default to open
         this.rating = 0.0; // Default rating
         this.ratingCount = 0; // Default rating count
-        this.purchasePolicy = new PurchasePolicy();
-        this.discountPolicy = new DiscountPolicy();
+        this.purchasePolicy = new PurchasePolicy(id);
+        this.discountPolicy = new DiscountPolicy(id);
         
     }
 
@@ -91,7 +91,7 @@ public class Shop {
     public boolean isOpen() { return isOpen; }
     public PurchasePolicy getPurchasePolicy() { return purchasePolicy; }
     public DiscountPolicy getDiscountPolicy() { return discountPolicy; }
-    public Map<Integer, Item> getItems() { 
+    public List<Item> getItems() { 
         return items; 
     }
     public Set<Integer> getOwnerIDs() { return ownerIDs; }
@@ -123,12 +123,12 @@ public class Shop {
         else{
             Item item = new Item(itemIdCounter,name, category, price, this.id, description);
             itemIdCounter++;
-            items.put(item.getId(), item);
+            items.add(item); 
             return item;
         }
     }
     public boolean validName(String name) {
-        for (Item item : items.values()) {
+        for (Item item : items) {
             if (item.getName().equals(name)) {
                 return false; // Name already exists
             }
@@ -136,74 +136,67 @@ public class Shop {
         return true; // Name is valid
     }
     public void removeItem(int itemId) throws IllegalArgumentException {
-        if (items.containsKey(itemId)) {
-            items.remove(itemId);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        items.remove(item);
     }
     
     public void updateItemName(int itemId, String name) {
-        if (items.containsKey(itemId)) {
-            Item item = items.get(itemId);
-            item.setName(name);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Item name cannot be null or empty.");
         }
+        if (!validName(name)) {
+            throw new IllegalArgumentException("Item name already exists in the shop.");
+        }
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.setName(name);
     }
 
     public void updateItemQuantity(int itemId, int quantity) {
-        if (items.containsKey(itemId)){
-            Item item = items.get(itemId);
-            item.updateQuantity(quantity);
-        } 
-        else {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.updateQuantity(quantity);
     }
 
     public void updateItemPrice(int itemId, double price) {
         if(price<=0){
             throw new IllegalArgumentException("item price cannot be negative");
         }
-        if (items.containsKey(itemId)){
-            Item item = items.get(itemId);
-            item.setPrice(price);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+        Item item = items.stream()
+            .filter(i -> i.getId() == itemId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.setPrice(price);
     }
 
     public void updateItemRating(int raterId, int itemId, double rating) {
-        if (items.containsKey(itemId)) {
-            Item item = items.get(itemId);
-            item.updateRating(raterId, rating);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+                Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.updateRating(raterId, rating);
     }
 
     public void updateItemCategory(int itemId, Category category) {
-        if (items.containsKey(itemId)) {
-            Item item = items.get(itemId);
-            item.setCategory(category);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.setCategory(category);
     }
-        public void updateItemDescription(int itemId, String description) {
-        if (items.containsKey(itemId)) {
-            Item item = items.get(itemId);
-            item.setDescription(description);
-        } 
-        else{
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+    public void updateItemDescription(int itemId, String description) {
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+        item.setDescription(description);
     }
 
     public void updateRating(int raterId, double rating) {
@@ -234,13 +227,13 @@ public class Shop {
     }
 
     public boolean canAddItemToBasket(int itemId, int quantity) {
-        System.out.println("canAddItemToBasket called with itemId: " + itemId + " and quantity: " + quantity + ", this.quantity: " + items.get(itemId).getQuantity());
-        if (items.containsKey(itemId) && items.get(itemId).quantityCheck(quantity)) {
+        Item item = items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop.")); 
+        if (item.quantityCheck(quantity)) {
             return true;
         }
-        else if (!items.containsKey(itemId)) {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        } 
         else {
             throw new IllegalArgumentException("Quantity exceeds available stock.");
         }
@@ -256,14 +249,15 @@ public class Shop {
         boolean result = true;
         HashMap<Item, Integer> allItems = new HashMap<>();
         for (Integer itemId : itemsToPurchase.keySet()) {
-            allItems.put(items.get(itemId), itemsToPurchase.get(itemId));
+            allItems.put(getItem(itemId), itemsToPurchase.get(itemId));
         }
         purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
-            if (!items.containsKey(id)) {
-                throw new IllegalArgumentException("Item ID does not exist in the shop.");
-            }
-            result = result && items.get(id).quantityCheck(itemsToPurchase.get(id)); //assuming basket.get(item) returns the quantity of the item wanting to purchase
+            Item item = items.stream()
+                .filter(i -> i.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+            result = result && getItem(id).quantityCheck(itemsToPurchase.get(id)); //assuming basket.get(item) returns the quantity of the item wanting to purchase
         }
         return result;
     }
@@ -271,7 +265,7 @@ public class Shop {
     public double purchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //will need to be synchronized later on
         HashMap<Item,Integer> allItems = new HashMap<>(); //<Item,quantity>
         for(Integer itemId: itemsToPurchase.keySet()){
-            allItems.put(items.get(itemId), itemsToPurchase.get(itemId)); 
+            allItems.put(getItem(id), itemsToPurchase.get(itemId)); 
         }
         double totalPrice =0;
         for(Item item: allItems.keySet()){
@@ -284,10 +278,10 @@ public class Shop {
     }
 
     public void addBidPurchase(int itemId, double bidAmount, int buyerId) {  
-        if (items.containsKey(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.BID)) {
+        if (isItemInShop(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.BID)) {
             BidPurchase bidPurchase = new BidPurchase(bidPurchaseIdCounter,bidAmount, itemId, buyerId, buyerId);
             bidPurchaseIdCounter++;
-            bidPurchaseItems.put(bidPurchase.getId(), bidPurchase);
+            bidPurchaseItems.add(bidPurchase);
         } else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
         }
@@ -327,19 +321,17 @@ public class Shop {
     }
 
     public void addBidDecision(int memberId, int bidId, boolean decision,List<Integer> members) {
-        if(!bidPurchaseItems.containsKey(bidId)) {
-            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
-        } 
-        else {
-            BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
+        BidPurchase bidPurchase = bidPurchaseItems.stream()
+            .filter(bid -> bid.getId() == bidId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
             bidPurchase.receiveDecision(memberId, decision,members);
-        }
     }
 
 
     public List<Item> filter(String name, String category, double minPrice, double maxPrice, int itemMinRating, double shopMinRating) {
         List<Item> filteredItems = new ArrayList<>();
-        for (Item item : items.values()) {
+        for (Item item : items) {
             if ((name == null || item.getName().toLowerCase().contains(name.toLowerCase())) &&
                 (category == null || item.getCategory().equalsIgnoreCase(category)) &&
                 (minPrice <= 0 || item.getPrice() >= minPrice) &&
@@ -358,14 +350,13 @@ public class Shop {
     }
 
 	public void submitCounterBid(int userID, int bidID, double offerAmount) {
-        if (bidPurchaseItems.containsKey(bidID)) {
-            BidPurchase bidPurchase = bidPurchaseItems.get(bidID);
-            BidPurchase counter= bidPurchase.submitCounterBid(userID,offerAmount, bidPurchaseIdCounter);
-            bidPurchaseIdCounter++;
-            bidPurchaseItems.put(counter.getId(), counter);
-        } else {
-            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
-        }
+        BidPurchase bidPurchase = bidPurchaseItems.stream()
+            .filter(bid -> bid.getId() == bidID)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
+        BidPurchase counter= bidPurchase.submitCounterBid(userID,offerAmount, bidPurchaseIdCounter);
+        bidPurchaseIdCounter++;
+        bidPurchaseItems.add(counter);
     }
 
     public void removeAppointment(List<Integer> idsToRemove) {
@@ -390,65 +381,58 @@ public class Shop {
     }
 
     public Item getItem(int itemId) {
-        if (items.containsKey(itemId)) {
-            return items.get(itemId);
-        } else {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+        return items.stream()
+                .filter(i -> i.getId() == itemId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
     }
 
-    public Pair<Integer,Double> purchaseBidItem(int bidId, int userID) {
-        if (bidPurchaseItems.containsKey(bidId)) {
-            BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            try{
-                if(!getItem(bidPurchase.getItemId()).quantityCheck(1)){
-                    throw new IllegalArgumentException("Item is out of stock.");
-                }
-                return bidPurchase.purchaseBidItem(userID);
+    public Pair<Integer, Double> purchaseBidItem(int bidId, int userID) {
+        BidPurchase bidPurchase = bidPurchaseItems.stream()
+                .filter(bid -> bid.getId() == bidId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
+        try {
+            if (!getItem(bidPurchase.getItemId()).quantityCheck(1)) {
+                throw new IllegalArgumentException("Item is out of stock.");
             }
-             catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
-            }
-        } else {
-            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
+            return bidPurchase.purchaseBidItem(userID);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
         }
     }
 
     public void openAuction(int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate) {
-        if (items.containsKey(itemID)&& purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION)) {
+            purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION);
+            getItem(itemID); // Check if item exists in the shop
             AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseIdCounter,startingPrice, itemID, startDate, endDate);
             auctionPurchaseIdCounter++;
-            auctionPurchaseItems.put(auctionPurchase.getId(), auctionPurchase);
-        } else {
-            throw new IllegalArgumentException("Item ID does not exist in the shop.");
-        }
+            auctionPurchaseItems.add(auctionPurchase);
     }
 
     public void submitAuctionOffer(int auctionID, double offerPrice, int userID) {
-        if (auctionPurchaseItems.containsKey(auctionID)) {
-            AuctionPurchase auctionPurchase = auctionPurchaseItems.get(auctionID);
-            auctionPurchase.placeOffer(offerPrice, userID);
-        } else {
-            throw new IllegalArgumentException("Auction ID does not exist in the shop.");
-        }
+         AuctionPurchase auctionPurchase= auctionPurchaseItems.stream()
+                .filter(auction -> auction.getId() == auctionID)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Auction ID does not exist in the shop."));
+        auctionPurchase.placeOffer(offerPrice, userID);
     }
 
-	public Pair<Integer, Double> purchaseAuctionItem(int auctionID, int userID) {
-		if(auctionPurchaseItems.containsKey(auctionID)) {
-            AuctionPurchase auctionPurchase = auctionPurchaseItems.get(auctionID);
-            try {
-                if (!getItem(auctionPurchase.getItemId()).quantityCheck(1)) {
-                    throw new IllegalArgumentException("Item is out of stock.");
-                }
-                items.get(auctionPurchase.getItemId()).buyItem(1);
-                return auctionPurchase.purchaseAuctionItem(userID);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Auction purchase failed: " + e.getMessage());
+    public Pair<Integer, Double> purchaseAuctionItem(int auctionID, int userID) {
+        AuctionPurchase auctionPurchase = auctionPurchaseItems.stream()
+                .filter(auction -> auction.getId() == auctionID)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Auction ID does not exist in the shop."));
+        try {
+            if (!getItem(auctionPurchase.getItemId()).quantityCheck(1)) {
+                throw new IllegalArgumentException("Item is out of stock.");
             }
-        } else {
-            throw new IllegalArgumentException("Auction ID does not exist in the shop.");
+            getItem(auctionPurchase.getItemId()).buyItem(1);
+            return auctionPurchase.purchaseAuctionItem(userID);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Auction purchase failed: " + e.getMessage());
         }
-	}
+    }
 
     public void updateDiscountType(DiscountType discountType) {
         discountPolicy.updateDiscountType(discountType);
@@ -457,7 +441,7 @@ public class Shop {
     public void addDiscount(DiscountDTO discountDetails) {
         discountPolicy.addDiscount(discountDetails);
     }
-    public void removeDiscount(int discountId) {
+    public void removeDiscount(String discountId) {
         discountPolicy.removeDiscount(discountId);
     }
 
@@ -465,17 +449,16 @@ public class Shop {
         purchasePolicy.addCondition(condition);
     }
 
-    public void removePurchaseCondition(int conditionID) {
+    public void removePurchaseCondition(String conditionID) {
         purchasePolicy.removeCondition(conditionID);
     }
 
     public void answerOnCounterBid(int bidId, boolean accept, int userID,List<Integer> members) {
-        if (bidPurchaseItems.containsKey(bidId)) {
-            BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            bidPurchase.answerOnCounterBid(userID, accept, members);
-        } else {
-            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
-        }
+        BidPurchase bidPurchase=bidPurchaseItems.stream()
+            .filter(bid -> bid.getId() == bidId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
+        bidPurchase.answerOnCounterBid(userID, accept, members);
     }
 
     public List<Integer> getMembersIDs() {
@@ -485,11 +468,10 @@ public class Shop {
         return membersIDs;
     }
     public BidPurchase getBidPurchase(int bidId) {
-        if (bidPurchaseItems.containsKey(bidId)) {
-            return bidPurchaseItems.get(bidId);
-        } else {
-            throw new IllegalArgumentException("Bid ID does not exist in the shop.");
-        }
+        return bidPurchaseItems.stream()
+            .filter(bid -> bid.getId() == bidId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
     }
 
     public void clearRoles() {
@@ -497,29 +479,31 @@ public class Shop {
         managerIDs.clear();
     }
     public Message getMessage(int messageId) {
-        if (inbox.containsKey(messageId)) {
-            return inbox.get(messageId);
-        }
-        else {
-            throw new IllegalArgumentException("Message ID does not exist in the inbox.");
-        }
+            return inbox.stream()
+                .filter(message -> message.getId() == messageId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Message ID does not exist in the inbox."));
     }
 
-    public HashMap<Integer, Message> getAllMessages() {
-        return new HashMap<>(inbox);
-    }
 
     
     public void addMessage(Message message) {
-        inbox.put(message.getId(), message);
+        if (message == null) {
+            throw new IllegalArgumentException("Message cannot be null.");
+        }
+        if (inbox.stream().anyMatch(m -> m.getId() == message.getId())) {
+            throw new IllegalArgumentException("Message ID already exists in the inbox.");
+        }
+        inbox.add(message);
     }
 
 	public boolean hasMessage(int messageId) {
-		return inbox.containsKey(messageId);
+		return inbox.stream()
+            .anyMatch(message -> message.getId() == messageId);
 	}
 
 	public List<Message> getInbox() {
-		return inbox.values().stream()
+		return inbox.stream()
 			.sorted((m1, m2) -> m1.getDateTime().compareTo(m2.getDateTime()))
 			.toList();
 	}
@@ -534,7 +518,7 @@ public class Shop {
 
     public List<AuctionDTO> getActiveAuctions() {
         List<AuctionDTO> activeAuctions = new ArrayList<>();
-        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+        for (AuctionPurchase auction : auctionPurchaseItems) {
             if (auction.isAuctionActive()) {
                 activeAuctions.add(new AuctionDTO(auction.getId(),auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
@@ -544,7 +528,7 @@ public class Shop {
 
     public List<AuctionDTO> getFutureAuctions() {
         List<AuctionDTO> auctions = new ArrayList<>();
-        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+        for (AuctionPurchase auction : auctionPurchaseItems) {
             if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
                 auctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
@@ -554,7 +538,7 @@ public class Shop {
 
     public List<BidDTO> getBids() {
         List<BidDTO> bids = new ArrayList<>();
-        for (BidPurchase bid : bidPurchaseItems.values()) {
+        for (BidPurchase bid : bidPurchaseItems) {
             bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
         }
         return bids;
@@ -562,7 +546,7 @@ public class Shop {
 
     public List<AuctionDTO> getWonAuctions(int userId) {
         List<AuctionDTO> wonAuctions = new ArrayList<>();
-        for (AuctionPurchase auction : auctionPurchaseItems.values()) {
+        for (AuctionPurchase auction : auctionPurchaseItems) {
             if (auction.isAuctionEnded() && auction.getBuyerId() == userId && !auction.isDone()) {
                 wonAuctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
             }
@@ -581,11 +565,11 @@ public class Shop {
     public HashMap<Item, Double> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
         HashMap<Item, Integer> allItems = new HashMap<>();
         for(Integer itemId : itemsMap.keySet()) {
-            if(!items.containsKey(itemId))
+            if(!isItemInShop(itemId))
             {
                 throw new IllegalArgumentException("Item ID does not exist in the shop.");
             }
-            Item item = items.get(itemId);
+            Item item = getItem(itemId);
             if(item.getQuantity() < itemsMap.get(itemId)) {
                 itemsMap.remove(itemId);
             }
@@ -593,6 +577,9 @@ public class Shop {
         }
 
         return discountPolicy.getPricePerItem(allItems);
+    }
+    public boolean isItemInShop(int itemId) {
+        return items.stream().anyMatch(item -> item.getId() == itemId);
     }
 }
 

@@ -1,31 +1,41 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Condition;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.github.javaparser.ast.Generated;
 import com.halilovindustries.backend.Domain.Shop.*;
 
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.SecondaryTable;
+import jakarta.persistence.SecondaryTables;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.InheritanceType;
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "condition_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Condition {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-    public Condition() {// Default constructor for JPA
+    private String id = UUID.randomUUID().toString();
+
+    public Condition() { // Default constructor for JPA
     }
-    public int getId() {
+
+    public String getId() {
         return id;
     }
+
     public abstract boolean checkCondition(HashMap<Item, Integer> allItems);
+
     public abstract ConditionType getConditionType();
     
     public int getItemId() { return -1; }

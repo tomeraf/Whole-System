@@ -1,10 +1,12 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Discount;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.Shop.*;
 
+import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,16 +17,15 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.SequenceGenerator;
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "discount_type", discriminatorType = jakarta.persistence.DiscriminatorType.STRING)
 public abstract class Discount {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int discountId;
+    private String id= UUID.randomUUID().toString();
     public Discount() {//Default constructor for JPA
-        
     }
-    public int getDiscountId() {
-        return discountId;
+    public String getId() {
+        return id;
     }
     public abstract double calculateDiscount(HashMap<Item,Integer> allItems);
     public abstract HashMap<Item,Double> getPercentagePerItem(HashMap<Item,Integer> allItems);

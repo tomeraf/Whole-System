@@ -19,7 +19,7 @@ public class Item {
     private int quantity;
     private String description;
 
-    private int shopId;
+    // private int shopId;
     
     private int numOfOrders;
 
@@ -36,7 +36,7 @@ public class Item {
         this.name = name;
         this.category = category;
         this.price = price;
-        this.shopId = shopId;
+        // this.shopId = shopId;
         this.description = description;
         this.quantity = 0;
         this.numOfOrders = 0;
@@ -86,9 +86,9 @@ public class Item {
     public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-    public int getShopId() {
-        return shopId;
-    }
+    // public int getShopId() {
+    //     return shopId;
+    // }
     public double getPrice() {
         return price;
     }
@@ -131,7 +131,7 @@ public class Item {
                 ", category=" + category +
                 ", price=" + price +
                 ", quantity=" + quantity +
-                ", shopId=" + shopId +
+                // ", shopId=" + shopId +
                 ", id=" + id +
                 ", rating=" + getRating() +
                 ", numOfOrders=" + numOfOrders +

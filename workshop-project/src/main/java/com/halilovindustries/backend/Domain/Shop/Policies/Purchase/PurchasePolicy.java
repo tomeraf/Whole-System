@@ -29,25 +29,28 @@ import jakarta.persistence.OneToMany;
 @Entity
 public class PurchasePolicy {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int shopId;
+    private int id;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "purchase_types", joinColumns = @JoinColumn(name = "policy_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "purchase_type")
     private List<PurchaseType> purchaseTypes;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @MapKeyColumn(name = "condition_id")
-    private Map<Integer,Condition> purchaseConditions;
+    
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "policy_id", referencedColumnName = "id")
+    private List<Condition> purchaseConditions;
 
 
-    public PurchasePolicy() {
+    public PurchasePolicy() {//Default constructor for JPA
+    }
+    public PurchasePolicy(int id) {
+        this.id = id;
         this.purchaseTypes = new ArrayList<>();
         this.purchaseTypes.add(PurchaseType.BID);
         this.purchaseTypes.add(PurchaseType.AUCTION);
         this.purchaseTypes.add(PurchaseType.IMMEDIATE);
-        this.purchaseConditions = new HashMap<>();
+        this.purchaseConditions = new ArrayList<>();
     }
     public void updatePurchaseType(PurchaseType purchaseType){
         if (this.purchaseTypes.contains(purchaseType)) {
@@ -67,18 +70,22 @@ public class PurchasePolicy {
     }
     public void addCondition(ConditionDTO condition) {
         Condition newCondition = DTOtoDomainFactory.convertDTO(condition);
-        if (this.purchaseConditions.keySet().contains(newCondition.getId())) {
-            throw new IllegalArgumentException("Error: condition already exists.");
-        } else {
-            this.purchaseConditions.put(newCondition.getId(), newCondition);
+        if (this.purchaseConditions.stream().anyMatch(c -> c.getId().equals(newCondition.getId()))) {
+            throw new IllegalArgumentException("Error: condition with this ID already exists.");
         }
+        else{
+            this.purchaseConditions.add(newCondition);
+        }
+
     }
-    public void removeCondition(int conditionID) {
-        if (this.purchaseConditions.keySet().contains(conditionID)) {
-            this.purchaseConditions.remove(conditionID);
-        } else {
-            throw new IllegalArgumentException("Error: condition does not exist.");
-        }
+    public void removeCondition(String conditionID) {
+        this.purchaseConditions.stream()
+                .filter(condition -> condition.getId().equals(conditionID))
+                .findFirst()
+                .ifPresentOrElse(
+                        condition -> this.purchaseConditions.remove(condition),
+                        () -> { throw new IllegalArgumentException("Error: condition does not exist."); }
+                );
         
     }
     
@@ -87,7 +94,7 @@ public class PurchasePolicy {
         {
             throw new IllegalArgumentException("Error: immediate purchase type not allowed.");
         }
-        for (Condition condition : this.purchaseConditions.values()) {
+        for (Condition condition : this.purchaseConditions) {
             if (!condition.checkCondition(items)) {
                 throw new IllegalArgumentException("Error:"+condition.toString()+" ,not met.");
             }
@@ -95,7 +102,7 @@ public class PurchasePolicy {
         return true;
     }
     public List<ConditionDTO> getConditions() {
-        return purchaseConditions.values().stream()
+        return purchaseConditions.stream()
                 .map(condition -> {ConditionDTO con=new ConditionDTO(condition.getConditionType(),condition.getItemId(),condition.getCategory(),condition.getConditionLimits(),condition.getMinPrice(),condition.getMaxPrice(),condition.getMinQuantity(),condition.getMaxQuantity(),condition.getConditionLimits2(),condition.getItemId2(),condition.getMinPrice2(),condition.getMaxPrice2(),condition.getMinQuantity2(),condition.getMaxQuantity2(),condition.getCategory2());
                 con.setId(condition.getId());
                 return con;})
@@ -104,7 +111,7 @@ public class PurchasePolicy {
     public List<PurchaseType> getPurchaseTypes() {
         return purchaseTypes;
     }
-    public int getShopId() {
-        return shopId;
+    public int getId() {
+        return id;
     }
 }

@@ -29,7 +29,6 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 @Entity
 public class DiscountPolicy {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "discount_types", joinColumns = @JoinColumn(name = "policy_id"))
@@ -39,7 +38,14 @@ public class DiscountPolicy {
     @OneToOne(cascade= CascadeType.ALL, fetch = FetchType.EAGER)
     private CombinedDiscount discounts;
     
-    public DiscountPolicy() {
+    public DiscountPolicy() {// Default constructor for JPA
+        this.discountTypes = new ArrayList<>();
+        this.discountTypes.add(DiscountType.BASE);
+        this.discountTypes.add(DiscountType.CONDITIONAL);
+        this.discounts = new CombinedDiscount();
+    }
+    public DiscountPolicy(int id) {
+        this.id = id;
         this.discountTypes = new ArrayList<>();
         this.discountTypes.add(DiscountType.BASE);
         this.discountTypes.add(DiscountType.CONDITIONAL);
@@ -70,19 +76,19 @@ public class DiscountPolicy {
         }
         
     }
-    public void removeDiscount(int discountId) {
+    public void removeDiscount(String discountId) {
         discounts.removeDiscount(discountId);
     }
     public double calculateDiscount(HashMap<Item, Integer> allItems) {
         return discounts.calculateDiscount(allItems);
     }
-    public List<Integer> getDiscountIds() {
+    public List<String> getDiscountIds() {
         return discounts.getIds();
     }
     public List<DiscountDTO> getDiscounts() {
-        return discounts.getDiscountsList().stream().map(discount->{
+        return discounts.getDiscounts().stream().map(discount->{
         DiscountDTO dis=new DiscountDTO(discount.getDiscountKind(),discount.getItemId(),discount.getCategory(),discount.getPercentage(),discount.getCondition(),discount.getItemId2(),discount.getCategory2(),discount.getPercentage2(),discount.getCondition2(),discount.getDiscountType(),discount.getDiscountType2());
-        dis.setId(discount.getDiscountId());
+        dis.setId(discount.getId());
         return dis;
     }).toList();  
     }

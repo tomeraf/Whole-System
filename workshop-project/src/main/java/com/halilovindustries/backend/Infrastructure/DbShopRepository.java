@@ -50,5 +50,9 @@ public class DbShopRepository implements IShopRepository {
     public List<Shop> getUserShops(int userId) {
         return jpaShopRepository.findByUserId(userId);
     }
+    @Override
+    public int getNextId() {
+        return jpaShopRepository.getNextId()+1;
+    }
 
 }

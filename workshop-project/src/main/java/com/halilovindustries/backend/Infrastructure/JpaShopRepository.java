@@ -8,10 +8,12 @@ import org.springframework.data.repository.query.Param;
 
 import com.halilovindustries.backend.Domain.Shop.Shop;
 
-public interface JpaShopRepository extends JpaRepository<Shop, Integer> {
+public interface JpaShopRepository extends JpaRepository<Shop, Integer>{
     @Query("SELECT s FROM Shop s WHERE s.name = :name")
     Shop findByName(@Param("name") String name);
     @Query("SELECT s FROM Shop s WHERE :userId IN elements(s.ownerIDs) OR :userId IN elements(s.managerIDs)")
     List<Shop> findByUserId(@Param("userId") int userId);
+    @Query("SELECT COALESCE(MAX(s.id), -1) FROM Shop s")
+    int getNextId();
     
 }

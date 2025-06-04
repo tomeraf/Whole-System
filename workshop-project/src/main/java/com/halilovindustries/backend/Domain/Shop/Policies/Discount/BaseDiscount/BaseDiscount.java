@@ -8,6 +8,8 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,14 +17,18 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "base_type", discriminatorType = jakarta.persistence.DiscriminatorType.STRING)
+@DiscriminatorValue("BASE")
 public class BaseDiscount extends Discount {
     private int percentage;
     private int itemId;
     @Enumerated(EnumType.STRING)
     private Category category;
 
-        public BaseDiscount(int percentage,Category category,int itemId) {
+    public BaseDiscount() {// Default constructor for JPA
+    }
+    public BaseDiscount(int percentage,Category category,int itemId) {
         this(percentage);
         if(itemId != -1&& category != null){
             throw new IllegalArgumentException("Cannot have both itemId and category");
