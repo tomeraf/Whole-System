@@ -2,6 +2,7 @@ package com.halilovindustries.backend.Infrastructure;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -53,14 +54,18 @@ public class RealPayment implements IPayment {
             String encodedForm = encodeFormData(formData);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(API_URL))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
-                    .build();
+                .uri(URI.create(API_URL))
+                .timeout(Duration.ofSeconds(3))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
+                .build();
 
             HttpClient client = HttpClient.newHttpClient();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() != 200) {
+                throw new IllegalStateException("External system error: status code = " + response.statusCode());
+            }
             int transactionId = Integer.parseInt(response.body().trim());
             if (transactionId == -1) {
                 return null; // Negative transaction ID indicates failure
@@ -85,10 +90,11 @@ public class RealPayment implements IPayment {
             String encodedForm = encodeFormData(formData);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(API_URL))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
-                    .build();
+                .uri(URI.create(API_URL))
+                .timeout(Duration.ofSeconds(3))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
+                .build();
 
             HttpClient client = HttpClient.newHttpClient();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
