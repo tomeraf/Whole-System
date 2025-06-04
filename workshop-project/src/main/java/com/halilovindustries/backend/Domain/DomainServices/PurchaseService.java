@@ -58,17 +58,11 @@ public class PurchaseService {
             }
         }
         List<ItemDTO> itemsList = new ArrayList<>();
-        for(Shop shop : itemsToBuy.keySet()) {
-            itemsList.addAll(checkCartContent(user, List.of(shop)));
-        }
         double total = 0.0;
 
         for(Shop shop : itemsToBuy.keySet()) {
             HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
             total=+shop.purchaseBasket(itemsMap);
-        }
-        for(Shop shop : itemsToBuy.keySet()) {
-            HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
             for(Integer itemId : itemsMap.keySet()) {
                 Item item = shop.getItem(itemId);
                 itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), itemId, itemsMap.get(itemId), item.getRating(), item.getDescription(), item.getNumOfOrders()));
