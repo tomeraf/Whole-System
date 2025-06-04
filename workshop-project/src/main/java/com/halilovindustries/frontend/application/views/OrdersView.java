@@ -39,7 +39,7 @@ public class OrdersView extends VerticalLayout {
 
         // Grid setup: use getId() and getTotalPrice()
         grid = new Grid<>(Order.class, false);
-        grid.addColumn(Order::getId)
+        grid.addColumn(Order::getOrderID)
             .setHeader("Order #").setAutoWidth(true);
         grid.addColumn(Order::getTotalPrice)
             .setHeader("Total Price").setAutoWidth(true);
@@ -75,8 +75,8 @@ public class OrdersView extends VerticalLayout {
         dialog.setWidth("400px");
         VerticalLayout layout = new VerticalLayout();
 
-        layout.add(new H3("Order #" + order.getId()));
-        layout.add(new Paragraph("Placed by User: " + order.getUserID()));
+        layout.add(new H3("Order #" + order.getOrderID()));
+        layout.add(new Paragraph("Placed by User: " + order.getUserId()));
         layout.add(new Paragraph("Total: $" + order.getTotalPrice()));
 
         for (ItemDTO item : order.getItems()) {
