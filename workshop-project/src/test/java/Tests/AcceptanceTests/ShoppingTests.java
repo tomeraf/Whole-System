@@ -261,7 +261,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void successfulBuyCartContentTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -316,13 +316,13 @@ public class ShoppingTests extends BaseAcceptanceTests {
         verify(payment, atLeastOnce()).validatePaymentDetails(p); // validatePaymentDetails should be called at least once
         verify(payment).processPayment(1.0, p);
         verify(shipment, atLeastOnce()).validateShipmentDetails(s); // validateShipmentDetails should be called at least once
-        verify(shipment).processShipment(0.1, s);
+        verify(shipment).processShipment(s);
     }
 
     @Test
     public void BuyCartContentTest_paymentFails() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -356,7 +356,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void BuyCartContentTest_shipmentFails() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -481,7 +481,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void rateShopTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -525,7 +525,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     // @Test
     // public void itemUnavailableForPurchaseTest() {
     //     PaymentDetailsDTO p = new PaymentDetailsDTO(
-    //         "1234567890123456", "Some Name", "1","12/25", "123"
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
     //     );
     //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -601,7 +601,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void concurrentSingleStockCartPurchaseTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -656,7 +656,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void auctionFlowSuccessTest() throws InterruptedException {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -707,7 +707,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void sumbitAuctionOfferBeforeAuctionStartsShouldFailTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -737,7 +737,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void purchaseAuctionOfferBeforeAuctionEndsShouldFailTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -774,7 +774,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void anotherUserCannotPurchaseWonAuctionTest() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
@@ -812,13 +812,12 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void concurrentPurchaseSameItem() throws InterruptedException {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-
-        when(payment.validatePaymentDetails(p)).thenReturn(true);
-        when(shipment.validateShipmentDetails(s)).thenReturn(true);
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
         for (int i = 0; i < 10; i++) {
             // 1) Owner creates shop with exactly 1 unit of “Apple”
             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
@@ -873,7 +872,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void concurrentRemoveAndPurchase() throws InterruptedException {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         

@@ -20,9 +20,12 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemDTO> items = new ArrayList<>();
 
+    private int paymentId;
+    private int shipmentId;
+
     public Order(){}
 
-    public Order(int userId, double totalPrice, List<ItemDTO> items) {
+    public Order(int userId, double totalPrice, List<ItemDTO> items, int paymentId, int shipmentId) {
         this.userId = userId;
         this.totalPrice = totalPrice;
         for (ItemDTO item : items) {
@@ -30,6 +33,8 @@ public class Order {
 
         }
         this.setItems(items);
+        this.paymentId = paymentId;
+        this.shipmentId = shipmentId;
     }
 
     public List<ItemDTO> getShopItems(int shopId) {
@@ -47,6 +52,8 @@ public class Order {
                 "Order ID: " + orderID +
                         "\nUserId: " + userId +
                         "\nTotal Price: " + totalPrice +
+                        "\nPayment ID: " + paymentId +
+                        "\nShipment ID: " + shipmentId +
                         "\nItems:\n"
         );
 
@@ -84,6 +91,14 @@ public class Order {
         return items;
     }
 
+    public int getPaymentId() {
+        return paymentId;
+    }
+
+    public int getShipmentId() {
+        return shipmentId;
+    }
+    
     public void setId(Integer id) {
         this.orderID = id;
     }

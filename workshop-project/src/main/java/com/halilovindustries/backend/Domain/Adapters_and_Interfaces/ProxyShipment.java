@@ -8,12 +8,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Primary
 public class ProxyShipment implements IShipment {
-    /*private final ShipmentDetailsDTO details;
-    public ProxyShipment() {
-        this.details = details;
-      }
-
-     */
 
     // This method checks if the shipment details are valid
     @Override
@@ -23,13 +17,13 @@ public class ProxyShipment implements IShipment {
 
     // This method processes the shipment and returns a shipment ID if successful
     @Override
-    public boolean processShipment(double price, ShipmentDetailsDTO details) {
+    public Integer processShipment(ShipmentDetailsDTO details) {
+        return 0;
+    }
+
+    // This method cancels a shipment based on the transaction ID
+    @Override
+    public boolean cancelShipment(int transactionId) {
         return true;
     }
-    /*
-    @Override
-    public ShipmentDetailsDTO getShipmentDetails() {
-        return null;
-    }
-    */
 }

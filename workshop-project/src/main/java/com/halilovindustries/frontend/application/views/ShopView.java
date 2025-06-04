@@ -536,8 +536,8 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                         cardNumber.getValue(),
                         cardHolderName.getValue(),
                         holderId.getValue(),
-                        expMonth.getValue() + "/" + expYear.getValue(),
-                        cvv.getValue()
+                        cvv.getValue(),
+                        expMonth.getValue(), expYear.getValue()
                     );
 
                     shopPresenter.purchaseAuctionItem(shopID, auction.getId(), payDto, shipDto, order -> {
