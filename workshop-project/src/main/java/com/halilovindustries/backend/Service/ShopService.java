@@ -748,7 +748,7 @@ public class ShopService {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopID);
-                managementService.removeAppointment(user, shop, appointee, userRepository);
+                managementService.removeAppointment(user, shop, appointee);
                 
                 notificationHandler.notifyUser(appointee.getUserID() + "",
                         "You no longer have your role in shop: " + shop.getName());
