@@ -616,6 +616,12 @@ public class ShopService {
             }
             Shop shop = shopRepository.getShopById(shopId);
             interactionService.sendMessage(user, shop, title, content);
+            for (int reciverId : shop.getOwnerIDs()) {
+                notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
+            }
+            for (int reciverId : shop.getManagerIDs()) {
+                notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
+            }
             logger.info(() -> "Message sent: " + title + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok();
         } catch (Exception e) {
@@ -745,7 +751,7 @@ public class ShopService {
                 managementService.removeAppointment(user, shop, appointee, userRepository);
                 
                 notificationHandler.notifyUser(appointee.getUserID() + "",
-                        "You no longer have your role in shop:" + shop.getName());
+                        "You no longer have your role in shop: " + shop.getName());
             } catch (Exception e) {
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());

@@ -136,7 +136,6 @@ public class PurchaseService {
         itemsToShip.put(shop.getId(), itemsList);
         payment.processPayment(offer.getValue(), paymentDetails);
         shipment.processShipment(offer.getValue()*0.1, shipmentDetails);
-        shop.updateItemQuantity(item.getId(), item.getQuantity()-1);
         Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip);
         return order;
     }
