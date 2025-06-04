@@ -29,14 +29,6 @@ public class MemoryUserRepository implements IUserRepository {
         users.put(user.getUserID(), user); // Add the user to the list 
     }
     public void saveUser(Registered user) {
-        if (users.containsKey(user.getUserID())) {
-            throw new RuntimeException("User already exists");
-        }
-        
-        if (getUserByName(user.getUsername()) != null) {
-            throw new RuntimeException("Username already exists");
-        }
-
         users.put(user.getUserID(), user); // Add the user to the list 
     }
 
@@ -107,6 +99,15 @@ public class MemoryUserRepository implements IUserRepository {
     }
     @Override
     public List<IRole> getAppointmentsOfUserInShop(int appointerId, int shopId) {
-        throw new UnsupportedOperationException("Unimplemented method 'getAppointmentsOfUserInShop'");
+        List<IRole> appointments = new ArrayList<>();
+        for (Guest user : users.values()) {
+            if (user instanceof Registered) {
+                Registered registeredUser = (Registered) user;
+                if (registeredUser.getUserID() == appointerId) {
+                    appointments.addAll(registeredUser.getAppointments(shopId).values());
+                }
+            }
+        }
+        return appointments;
     }
 }

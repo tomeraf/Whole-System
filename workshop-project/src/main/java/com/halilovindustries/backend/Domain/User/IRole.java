@@ -73,7 +73,7 @@ public abstract class IRole {
     }
 
     
-    abstract Map<Integer, IRole> getAppointments(); // Returns a list of all the appointments the role has made  
+    public abstract Map<Integer, IRole> getAppointments(); // Returns a list of all the appointments the role has made  
     public int getShopID() {
         return shopID;
     }
