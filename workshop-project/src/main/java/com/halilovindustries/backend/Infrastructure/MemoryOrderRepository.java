@@ -40,13 +40,11 @@ public class MemoryOrderRepository implements IOrderRepository {
     }
 
     @Override
-    public List<ItemDTO> getOrdersByShopId(int shopId) {
-        List<ItemDTO> orderList = new ArrayList<>();
+    public List<Order> getOrdersByShopId(int shopId) {
+        List<Order> orderList = new ArrayList<>();
         for (Order order : orders.values()) {
-            List<ItemDTO> items = order.getShopItems(shopId);
-            if (items != null) {
-                orderList.addAll(items);
-            }
+            if(!order.getShopItems(shopId).isEmpty())
+                orderList.add(order);
         }
         return orderList;
     }
