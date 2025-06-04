@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.stereotype.Repository;
 
 import com.halilovindustries.backend.Domain.User.Guest;
+import com.halilovindustries.backend.Domain.User.IRole;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
@@ -103,5 +104,9 @@ public class MemoryUserRepository implements IUserRepository {
             }
         }
         return registeredUsers;
+    }
+    @Override
+    public List<IRole> getAppointmentsOfUserInShop(int appointerId, int shopId) {
+        throw new UnsupportedOperationException("Unimplemented method 'getAppointmentsOfUserInShop'");
     }
 }

@@ -3,7 +3,6 @@ package com.halilovindustries.backend.Domain.Repositories;
 import com.halilovindustries.backend.Domain.User.*;
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -20,4 +19,5 @@ public interface IUserRepository {
     List<Registered> getAllRegisteredUsers();
 
     List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission);
+    List<IRole> getAppointmentsOfUserInShop(int appointerId, int shopId);
 }

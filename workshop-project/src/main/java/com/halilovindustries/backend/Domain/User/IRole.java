@@ -52,8 +52,8 @@ public abstract class IRole {
             idsToRemove.addAll(role.removeAllAppointments());
             Registered registered = role.getUser();
             registered.removeRoleFromShop(role.getShopID());
-            setUser(null);
         }
+        
         appointments.clear();
         return idsToRemove;
     }
@@ -84,6 +84,9 @@ public abstract class IRole {
     abstract List<Permission> getPermissions();
     public Registered getUser() {
         return user;
+    }
+    public void setAppointments(List<IRole> appointments) {
+        this.appointments = appointments;
     }
     
 }

@@ -724,15 +724,26 @@ public class ShopService {
                 }
                 int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
                 Registered user = (Registered) this.userRepository.getUserById(userID);
+                
+                List<IRole> appointedRoles = userRepository.getAppointmentsOfUserInShop(userID, shopID);
+                IRole roleInShop = user.getRoleInShop(shopID);
+                roleInShop.setAppointments(appointedRoles);
+
                 if (user.isSuspended()) {
                     return Response.error("User is suspended");
                 }
                 Registered appointee = userRepository.getUserByName(appointeeName);
+
+                appointedRoles = userRepository.getAppointmentsOfUserInShop(appointee.getUserID(), shopID);
+                roleInShop = appointee.getRoleInShop(shopID);
+                roleInShop.setAppointments(appointedRoles);
+                
                 if (appointee.isSuspended()) {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopID);
-                managementService.removeAppointment(user, shop, appointee);
+                managementService.removeAppointment(user, shop, appointee, userRepository);
+                
                 notificationHandler.notifyUser(appointee.getUserID() + "",
                         "You no longer have your role in shop:" + shop.getName());
             } catch (Exception e) {

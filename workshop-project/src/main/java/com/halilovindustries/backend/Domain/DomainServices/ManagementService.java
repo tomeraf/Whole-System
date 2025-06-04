@@ -8,6 +8,7 @@ import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
@@ -45,10 +46,10 @@ public class ManagementService {
         shop.addOwner(appointee.getUserID());
     }
 
-    public void removeAppointment(Registered appointer, Shop shop, Registered userToRemove) {
+    public void removeAppointment(Registered appointer, Shop shop, Registered userToRemove, IUserRepository userRepository) {
         List<Integer> idsToRemove = appointer.removeAppointment(shop.getId(), userToRemove.getUserID());
         shop.removeAppointment(idsToRemove);
-    }
+        userRepository.saveUser(userToRemove);    }
 
     public void addManager(Registered appointer, Shop shop, Registered appointee, Set<Permission> permission) {
         Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
