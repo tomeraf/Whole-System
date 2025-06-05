@@ -71,7 +71,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testDiscountAppliedToBasket_ShouldSucceed() {
         // Arrange
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
@@ -102,7 +102,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testMaxDiscountAppliedToBasket_ShouldSucceed(){
         // Arrange
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
@@ -133,7 +133,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testCombinedDiscountAppliedToBasket_ShouldSucceed(){
         // Arrange
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
@@ -243,7 +243,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
     public void testPurchaseConditionBlocksPurchase_ShouldSucceed(){
         // Arrange
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");

@@ -3,6 +3,7 @@ package com.halilovindustries.frontend.application.presenters;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
@@ -133,6 +134,32 @@ public class ShopPresenter extends AbstractPresenter {
             }
             else {
                     Notification.show("Bid item purchased successfully!", 2000, Position.MIDDLE);
+                    onFinish.accept(true);
+            }
+            });
+        });
+    }
+
+    
+    public void answerOnCounterBid(int shopId, int bidId, boolean accept, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = orderService.answerOnCounterBid(token, shopId, bidId, accept);
+            if (!response.isOk()) {
+                Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            else {
+                    Notification.show("Answered On Counter Bid successfully!", 2000, Position.MIDDLE);
                     onFinish.accept(true);
             }
             });
@@ -294,6 +321,27 @@ public class ShopPresenter extends AbstractPresenter {
                 }
 
                 Response<List<AuctionDTO>> resp = shopService.getWonAuctions(token, shopId);
+                if (!resp.isOk()) {
+                    Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                } else {
+                    onFinish.accept(resp.getData());
+                }
+            });
+        });
+    }
+
+    public void getUserBids(int shopId, Consumer<List<BidDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Position.MIDDLE);
+                    return;
+                }
+
+                Response<List<BidDTO>> resp = shopService.getUserBids(token, shopId);
                 if (!resp.isOk()) {
                     Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 } else {

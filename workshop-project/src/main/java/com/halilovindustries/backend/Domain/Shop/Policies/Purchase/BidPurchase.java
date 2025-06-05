@@ -13,6 +13,7 @@ public class BidPurchase extends Purchase {
     private int isAccepted = 0; // 0 = not accepted , 1 = accepted , -1 = rejected 
     private int CounterBidID=-1;
     boolean done=false;
+    private double counterAmount = -1;
 
     public BidPurchase(int id,double bidAmount, int itemId, int buyerID,int submitterID) {
         super(id, bidAmount, itemId, buyerID);
@@ -68,6 +69,7 @@ public class BidPurchase extends Purchase {
         }
         BidPurchase counterBid = new BidPurchase(counterID, offerAmount, getItemId(),getBuyerId(), submitterId);
         counterBid.setCounterBidID(counterID);
+        counterBid.counterAmount = offerAmount;
         return counterBid;
     }
     private void setCounterBidID(int counterID) {
@@ -108,6 +110,7 @@ public class BidPurchase extends Purchase {
     public boolean isDone() {
         return done;
     }
-
-
+    public double getCounterAmount() {
+        return counterAmount;
+    }
 }

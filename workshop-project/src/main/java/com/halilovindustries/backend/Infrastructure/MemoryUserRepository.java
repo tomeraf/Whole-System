@@ -91,9 +91,15 @@ public class MemoryUserRepository implements IUserRepository {
     public List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission) {
         List<Integer> registeredUsers = new ArrayList<>();
         for (Guest user : users.values()) {
-            if (user instanceof Registered && ((Registered) user).hasPermission(shopID, permission)) {
-                registeredUsers.add(user.getUserID());
+            try {
+                if (user instanceof Registered && ((Registered) user).hasPermission(shopID, permission)) {
+                    registeredUsers.add(user.getUserID());
+                }
             }
+            catch (Exception e) {
+                // Handle the case where the user does not have a role in the shop
+                // or any other exception that might occur            
+                }
         }
         return registeredUsers;
     }

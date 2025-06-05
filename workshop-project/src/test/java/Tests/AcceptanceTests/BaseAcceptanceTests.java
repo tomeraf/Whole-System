@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSystems;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
@@ -41,6 +42,7 @@ public abstract class BaseAcceptanceTests {
     protected IAuthentication jwtAdapter;
     protected IShipment shipment;
     protected IPayment payment;
+    protected IExternalSystems externalSystems;
     protected INotifier notifier;
     protected UserService userService;
     protected ShopService shopService;
@@ -102,13 +104,15 @@ public abstract class BaseAcceptanceTests {
         concurrencyHandler = new ConcurrencyHandler();
         shipment         = mock(IShipment.class);
         payment          = mock(IPayment.class);
+        externalSystems  = mock(IExternalSystems.class);
         notifier         =new VaadinNotifier();
         notificationHandler = new NotificationHandler(notificationRepository,notifier);
 
 
+
         userService  = new UserService(userRepository, jwtAdapter, concurrencyHandler, notificationHandler);
         shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler,notificationHandler);
-        orderService = new OrderService(userRepository, shopRepository, orderRepository,jwtAdapter, payment, shipment, concurrencyHandler, notificationHandler);
-        fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, payment, shipment);
+        orderService = new OrderService(userRepository, shopRepository, orderRepository,jwtAdapter, payment, shipment, concurrencyHandler, notificationHandler, externalSystems);
+        fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, payment, shipment, externalSystems);
     }
 }

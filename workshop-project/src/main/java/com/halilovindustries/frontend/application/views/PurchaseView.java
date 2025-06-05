@@ -138,8 +138,8 @@ public class PurchaseView extends VerticalLayout {
                         cardNumber.getValue(),
                         cardHolderName.getValue(),
                         holderId.getValue(),
-                        expMonth.getValue() + "/" + expYear.getValue(),
-                        cvv.getValue()
+                        cvv.getValue(),
+                        expMonth.getValue(), expYear.getValue()
                     );
 
                     // hand off to the presenter

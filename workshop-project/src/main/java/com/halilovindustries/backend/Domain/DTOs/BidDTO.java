@@ -13,8 +13,9 @@ public class BidDTO {
     private int isAccepted = 0; // 0 = not accepted , 1 = accepted , -1 = rejected
     private int counterBidId = -1;
     private boolean done;
+    private double counterAmount = -1;
 
-    public BidDTO(int id, double amount, int itemId, int buyerId, int submitterId, List<Integer> acceptingMembers, int rejecterId, int isAccepted, int counterBidId, boolean done) {
+    public BidDTO(int id, double amount, int itemId, int buyerId, int submitterId, List<Integer> acceptingMembers, int rejecterId, int isAccepted, int counterBidId, boolean done, double counterAmount) {
         this.id = id;
         this.amount = amount;
         this.itemId = itemId;
@@ -25,6 +26,7 @@ public class BidDTO {
         this.isAccepted = isAccepted;
         this.counterBidId = counterBidId;
         this.done = done;
+        this.counterAmount = counterAmount;
     }
 
     public int getId() {
@@ -59,6 +61,10 @@ public class BidDTO {
     }
     public boolean isDone() {
         return done;
+    }
+
+    public double getCounterAmount() {
+        return counterAmount;
     }
     
 

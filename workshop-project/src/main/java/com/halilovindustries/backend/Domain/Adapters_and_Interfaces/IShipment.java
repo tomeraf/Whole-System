@@ -4,11 +4,9 @@ import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 
 public interface IShipment {
 
-    // checking if the shipment details are valid
     boolean validateShipmentDetails(ShipmentDetailsDTO details);
 
-    // return the transactionId for good shipment; return null for bad shipment
-    boolean processShipment(double price,ShipmentDetailsDTO details);
+    Integer processShipment(ShipmentDetailsDTO details);
 
-    //ShipmentDetailsDTO getShipmentDetails();
+    boolean cancelShipment(int transactionId);
 }

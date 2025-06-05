@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSystems;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
@@ -30,12 +31,14 @@ public class AcceptanceTestFixtures {
     private final OrderService orderService;
     private final IPayment payment;
     private final IShipment shipment;
+    private final IExternalSystems externalSystems;
 
     public AcceptanceTestFixtures(UserService userService,
                                   ShopService shopService,
                                   OrderService orderService,
                                   IPayment payment,
-                                  IShipment shipment) {
+                                  IShipment shipment, IExternalSystems externalSystems) {
+        this.externalSystems = externalSystems;
         this.userService  = userService;
         this.shopService  = shopService;
         this.orderService = orderService;
@@ -200,19 +203,24 @@ public class AcceptanceTestFixtures {
 
     public void mockPositivePayment(PaymentDetailsDTO details) {
         when(payment.validatePaymentDetails(details)).thenReturn(true);
-        when(payment.processPayment(1.0, details)).thenReturn(true);
+        when(payment.processPayment(1.0, details)).thenReturn(12345); // or any valid transaction ID
+        when(externalSystems.handshake()).thenReturn(true);
     }
+
     public void mockPositiveShipment(ShipmentDetailsDTO details) {
         when(shipment.validateShipmentDetails(details)).thenReturn(true);
-        when(shipment.processShipment(0.1, details)).thenReturn(true);
+        when(shipment.processShipment(details)).thenReturn(67890); // or any valid transaction ID
     }
+
     public void mockNegativePayment(PaymentDetailsDTO details) {
         when(payment.validatePaymentDetails(details)).thenReturn(false);
-        when(payment.processPayment(1.0, details)).thenReturn(false);
+        when(payment.processPayment(1.0, details)).thenReturn(null); // null = failure
+        when(externalSystems.handshake()).thenReturn(false);
     }
+
     public void mockNegativeShipment(ShipmentDetailsDTO details) {
         when(shipment.validateShipmentDetails(details)).thenReturn(false);
-        when(shipment.processShipment(0.1, details)).thenReturn(false);
+        when(shipment.processShipment(details)).thenReturn(null); // null = failure
     }
 }
 
