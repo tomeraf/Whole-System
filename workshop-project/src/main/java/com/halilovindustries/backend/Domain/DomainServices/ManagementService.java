@@ -48,7 +48,7 @@ public class ManagementService {
     public void removeAppointment(Registered appointer, Shop shop, Registered userToRemove) {
         List<Integer> idsToRemove = appointer.removeAppointment(shop.getId(), userToRemove.getUserID());
         shop.removeAppointment(idsToRemove);
-    }
+        }
 
     public void addManager(Registered appointer, Shop shop, Registered appointee, Set<Permission> permission) {
         Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);

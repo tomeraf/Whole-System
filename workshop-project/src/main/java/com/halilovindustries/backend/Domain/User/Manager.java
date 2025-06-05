@@ -1,21 +1,34 @@
 package com.halilovindustries.backend.Domain.User;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.persistence.*;
+
+@Entity 
+@DiscriminatorValue("MANAGER")
 public class Manager extends IRole {
-    private Set<Permission> permission; //hashSet-to prevents duplication
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    private Set<Permission> permission= Set.of(); //hashSet-to prevents duplication
 
     public Manager(int appointerID, int shopID, Set<Permission> permission) {
         this.appointerID = appointerID;
         this.shopID = shopID;
         this.permission = permission;
-        this.appointments = new HashMap<>();
+        this.appointments = new ArrayList<>();
+    }
+
+    public Manager() {
+        super();
+        this.appointments = new ArrayList<>();
     }
     @Override
-    public void addOwner(int nomineeID, IRole role)  {
+    public void addOwner(IRole role)  {
         throw new IllegalArgumentException("Menager can not appoint owner");
     }
 
@@ -39,7 +52,8 @@ public class Manager extends IRole {
     @Override
     public Map<Integer, IRole> getAppointments() {
         // no implementation needed for manager
-        return appointments;
+        Map<Integer, IRole> appointmentMap = new HashMap<>();
+        return appointmentMap;
     }
 
     public List<Permission> getPermissions() {

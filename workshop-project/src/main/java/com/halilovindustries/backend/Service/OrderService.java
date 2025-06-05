@@ -1,5 +1,6 @@
 package com.halilovindustries.backend.Service;
 
+import java.beans.Transient;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,6 +21,9 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Shop.*;
 
 import com.halilovindustries.backend.Domain.User.ShoppingBasket;
+
+import jakarta.transaction.Transactional;
+
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSystems;
@@ -36,8 +40,6 @@ import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -81,13 +83,13 @@ public class OrderService {
                 throw new Exception("User not logged in");
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-
+            
             Guest guest = userRepository.getUserById(userID);
             List<Shop> shops= shopRepository.getAllShops().values().stream().filter(shop ->guest.getCart().getShopIDs().contains(shop.getId())).collect(Collectors.toList());
             List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest,shops);
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
-        }
+        } 
         catch (Exception e) {
             logger.error(() -> "Error viewing cart: " + e.getMessage());
             return Response.error("Error viewing cart: " + e.getMessage());
@@ -98,7 +100,7 @@ public class OrderService {
      * Adds items to the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param itemID list of items to add
+     * @param itemDTOs list of items to add
      */
     // items = shopId, itemID
     @Transactional
@@ -117,7 +119,7 @@ public class OrderService {
             }
 
 
-
+            
             shopLock = ConcurrencyHandler.getShopReadLock(shopId);
             shopLock.lock();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
@@ -125,7 +127,7 @@ public class OrderService {
 
             logger.info(() -> "Items added to cart successfully");
             return Response.ok();
-        }
+        } 
         catch (Exception e) {
             logger.error(() -> "Error adding items to cart: " + e.getMessage());
             return Response.error("Error adding items to cart: " + e.getMessage());
@@ -141,11 +143,11 @@ public class OrderService {
      * Removes items from the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param userItems list of items to remove
+     * @param itemDTOs list of items to remove
      */
     // userItems = shopID, itemID
     @Transactional
-    public Response<Void> removeItemsFromCart(String sessionToken, HashMap<Integer, List<Integer>> userItems) {
+    public Response<Void> removeItemFromCart(String sessionToken, int shopId,int itemID) {
 
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -156,9 +158,9 @@ public class OrderService {
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
-            purchaseService.removeItemsFromCart(guest, userItems); // Save the updated cart to the repository
-
-
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            guest.getCart().deleteItem(shopId,itemID); // Remove items from the cart
+            
             logger.info(() -> "Items removed from cart successfully");
             return Response.ok();
         } catch (Exception e) {
@@ -176,7 +178,7 @@ public class OrderService {
     @Transactional
     public Response<Order> buyCartContent(String sessionToken, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
         List<Lock> acquiredLocks = new ArrayList<>();
-
+        
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
@@ -192,9 +194,9 @@ public class OrderService {
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
-
+            
             List<Pair<Integer, Integer>> locksToAcquire = new ArrayList<>();
-
+        
             // First add shops (with itemID = -1 to indicate shop lock)
             Set<Integer> shopIds = guest.getCart().getBaskets().stream()
                     .map(ShoppingBasket::getShopID)
@@ -213,8 +215,8 @@ public class OrderService {
 
             // Sort: shop locks first (itemID == -1), then by itemID
             locksToAcquire.sort(Comparator
-                    .comparing(Pair<Integer, Integer>::getKey)
-                    .thenComparing(Pair::getValue)
+                .comparing(Pair<Integer, Integer>::getKey)
+                .thenComparing(Pair::getValue)
             );
 
             // Lock all
@@ -234,16 +236,18 @@ public class OrderService {
             List<Shop> shops = new ArrayList<>();
             for (int i = 0; i < guest.getCart().getBaskets().size(); i++) {
                 int shopID = guest.getCart().getBaskets().get(i).getShopID();
-                Shop shop = shopRepository.getShopById(shopID);
-                shops.add(shop);
+                Shop shop = shopRepository.getShopById(shopID); // Get the shop by ID
+                shops.add(shop); // Add the shop to the list of shops
             }
-            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment, paymentDetails, shipmentDetails, externalSystems);
-            orderRepository.addOrder(order);
+
+            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getAllOrders().size(), paymentDetails, shipmentDetails, externalSystems); // Buy the cart content
+            orderRepository.addOrder(order); // Save the order to the repository
+
             notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
-            return Response.ok(order);
-        }
-
+            return Response.ok(order); 
+        } 
+        
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error(() -> "Thread interrupted during cart purchase");
@@ -267,13 +271,13 @@ public class OrderService {
      * @param itemID the item to bid on
      * @param offerPrice the bid amount
      */
-    @Transactional
+    @Transactional  
     public Response<Void> submitBidOffer(String sessionToken, int shopId, int itemID, double offerPrice) {
 
         Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
         ReentrantLock itemLock = ConcurrencyHandler.getItemLock(shopId, itemID);
 
-        shopRead.lock();
+        shopRead.lock();     
         try {
             itemLock.lockInterruptibly();
 
@@ -292,7 +296,7 @@ public class OrderService {
                 logger.info(() -> "Bid offer submitted successfully for item ID: " + itemID);
                 return Response.ok();
 
-            }
+            } 
             catch (Exception e) {
                 logger.error(() -> "Error submitting bid offer: " + e.getMessage());
                 return Response.error("Error submitting bid offer: " + e.getMessage());
@@ -300,7 +304,7 @@ public class OrderService {
             finally {
                 itemLock.unlock();
             }
-        }
+        } 
         catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             // handle interruption…
@@ -309,12 +313,12 @@ public class OrderService {
         }
         return null;
     }
-
+    
     /**
      * Answers on a counter bid.
      *
      * @param sessionToken current session token
-     * @param shopId the item to bid on
+     * @param itemID the item to bid on
      * @param accept whether to accept the counter bid
      */
     @Transactional
@@ -343,13 +347,13 @@ public class OrderService {
         }
     }
 
-    /**
+     /**
      * Retrieves the personal order history for the user.
      *
      * @param sessionToken current session token
      * @return list of past Orders, or null on error
      */
-    @Transactional
+@Transactional
     public Response<List<Order>> viewPersonalOrderHistory(String sessionToken) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -364,7 +368,6 @@ public class OrderService {
             return Response.error("Error viewing personal search history: " + e.getMessage());
         }
     }
-
     @Transactional
     public Response<Void> purchaseBidItem(String sessionToken,int shopId,int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
@@ -372,14 +375,16 @@ public class OrderService {
                 throw new Exception("User not logged in");
             }
             int userId = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Guest guest = userRepository.getUserById(userId);
+            Guest guest = userRepository.getUserById(userId); // Get the guest user by ID
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
-            Shop shop = shopRepository.getShopById(shopId);
-            Order order = purchaseService.purchaseBidItem(user,shop,bidId,payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
-            orderRepository.addOrder(order);
+
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
+            orderRepository.addOrder(order); // Save the order to the repository
+
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(bidId).getName() + " was purchased by " + user.getUsername()+"from bid");
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
@@ -388,33 +393,31 @@ public class OrderService {
             return Response.error("Error purchasing bid item: " + e.getMessage());
         }
     }
-
     @Transactional
     public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
 
-        try {
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User not logged in");
-            }
-            int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
-            if(guest.isSuspended()) {
-                throw new Exception("User is suspended");
-            }
-            Registered user = userRepository.getUserByName(guest.getUsername());
-            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
+            try {
+                if (!authenticationAdapter.validateToken(sessionToken)) {
+                    throw new Exception("User not logged in");
+                }
+                int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+                Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+                if(guest.isSuspended()) {
+                    throw new Exception("User is suspended");
+                }
+                Registered user = userRepository.getUserByName(guest.getUsername());
+                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+                purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
+    
+                logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
+                return Response.ok();
 
-            logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
-            return Response.ok();
-
-        }
-        catch (Exception e) {
-            logger.error(() -> "Error submitting auction offer: " + e.getMessage());
-            return Response.error("Error submitting auction offer: " + e.getMessage());
-        }
+            } 
+            catch (Exception e) {
+                logger.error(() -> "Error submitting auction offer: " + e.getMessage());
+                return Response.error("Error submitting auction offer: " + e.getMessage());
+            }
     }
-
     @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
@@ -428,7 +431,7 @@ public class OrderService {
             }
             Registered registered = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
+            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
             orderRepository.addOrder(order); // Save the order to the repository
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);

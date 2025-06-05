@@ -19,7 +19,7 @@ public class MemoryOrderRepository implements IOrderRepository {
 
     @Override
     public void addOrder(Order order) {
-        orders.put(order.getOrderID(), order);
+        orders.put(order.getId(), order);
     }
 
     @Override
@@ -44,18 +44,20 @@ public class MemoryOrderRepository implements IOrderRepository {
     }
 
     @Override
-    public List<Order> getOrdersByShopId(int shopId) {
-        List<Order> orderList = new ArrayList<>();
+    public List<ItemDTO> getOrdersByShopId(int shopId) {
+        List<ItemDTO> orderList = new ArrayList<>();
         for (Order order : orders.values()) {
-            if(!order.getShopItems(shopId).isEmpty())
-                orderList.add(order);
+            List<ItemDTO> items = order.getShopItems(shopId);
+            if (items != null) {
+                orderList.addAll(items);
+            }
         }
         return orderList;
     }
     public List<Order> getOrdersByCustomerId(int userID) {
         List<Order> orderList = new ArrayList<>();
         for (Order order : orders.values()) {
-            if (order.getUserId() == userID) {
+            if (order.getUserID() == userID) {
                 orderList.add(order);
             }
         }

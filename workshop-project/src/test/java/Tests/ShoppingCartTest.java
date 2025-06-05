@@ -9,6 +9,7 @@ import com.halilovindustries.backend.Domain.User.ShoppingCart;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 
@@ -95,7 +96,7 @@ class ShoppingCartTest {
 
     @Test
     void testGetItems_EmptyCart() {
-        HashMap<Integer, HashMap<Integer, Integer>> items = cart.getItems();
+        Map<Integer, Map<Integer, Integer>> items = cart.getItems();
         assertTrue(items.isEmpty());
     }
 

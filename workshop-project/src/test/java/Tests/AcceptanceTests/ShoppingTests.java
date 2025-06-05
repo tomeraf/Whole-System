@@ -305,7 +305,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertEquals(1, history.size(), "Exactly one order should exist for this buyer");
 
         Order recorded = history.get(0);
-        assertEquals(created.getOrderID(), recorded.getOrderID(), "Order IDs should match");
+        assertEquals(created.getId(), recorded.getId(), "Order IDs should match");
         assertEquals(1, recorded.getItems().size(), "Order must contain exactly one item");
         assertEquals(
             toBuy.getName(),
@@ -424,15 +424,11 @@ public class ShoppingTests extends BaseAcceptanceTests {
         HashMap<Integer, List<Integer>> itemMap1 = new HashMap<>();
         itemMap1.put(shop.getId(), List.of(shopItems.get(0).getItemID()));
 
-        HashMap<Integer, List<Integer>> userItems = new HashMap<>();
-        List<Integer> itemsToRemove = new ArrayList<>();
-        itemsToRemove.add(shopItems.get(0).getItemID());
-        userItems.put(shop.getId(), itemsToRemove);
-
         // 4) Remove the first item
-        Response<Void> removeResp = orderService.removeItemsFromCart(
-                guestToken,
-                userItems
+        Response<Void> removeResp = orderService.removeItemFromCart(
+            guestToken,
+            shop.getId(),
+            shopItems.get(0).getItemID()
         );
         assertTrue(removeResp.isOk(), "removeItemsFromCart should succeed");
 
