@@ -121,7 +121,8 @@ public class Shop {
             throw new IllegalArgumentException("Item name already exists or price cannot be negative.");
         } 
         else{
-            Item item = new Item(itemIdCounter,name, category, price, this.id, description);
+            int itemId = Integer.parseInt("" + this.id + itemIdCounter); //give itemId based on shop id and itemIdCounter
+            Item item = new Item(itemId,name, category, price, this.id, description);
             itemIdCounter++;
             items.add(item); 
             return item;
