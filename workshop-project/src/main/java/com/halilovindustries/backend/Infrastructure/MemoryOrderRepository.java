@@ -35,8 +35,8 @@ public class MemoryOrderRepository implements IOrderRepository {
     }
 
     @Override
-    public HashMap<Integer, Order> getAllOrders() {
-        return orders;
+    public List<Order> getAllOrders() {
+        return orders.values().stream().toList();
     }
 
     @Override
@@ -58,6 +58,10 @@ public class MemoryOrderRepository implements IOrderRepository {
             }
         }
         return orderList;
+    }
+    @Override
+    public int getNextId() {
+        return orders.size();
     }
 
 

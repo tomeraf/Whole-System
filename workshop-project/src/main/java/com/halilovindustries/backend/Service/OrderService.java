@@ -137,12 +137,11 @@ public class OrderService {
     }
 
     /**
-     * Removes items from the user's shopping cart.
-     *
-     * @param sessionToken current session token
-     * @param itemDTOs list of items to remove
+     * Removes item from the user's shopping cart.
+     * @param sessionToken
+     * @param shopId
+     * @param itemID
      */
-    // userItems = shopID, itemID
     @Transactional
     public Response<Void> removeItemFromCart(String sessionToken, int shopId,int itemID) {
 
@@ -236,7 +235,7 @@ public class OrderService {
                 Shop shop = shopRepository.getShopById(shopID); // Get the shop by ID
                 shops.add(shop); // Add the shop to the list of shops
             }
-            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getAllOrders().size(), paymentDetails, shipmentDetails); // Buy the cart content
+            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getNextId(), paymentDetails, shipmentDetails); // Buy the cart content
             orderRepository.addOrder(order); // Save the order to the repository
             notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
@@ -376,7 +375,7 @@ public class OrderService {
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getAllOrders().size(),payment, shipment, paymentDetalis, shipmentDetalis);
+            Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getNextId(),payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + shop.getItem(bidId).getName() + " was purchased by " + user.getUsername()+"from bid");
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
@@ -424,7 +423,7 @@ public class OrderService {
             }
             Registered registered = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getAllOrders().size(), payment, shipment, paymentDetalis, shipmentDetalis);
+            Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getNextId(), payment, shipment, paymentDetalis, shipmentDetalis);
             orderRepository.addOrder(order); // Save the order to the repository
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);

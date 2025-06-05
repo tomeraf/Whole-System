@@ -2,6 +2,9 @@ package com.halilovindustries.backend.Domain.DTOs;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
 
+import jakarta.persistence.Entity;
+
+@Entity
 public class ItemDTO {
     private String name;
     private Category category;

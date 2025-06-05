@@ -2,14 +2,24 @@ package com.halilovindustries.backend.Domain.DTOs;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+
+@Entity
 public class Order {
+    @Id
     private final int orderID;
     private final int userId;
     private final double totalPrice;
-    private final HashMap<Integer, List<ItemDTO>> items; // <Integer, List<ItemDTO> = shopId, List<ItemDTO> = items in the shop
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<ItemDTO> items;
 
-    public Order(int orderID, int userId, double totalPrice, HashMap<Integer, List<ItemDTO>> items) {
+    public Order(int orderID, int userId, double totalPrice, List<ItemDTO> items) {
         this.orderID = orderID;
         this.totalPrice = totalPrice;
         this.items = items;
@@ -17,11 +27,11 @@ public class Order {
     }
 
     public List<ItemDTO> getItems() {
-        return items.values().stream().flatMap(List::stream).toList(); // Flatten the list of lists into a single list
+        return items; // Flatten the list of lists into a single list
     }
 
     public List<ItemDTO> getShopItems(int shopId) {
-        return items.get(shopId); // Return the list of items for the specified shop ID or null if not found
+        return items.stream().filter(item->item.getShopId()==shopId).toList(); // Return the list of items for the specified shop ID or null if not found
     }
     
     public int getId() {
@@ -36,9 +46,11 @@ public class Order {
     }
     public String getOrderDetails() {
         StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
-        for (int shopId : items.keySet()) {
+        Map<Integer, List<ItemDTO>> itemsByShop = items.stream()
+        .collect(Collectors.groupingBy(ItemDTO::getShopId));
+        for (int shopId : itemsByShop.keySet()) {
             details.append("Shop ID: ").append(shopId).append("\nItems:\n");
-            for (ItemDTO item : items.get(shopId)) {
+            for (ItemDTO item : itemsByShop.get(shopId)) {
                 details.append(item.toString()).append("\n");
             }
         }

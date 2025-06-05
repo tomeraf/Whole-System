@@ -63,7 +63,7 @@ public class PurchaseService {
         ship.processShipment(total*0.1, shipmentDetails);
         pay.processPayment(total, paymentDetails);
         cart.clearCart();
-        Order order = new Order(orderID, user.getUserID(), total, itemsToShip);
+        Order order = new Order(orderID, user.getUserID(), total, itemsToShip.values().stream().flatMap(List::stream).toList());
         return order;
     }
 
@@ -114,7 +114,7 @@ public class PurchaseService {
         itemsToShip.put(shop.getId(), itemsList);
         pay.processPayment(offer.getValue(), paymentDetails);
         ship.processShipment(offer.getValue()*0.1, shipmentDetails);
-        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip);
+        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip.values().stream().flatMap(List::stream).toList());
         return order;
     }
 
@@ -136,7 +136,7 @@ public class PurchaseService {
         itemsToShip.put(shop.getId(), itemsList);
         payment.processPayment(offer.getValue(), paymentDetails);
         shipment.processShipment(offer.getValue()*0.1, shipmentDetails);
-        Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip);
+        Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip.values().stream().flatMap(List::stream).toList());
         return order;
     }
 
