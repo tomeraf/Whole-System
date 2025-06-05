@@ -18,12 +18,16 @@ public class Order {
     private final double totalPrice;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<ItemDTO> items;
+    private int paymentId;
+    private int shipmentId;
 
-    public Order(int orderID, int userId, double totalPrice, List<ItemDTO> items) {
+    public Order(int orderID, int userId, double totalPrice, List<ItemDTO> items, int paymentId, int shipmentId) {
         this.orderID = orderID;
         this.totalPrice = totalPrice;
         this.items = items;
         this.userId = userId;
+        this.paymentId = paymentId;
+        this.shipmentId = shipmentId;
     }
 
     public List<ItemDTO> getItems() {
@@ -44,6 +48,15 @@ public class Order {
     public double getTotalPrice() {
         return totalPrice;
     }
+    
+    public int getPaymentId() {
+        return paymentId;
+    }
+
+    public int getShipmentId() {
+        return shipmentId;
+    }
+    
     public String getOrderDetails() {
         StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
         Map<Integer, List<ItemDTO>> itemsByShop = items.stream()

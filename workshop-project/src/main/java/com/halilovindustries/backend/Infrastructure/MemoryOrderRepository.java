@@ -7,8 +7,12 @@ import java.util.List;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
+
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+//TODO: @Primary
+@Primary
 @Repository
 public class MemoryOrderRepository implements IOrderRepository {
     private HashMap<Integer, Order> orders = new HashMap<>();

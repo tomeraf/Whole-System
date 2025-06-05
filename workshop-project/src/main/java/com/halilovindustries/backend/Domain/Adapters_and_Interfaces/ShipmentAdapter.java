@@ -4,39 +4,27 @@ import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ShipmentAdapter implements IShipment {
-    
+public class ShipmentAdapter {
+
     private final IShipment shipmentMethod;
 
-    // Dependency injection of the shipment implementation adapter
-    // This allows for flexibility in choosing the shipment method at runtime
     public ShipmentAdapter(IShipment shipmentMethod) {
         this.shipmentMethod = shipmentMethod;
     }
 
-    // checking if the shipment details are valid
-    @Override
     public boolean validateShipmentDetails(ShipmentDetailsDTO details) {
-        if (details == null || !details.fullShipmentDetails()) {
-            // If shipment details are null or not complete, return false
-            return false;
-        }
-        return shipmentMethod.validateShipmentDetails(details);
+        return details != null && details.fullShipmentDetails() &&
+               shipmentMethod.validateShipmentDetails(details);
     }
 
-    // return shipment id for good shipment; return null for bad shipment
-    @Override
-    public boolean processShipment(double price,ShipmentDetailsDTO details) {
+    public Integer processShipment(ShipmentDetailsDTO details) {
         if (!validateShipmentDetails(details)) {
-            // If shipment details are not valid, return null
-            return false;
+            return null;
         }
-        return shipmentMethod.processShipment(price, details);
+        return shipmentMethod.processShipment(details);
     }
 
-    // @Override
-    // public ShipmentDetailsDTO getShipmentDetails() {
-    //     return shipmentMethod.getShipmentDetails();
-    // }
-
+    public boolean cancelShipment(int transactionId) {
+        return shipmentMethod.cancelShipment(transactionId);
+    }
 }

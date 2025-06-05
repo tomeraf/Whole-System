@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class NotificationsTests extends BaseAcceptanceTests{
@@ -367,7 +368,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
 
         orderService.addItemToCart(buyerToken,shop.getId(),shop.getItems().get(0).getItemID(),1);
 
-        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "333", "12", "25");
         ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
 
@@ -386,7 +387,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
     public void testBuyCartContentEmptyCart() throws Exception {
         String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
 
-        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123","333", "12", "25");
         ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
 
