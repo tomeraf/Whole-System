@@ -6,9 +6,13 @@ import java.util.Map;
 import jakarta.persistence.*;
 
 @Entity
+@IdClass(ShopKey.class) 
 public class Item {
     @Id
     private int id;
+    
+    @Id
+    private int shopId;
 
     private String name;
 
@@ -19,24 +23,24 @@ public class Item {
     private int quantity;
     private String description;
 
-    // private int shopId;
     
     private int numOfOrders;
 
     @ElementCollection
-    @CollectionTable(name = "item_ratings", joinColumns = @JoinColumn(name = "item_id"))
+    @CollectionTable(name = "item_ratings", joinColumns = {@JoinColumn(name = "item_id"), @JoinColumn(name = "shop_id")})
     @MapKeyColumn(name = "rater_id")
     @Column(name = "rating")
     private Map<Integer, Double> ratedIds = new HashMap<>();
 
     public Item() {} // JPA requires a no-args constructor
 
-    public Item(int id,String name, Category category, double price, int shopId, String description) {
+    public Item(int id, String name, Category category, double price, int shopId, String description) {
         this.id = id;
+        this.shopId = shopId;
         this.name = name;
         this.category = category;
         this.price = price;
-        // this.shopId = shopId;
+        this.shopId = shopId;
         this.description = description;
         this.quantity = 0;
         this.numOfOrders = 0;

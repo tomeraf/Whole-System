@@ -1,16 +1,21 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 
 import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.halilovindustries.backend.Domain.Shop.ShopKey;
+
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@IdClass(ShopKey.class)
 public class BidPurchase {
 
     @Id
     private int id;
+    @Id
+    private int shopId;
 
     private double amount;
     private int itemId;
@@ -28,8 +33,9 @@ public class BidPurchase {
         // Required by JPA
     }
 
-    public BidPurchase(int id,double bidAmount, int itemId, int buyerID, int submitterID) {
+    public BidPurchase(int id,int shopId,double bidAmount, int itemId, int buyerID, int submitterID) {
         this.id = id;
+        this.shopId=shopId;
         if (bidAmount <= 0) {
             throw new IllegalArgumentException("Bid amount must be greater than 0.");
         }
@@ -75,6 +81,9 @@ public class BidPurchase {
     public int getCounterBidID() {
         return counterBidID;
     }
+    public int getShopId(){
+        return shopId;
+    }
 
     public boolean isDone() {
         return done;
@@ -118,7 +127,7 @@ public class BidPurchase {
         if (isAccepted == -1) {
             throw new IllegalStateException("Bid Purchase has already been rejected by " + rejecterId);
         }
-        BidPurchase counterBid = new BidPurchase(counterId,offerAmount, getItemId(), getBuyerId(), submitterId);
+        BidPurchase counterBid = new BidPurchase(counterId,shopId,offerAmount, getItemId(), getBuyerId(), submitterId);
         counterBid.setCounterBidID(counterBid.getId());
         return counterBid;
     }

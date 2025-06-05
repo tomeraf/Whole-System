@@ -1,6 +1,8 @@
 package com.halilovindustries.backend.Domain.Shop.Policies.Purchase;
 
 import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.halilovindustries.backend.Domain.Shop.ShopKey;
+
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -8,10 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@IdClass(ShopKey.class)
 public class AuctionPurchase {
 
     @Id
     private int id;
+    @Id
+    private int shopId;
 
     private double startingBid;
     private int buyerId = -1;
@@ -30,8 +35,9 @@ public class AuctionPurchase {
         // Required by JPA
     }
 
-    public AuctionPurchase(int id,double startingBid, int itemId, LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
+    public AuctionPurchase(int id,int shopId,double startingBid, int itemId, LocalDateTime auctionStartTime, LocalDateTime auctionEndTime) {
         this.id = id;
+        this.shopId=shopId;
         if (startingBid <= 0) {
             throw new IllegalArgumentException("Starting bid must be greater than 0.");
         }
@@ -81,6 +87,9 @@ public class AuctionPurchase {
         return id;
     }
 
+    public int getShopId(){
+        return shopId;
+    }
     public double getStartingBid() {
         return startingBid;
     }

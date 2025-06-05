@@ -47,15 +47,12 @@ public class Shop {
     private Map<Integer, Double> ratedIds = new HashMap<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "shop_id", referencedColumnName = "id")
     private List<Item> items = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "shop_id", referencedColumnName = "id")
     private List<BidPurchase> bidPurchaseItems = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "shop_id", referencedColumnName = "id")
     private List<AuctionPurchase> auctionPurchaseItems = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -121,8 +118,7 @@ public class Shop {
             throw new IllegalArgumentException("Item name already exists or price cannot be negative.");
         } 
         else{
-            int itemId = Integer.parseInt("" + this.id + itemIdCounter); //give itemId based on shop id and itemIdCounter
-            Item item = new Item(itemId,name, category, price, this.id, description);
+            Item item = new Item(itemIdCounter, name, category, price, this.id, description);
             itemIdCounter++;
             items.add(item); 
             return item;
@@ -254,7 +250,7 @@ public class Shop {
         }
         purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
-            Item item = items.stream()
+            Item item = items.stream()          //used to check if exists, if not throw exception
                 .filter(i -> i.getId() == id)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
@@ -280,7 +276,7 @@ public class Shop {
 
     public void addBidPurchase(int itemId, double bidAmount, int buyerId) {  
         if (isItemInShop(itemId) && purchasePolicy.allowsPurchaseType(PurchaseType.BID)) {
-            BidPurchase bidPurchase = new BidPurchase(bidPurchaseIdCounter,bidAmount, itemId, buyerId, buyerId);
+            BidPurchase bidPurchase = new BidPurchase(bidPurchaseIdCounter,id,bidAmount, itemId, buyerId, buyerId);
             bidPurchaseIdCounter++;
             bidPurchaseItems.add(bidPurchase);
         } else {
@@ -406,7 +402,7 @@ public class Shop {
     public void openAuction(int itemID, double startingPrice, LocalDateTime startDate, LocalDateTime endDate) {
             purchasePolicy.allowsPurchaseType(PurchaseType.AUCTION);
             getItem(itemID); // Check if item exists in the shop
-            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseIdCounter,startingPrice, itemID, startDate, endDate);
+            AuctionPurchase auctionPurchase = new AuctionPurchase(auctionPurchaseIdCounter,id,startingPrice, itemID, startDate, endDate);
             auctionPurchaseIdCounter++;
             auctionPurchaseItems.add(auctionPurchase);
     }
