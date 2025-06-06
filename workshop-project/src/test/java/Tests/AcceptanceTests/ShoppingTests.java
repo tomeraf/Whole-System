@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,15 +26,17 @@ import org.junit.jupiter.api.Test;
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
+import com.halilovindustries.backend.Domain.DTOs.NotificationDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-
+import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.Message;
 
 public class ShoppingTests extends BaseAcceptanceTests {
     @Test
@@ -516,6 +520,187 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(infoResp.isOk(), "getShopInfo should succeed after rating");
         ShopDTO ratedShop = infoResp.getData();
         assertEquals(ratingScore, ratedShop.getRating(), "Shop rating should match the score given");
+    }
+
+    @Test
+    public void rateItemTest() {
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerItem", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ItemShop");
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
+        assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
+        ItemDTO toBuy = shopItems.get(0);
+        int shopId = shop.getId();
+        int itemId = toBuy.getItemID();
+
+        // 2) Buyer setup: register and login
+        String buyerToken = fixtures.generateRegisteredUserSession("itemBuyer", "Pwd1");
+
+        // 3) Add to cart
+        Response<Void> addToCart = orderService.addItemToCart(
+            buyerToken,
+            shopId,
+            itemId,
+            1
+        );
+        assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
+
+        // 4) Complete purchase
+        fixtures.successfulBuyCartContent(buyerToken, p, s);
+
+        // 5) Rate the item
+        int ratingScore = 4;
+        Response<Void> rateResp = shopService.rateItem(buyerToken, shopId, itemId, ratingScore);
+        assertTrue(rateResp.isOk(), "rateItem should succeed");
+
+        // 6) Fetch shop items and verify the item's rating
+        List<ItemDTO> updatedItems = shopService.showShopItems(ownerToken, shopId).getData();
+        boolean found = false;
+        for (ItemDTO item : updatedItems) {
+            if (item.getItemID() == itemId) {
+                assertEquals(ratingScore, item.getRating(), "Item rating should match the score given");
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "Rated item must be present in shop items");
+    }
+
+    @Test
+    public void removeShopManagerPermissionTest() {
+        // 1) Owner setup: register and create a shop
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
+
+        // 2) Manager setup: register a second user to become manager
+        String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
+        String managerUsername = "ShopManager";
+
+        // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
+        Response<Void> assignResp = shopService.addShopManager(
+            ownerToken,
+            shop.getId(),
+            managerUsername,
+            Set.of(Permission.UPDATE_SUPPLY)
+        );
+        assertTrue(assignResp.isOk(), "assignShopManager should succeed");
+
+        // 4) Verify manager can perform a manager-only action (e.g., add an item)
+        Response<ItemDTO> addItemResp = shopService.addItemToShop(
+            managerToken,
+            shop.getId(),
+            "ManagerItem",
+            Category.ELECTRONICS,
+            10.00,
+            "Item added by manager"
+        );
+        assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
+
+        // 5) Owner removes manager permission
+        Response<Void> removeResp = shopService.removeAppointment(
+            ownerToken,
+            shop.getId(),
+            managerUsername
+        );
+        assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
+
+        // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
+        Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
+            managerToken,
+            shop.getId(),
+            "ShouldFailItem",
+            Category.FOOD,
+            5.00,
+            "This should not be added"
+        );
+        assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
+    }
+
+    @Test
+    public void respondToMessageTest() {
+        // 1) Owner setup: register and create a shop
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerMsg", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MsgShop");
+        int shopId = shop.getId();
+
+        // 2) Customer setup: register/login a user who will send the question
+        String customerToken = fixtures.generateRegisteredUserSession("CustomerA", "CustPwd");
+
+        // 3) Customer sends a message to the shop
+        String title = "Question about an item";
+        String message = "Do you have refunds?";
+        Response<Void> sendResp = shopService.sendMessage(
+            customerToken,
+            shopId,
+            title,
+            message
+        );
+        assertTrue(sendResp.isOk(), "sendMessageToShop should succeed");
+
+        // 4) Fetch messages for the shop so we can grab the new message ID.
+        //    (Assumes you have a method like viewShopMessages or getAllMessagesInShop.)
+        //    If your API returns List<MessageDTO>, find the one whose content is `questionText`.
+        Response<List<Message>> inboxResp = shopService.getInbox(ownerToken, shopId);
+        assertTrue(inboxResp.isOk(), "viewShopMessages should succeed for owner/manager");
+        List<Message> inbox = inboxResp.getData();
+        assertFalse(inbox.isEmpty(), "There must be at least one message");
+        // Find the message just inserted
+        Message incoming = inbox.stream()
+            .filter(m -> m.getContent().equals(message))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Could not find the question message"));
+
+        int messageId = incoming.getId();
+
+        
+
+        // 5) Manager setup: register a second user and assign them as manager with ANSWER_MESSAGE permission
+        String managerToken = fixtures.generateRegisteredUserSession("ShopMgr", "MgrPwd");
+        String managerUsername = "ShopMgr";
+
+        // Give the manager the ANSWER_MESSAGE permission so they can respond:
+        Response<Void> addMgrResp = shopService.addShopManager(
+            ownerToken,
+            shopId,
+            managerUsername,
+            Set.of(Permission.ANSWER_MESSAGE)
+        );
+        assertTrue(addMgrResp.isOk(), "addShopManager(with ANSWER_MESSAGE) should succeed");
+
+        // 6) Manager calls respondToMessage
+        String title_2 = "Response to your question";
+        String responseText = "Yes—this item is in stock!";
+        Response<Void> replyResp = shopService.respondToMessage(
+            managerToken,
+            shopId,
+            messageId,
+            title_2,
+            responseText
+        );
+        assertTrue(replyResp.isOk(), "respondToMessage should succeed when user has ANSWER_MESSAGE permission");
+
+        // 7) Verify that the reply was saved in the message thread.
+        //    For example, view the entire thread again and check that the “inReplyTo” field points to messageId:
+        Response<List<Message>> threadResp = shopService.getInbox(ownerToken, shopId);
+        assertTrue(threadResp.isOk(), "viewShopMessages should still succeed after reply");
+        List<Message> updatedInbox = threadResp.getData();
+
+        // Find the newly inserted reply
+        Message replyMsg = updatedInbox.stream()
+            .filter(m -> m.getContent().equals(message))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Reply message was not found"));
+        assertEquals(responseText, replyMsg.getContent(), "The reply content must match what the manager sent");
+        assertEquals(managerUsername, replyMsg.getUserName(), "Reply sender should be the shop manager");
+        assertEquals(messageId, replyMsg.getRespondId(), "Reply should reference the original message ID");
     }
 
     // @Test
