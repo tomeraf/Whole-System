@@ -4,11 +4,15 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 
+@Primary
+@Repository
 public class DBOrderRepository implements IOrderRepository{
     private final JpaOrderRepository jpaOrderRepository;
     @Autowired

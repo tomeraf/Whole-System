@@ -7,17 +7,22 @@ import java.util.stream.Collectors;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "Orders")
 public class Order {
     @Id
-    private final int orderID;
-    private final int userId;
-    private final double totalPrice;
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<ItemDTO> items;
+    private int orderID;
+    private int userId;
+    private double totalPrice;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
+    @JoinColumn(name = "order_id", referencedColumnName = "orderID")
+    private List<ItemDTO> items;
     private int paymentId;
     private int shipmentId;
 
@@ -29,6 +34,7 @@ public class Order {
         this.paymentId = paymentId;
         this.shipmentId = shipmentId;
     }
+    public Order(){}
 
     public List<ItemDTO> getItems() {
         return items; // Flatten the list of lists into a single list
