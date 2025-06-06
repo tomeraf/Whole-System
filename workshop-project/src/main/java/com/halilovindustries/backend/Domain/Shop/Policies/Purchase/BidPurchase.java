@@ -19,7 +19,6 @@ public class BidPurchase extends Purchase {
         super(id, bidAmount, itemId, buyerID);
         this.submitterId = submitterID;
         this.AcceptingMembers = new ArrayList<>();
-        this.AcceptingMembers.add(submitterID);
     }
     public List<Integer> getAcceptingMembers() {
         return AcceptingMembers;
@@ -45,6 +44,9 @@ public class BidPurchase extends Purchase {
         if (!AcceptingMembers.contains(memberId)) {
             AcceptingMembers.add(memberId);
         }
+        else {
+            throw new IllegalArgumentException("Member " + memberId + " has already accepted the bid.");
+        }
         if(AcceptingMembers.containsAll(members)){
             isAccepted = 1;
         }
@@ -67,8 +69,8 @@ public class BidPurchase extends Purchase {
         if (isAccepted == -1) {
             throw new IllegalStateException("Bid Purchase has already been rejected by " + rejecterId);
         }
-        BidPurchase counterBid = new BidPurchase(counterID, offerAmount, getItemId(),getBuyerId(), submitterId);
-        counterBid.setCounterBidID(counterID);
+        BidPurchase counterBid = new BidPurchase(counterID, this.getAmount(), getItemId(),getBuyerId(), submitterId);
+        setCounterBidID(counterID);
         counterBid.counterAmount = offerAmount;
         return counterBid;
     }
@@ -85,7 +87,7 @@ public class BidPurchase extends Purchase {
         done = true; // Mark the bid as done
         return new Pair<>(getItemId(), getAmount()); // Return the item ID and bid amount as a pair
     }
-    public void answerOnCounterBid(int userID, boolean accept,List<Integer> members) {
+    public void answerOnCounterBid(int userID, boolean accept) {
         if(getBuyerId()!=userID)
         {
             throw new IllegalArgumentException("Error: user is not the buyer of the bid.");
@@ -93,7 +95,6 @@ public class BidPurchase extends Purchase {
         if(accept)
         {
             isAccepted = 1;
-            addAcceptingMember(userID,members);
         }
         else
         {

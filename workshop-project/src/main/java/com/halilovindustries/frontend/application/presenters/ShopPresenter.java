@@ -330,7 +330,7 @@ public class ShopPresenter extends AbstractPresenter {
         });
     }
 
-    public void getUserBids(int shopId, Consumer<List<BidDTO>> onFinish) {
+    public void getUserBids(int shopId, String flag, Consumer<List<BidDTO>> onFinish) {
         getSessionToken(token -> {
             UI ui = UI.getCurrent();
             if (ui == null) return;
@@ -341,7 +341,7 @@ public class ShopPresenter extends AbstractPresenter {
                     return;
                 }
 
-                Response<List<BidDTO>> resp = shopService.getUserBids(token, shopId);
+                Response<List<BidDTO>> resp = shopService.getUserBids(token, shopId, flag);
                 if (!resp.isOk()) {
                     Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 } else {

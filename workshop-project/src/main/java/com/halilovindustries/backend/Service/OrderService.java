@@ -335,7 +335,7 @@ public class OrderService {
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             List<Integer> members=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
-            Pair<Integer,String> notification=purchaseService.answerOnCounterBid(user,shop,bidId,accept,members);
+            Pair<Integer,String> notification=purchaseService.answerOnCounterBid(user,shop,bidId,accept);
             if(notification!=null) {
                 notificationHandler.notifyUsers(Collections.singletonList(notification.getKey()),notification.getValue());
             }

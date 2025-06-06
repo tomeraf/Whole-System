@@ -449,10 +449,10 @@ public class Shop {
         purchasePolicy.removeCondition(conditionID);
     }
 
-    public void answerOnCounterBid(int bidId, boolean accept, int userID,List<Integer> members) {
+    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            bidPurchase.answerOnCounterBid(userID, accept, members);
+            bidPurchase.answerOnCounterBid(userID, accept);
         } else {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         }
