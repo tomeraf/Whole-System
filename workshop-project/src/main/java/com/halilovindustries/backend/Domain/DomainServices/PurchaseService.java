@@ -139,7 +139,7 @@ public class PurchaseService {
         if (shipmentId == null) {
             throw new IllegalArgumentException("Error: shipment processing failed.");
         }
-        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip, paymentId, shipmentId);
+        Order order= new Order(orderID, guest.getUserID(), offer.getValue(), itemsToShip, paymentId, shipmentId);
         return order;
     }
 
@@ -169,8 +169,8 @@ public class PurchaseService {
         return order;
     }
 
-    public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept,List<Integer> members) {
-        shop.answerOnCounterBid(bidId, accept, user.getUserID(),members);
+    public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
+        shop.answerOnCounterBid(bidId, accept, user.getUserID());
         return notifyBid(shop.getBidPurchase(bidId));
     }
     private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {

@@ -86,9 +86,15 @@ public class DBUserRepository implements IUserRepository {
         List<Registered> allRegistered = getAllRegisteredUsers();
         List<Integer> userIds = new ArrayList<>();
         for (Registered reg : allRegistered) {
-            if (reg.hasPermission(shopID, permission)) {
-                userIds.add(Math.toIntExact(reg.getUserID()));
+            try {
+                if (reg.hasPermission(shopID, permission)) {
+                    userIds.add(Math.toIntExact(reg.getUserID()));
             }
+            } catch (Exception e) {
+                // Handle the case where the user does not have a role in the shop
+                // or any other exception that might occur
+            }
+            
         }
         return userIds;
     }
