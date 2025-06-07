@@ -1,4 +1,4 @@
-// System setup - first registered user is system manager
+// System setup - first registered user is system manager (need to implement)
 register-user(u1, u1, 1999-06-16);
 
 // Registering users
@@ -14,13 +14,17 @@ login-user(u2, u2);
 // User u2 opens shop "s1"
 create-shop(u2, s1);
 
-// User u2 appoints u3 as manager of the shop with permission to manage inventory
-add-shop-manager(0, u3, INVENTORY);
+// User u2 add Bamba to the shop
+add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
 
-// u2 appoints u4 and u5 as shop owners — assuming you’ll later add: add-shop-owner
-// You can implement and use a similar command:
+// User u2 appoints u3 as manager of the shop with permission to manage inventory
+add-shop-manager(0, u3, UPDATE_ITEM_QUANTITY);
+
+
+
+// u2 appoints u4 and u5 as shop owners
 add-shop-owner(0, u4);
 add-shop-owner(0, u5);
 
-// u2 logs out — you’ll need to implement a logout command
+// u2 logs out
 logout-user(u2);

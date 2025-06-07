@@ -16,9 +16,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Component
 public class Initializer {
@@ -76,8 +75,8 @@ public class Initializer {
         if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) return true;
 
         try {
-            // Basic syntax check. can add more if needed
-            if (!line.endsWith(");") || !line.contains("(")) {
+            // Basic syntax check
+            if (!line.endsWith(";") || !line.contains("(")) {
                 System.err.println("Invalid command format: " + line);
                 return false;
             }
@@ -86,20 +85,20 @@ public class Initializer {
             int parenIndex = line.indexOf('(');
             String command = line.substring(0, parenIndex).trim();
 
-            // Extract arguments inside the parentheses
-            String argsPart = line.substring(parenIndex + 1, line.length() - 2).trim();
-            String[] args = argsPart.split(",");
+            // Extract arguments inside the parentheses by:
+            String argsPart = line.substring(parenIndex + 1, line.lastIndexOf(')')).trim();
 
-            // Trim each argument
-            for (int i = 0; i < args.length; i++) {
-                args[i] = args[i].trim();
-            }
+            // Split arguments by comma and trim each
+            String[] args = Arrays.stream(argsPart.split(","))
+                    .map(String::trim)
+                    .toArray(String[]::new);
 
             // Dispatch to actual logic
             switch (command) {
                 case "register-user": {
                     if (args.length != 3)
                         throw new IllegalArgumentException("register-user should have 3 args");
+                    initST = userService.enterToSystem().getData();
                     Response<Void> res = userService.registerUser(initST, args[0], args[1], LocalDate.parse(args[2]));
                     return res.isOk();
                 }
@@ -116,6 +115,12 @@ public class Initializer {
                         throw new IllegalArgumentException("logout-user should have 1 arg: username");
                     Response<String> res = userService.logoutRegistered(initST);
                     initST = res.getData();
+                    return res.isOk();
+                }
+                case "exit-as-guest": {
+                    if (args.length != 0)
+                        throw new IllegalArgumentException("logout-guest should have 0 args");
+                    Response<Void> res = userService.exitAsGuest(initST);
                     return res.isOk();
                 }
 
@@ -385,8 +390,22 @@ public class Initializer {
 
                  */
 
+                case "suspend": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("suspend should have 3 args: username, startDate, endDate");
+                    String username = args[0];
+                    Optional<LocalDateTime> startDate = Optional.of(LocalDateTime.parse(args[1]));
+                    Optional<LocalDateTime> endDate = Optional.of(LocalDateTime.parse(args[2]));
+                    Response<Void> res = userService.suspendUser(initST, username, startDate, endDate);
+                    return res.isOk();
+                }
 
-
+                case "unsuspend": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("unsuspend should have 1 arg: username");
+                    Response<Void> res = userService.unsuspendUser(initST, args[0]);
+                    return res.isOk();
+                }
 
 
 
