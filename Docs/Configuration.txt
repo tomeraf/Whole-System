@@ -1,0 +1,16 @@
+[Database]
+url = jdbc:h2:file:./data/shop_system;DB_CLOSE_ON_EXIT=false;AUTO_SERVER=TRUE
+driver = org.h2.Driver
+
+[ExternalSystems]
+payment_gateway_url = https://payments.example.com/api
+notification_service_url = http://localhost:8081/notify
+
+[SystemAdmin]
+Username = Tomer
+password = 123321
+user_id = 1
+
+[Startup]
+init_file = init.txt
+
