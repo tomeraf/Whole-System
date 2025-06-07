@@ -151,13 +151,13 @@ public class UserService {
                 
                 if (userRepository.getUserByName(username) != null)
                     throw new Exception("Username already exists");
-                if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
-                    // this is a special case for the system manager
-                    registered.setSystemManager(true);
-                }
+                // if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
+                //     // this is a special case for the system manager
+                //     registered.setSystemManager(true);
+                // }
                 userRepository.removeGuestById(userID); // Remove the guest from the repository
                 userRepository.saveUser(registered);
-                 // should be actually inside guest.register..
+                // should be actually inside guest.register..
                 return Response.ok();
             } catch (Exception e) {
                 logger.error(() -> "Error registering user: " + e.getMessage());

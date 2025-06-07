@@ -1,5 +1,8 @@
 package com.halilovindustries.websocket;
 
+import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.vaadin.flow.component.UI;
+
 // Functional interface for a registration that can be removed.
 
 import com.vaadin.flow.shared.Registration;
@@ -18,6 +21,8 @@ public class Broadcaster {
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final Map<String, List<Consumer<String>>> listeners = new ConcurrentHashMap<>();
+    // Store mapping of sessionId to userUuid and listener
+    private static final Map<String, Pair<String, Consumer<String>>> sessionListeners = new ConcurrentHashMap<>();
     private static Broadcaster instance = null;
 
     private Broadcaster() {
@@ -29,16 +34,28 @@ public class Broadcaster {
         }
         return instance;
     }
+
     /**
-     * Registers a listener (usually from a Vaadin UI) for a specific user UUID.
+     * Registers a listener for a specific user UUID.
      * @param userUuid the user ID
-     * @param listener a consumer to handle messages
-     * @return a Registration to remove the listener
+     * @param listener the listener to register
+     * @return a Registration that can be used to remove the listener
      */
     public static synchronized Registration register(String userUuid, Consumer<String> listener) {
+        // Generate unique session ID
+        String sessionId = UI.getCurrent().getUIId() + "-" + System.currentTimeMillis();
+        
+        // Store in both maps
         listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
-        System.out.println("Listener registered for user: " + userUuid);
-        return () -> removeListener(userUuid, listener);
+        sessionListeners.put(sessionId, new Pair<>(userUuid, listener));
+        
+        System.out.println("Listener registered for user: " + userUuid + " with session: " + sessionId);
+        
+        // Return a registration that can remove from both maps
+        return () -> {
+            removeListener(userUuid, listener);
+            sessionListeners.remove(sessionId);
+        };
     }
 
     /**
@@ -77,6 +94,21 @@ public class Broadcaster {
             if (userListeners.isEmpty()) {
                 listeners.remove(userUuid);
             }
+        }
+    }
+
+    public static int getListenerCount(String userUuid) {
+        List<Consumer<String>> userListeners = listeners.get(userUuid);
+        return userListeners != null ? userListeners.size() : 0;
+    }
+
+    public static synchronized void removeListenerBySessionId(String sessionId) {
+        Pair<String, Consumer<String>> mapping = sessionListeners.remove(sessionId);
+        if (mapping != null) {
+            String userUuid = mapping.getKey();
+            Consumer<String> listener = mapping.getValue();
+            removeListener(userUuid, listener);
+            System.out.println("Removed specific listener for session: " + sessionId);
         }
     }
 }
