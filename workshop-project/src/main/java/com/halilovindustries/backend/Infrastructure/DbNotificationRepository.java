@@ -2,6 +2,8 @@ package com.halilovindustries.backend.Infrastructure;
 
 import com.halilovindustries.backend.Domain.DTOs.NotificationDTO;
 import com.halilovindustries.backend.Domain.Repositories.INotificationRepository;
+
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Queue;
@@ -10,12 +12,13 @@ import java.util.LinkedList;
 /**
  * Database-backed implementation of INotificationRepository using Spring Data JPA.
  */
+@Primary
 @Repository
-public class DbNotificationRepository implements INotificationRepository {
+public class DBNotificationRepository implements INotificationRepository {
 
     private final JpaNotificationRepository jpaNotificationRepo;
 
-    public DbNotificationRepository(JpaNotificationRepository jpaNotificationRepo) {
+    public DBNotificationRepository(JpaNotificationRepository jpaNotificationRepo) {
         this.jpaNotificationRepo = jpaNotificationRepo;
     }
 

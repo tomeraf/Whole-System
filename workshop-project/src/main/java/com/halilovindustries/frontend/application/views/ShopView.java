@@ -759,17 +759,18 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                         expMonth.getValue(), expYear.getValue()
                     );
 
-                    shopPresenter.purchaseBidItem(shopID, bid.getId(), payDto, shipDto, order -> {
-                        ui.access(() -> {
-                            if (order != null) {
-                                Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
-                                dialog.close(); // Close on success
-                                UI.getCurrent().navigate(""); // Or refresh, or go somewhere
-                            } else {
-                                Notification.show("Failed to place order", 2000, Position.MIDDLE);
-                            }
-                        });
+                    shopPresenter.purchaseBidItem(shopID, bid.getId(), payDto, shipDto, success -> {
+                    ui.access(() -> {
+                        if (success) {  // Check for boolean true/false
+                            Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
+                            dialog.close();
+                            // Consider delaying navigation slightly
+                            UI.getCurrent().getPage().executeJs("setTimeout(() => {$0.navigate('');}, 300)", UI.getCurrent());
+                        } else {
+                            Notification.show("Failed to place order", 2000, Position.MIDDLE);
+                        }
                     });
+                });
                 });
             });
         });

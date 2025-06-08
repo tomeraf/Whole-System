@@ -12,10 +12,6 @@ public class SessionCleanupService {
     private static final Map<String, Long> lastPingTimes = new ConcurrentHashMap<>();
     private static final long SESSION_TIMEOUT_MS = 60000; // 1 minute timeout for testing
 
-    public static void updatePingTime(String sessionId) {
-        lastPingTimes.put(sessionId, System.currentTimeMillis());
-    }
-
     @Scheduled(fixedRate = 30000) // Run every 30 seconds
     public void cleanupInactiveSessions() {
         long now = System.currentTimeMillis();

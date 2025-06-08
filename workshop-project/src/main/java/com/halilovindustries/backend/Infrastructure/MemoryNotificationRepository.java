@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Repository
-@Primary
 public class MemoryNotificationRepository implements INotificationRepository {
     private int counterId = 0;
     private List<Integer> removedIds = new ArrayList<>(); // List of removed IDs
