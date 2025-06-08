@@ -11,11 +11,11 @@ import java.util.LinkedList;
 
 @Primary
 @Repository
-public class DBNotificationRepository implements INotificationRepository {
+public class DbNotificationRepository implements INotificationRepository {
 
     private final JpaNotificationRepository jpaNotificationRepo;
 
-    public DBNotificationRepository(JpaNotificationRepository jpaNotificationRepo) {
+    public DbNotificationRepository(JpaNotificationRepository jpaNotificationRepo) {
         this.jpaNotificationRepo = jpaNotificationRepo;
     }
 
