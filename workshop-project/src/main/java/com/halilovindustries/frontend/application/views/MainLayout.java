@@ -1,9 +1,16 @@
 package com.halilovindustries.frontend.application.views;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.frontend.application.presenters.SupplyPresenter;
 import com.halilovindustries.websocket.Broadcaster;
-import com.halilovindustries.websocket.SessionCleanupService;
-import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -12,24 +19,18 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Header;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.SvgIcon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.Layout;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.server.menu.MenuConfiguration;
 import com.vaadin.flow.server.menu.MenuEntry;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import java.util.List;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 
 /**
  * The main view is a top-level placeholder for other views.
@@ -39,27 +40,20 @@ import com.vaadin.flow.component.notification.Notification;
 public class MainLayout extends AppLayout {
 
     private H1 viewTitle;
-    private SupplyPresenter presenter;
+    private HomePresenter presenter;
     private VerticalLayout drawerContent;
     private Header header;
     private Scroller scroller;
     private Span greeting;
+
     private Registration broadcasterRegistration;
-    //private Registration beforeUnloadRegistration;
 
+    public MainLayout(HomePresenter presenter) {
 
-
-    public MainLayout(SupplyPresenter presenter) {
-
-    this.presenter = presenter;
-    setPrimarySection(Section.DRAWER);          // Set the primary section to the drawer
-    this.drawerContent = new VerticalLayout();   // init
-    //drawerContent.setPadding(false);
-    //drawerContent.setSpacing(false);
-    //drawerContent.setWidthFull();
-    //addToDrawer(drawerContent);                 // Add it here!
-    //refreshDrawer();                            // Build it initially
-    addHeaderContent();                         // Add header
+        this.presenter = presenter;
+        setPrimarySection(Section.DRAWER);          // Set the primary section to the drawer
+        this.drawerContent = new VerticalLayout();   // init
+        addHeaderContent();                         // Add header
     }
     
     /** Rebuilds header + nav + footer in the drawer */
@@ -112,25 +106,6 @@ public class MainLayout extends AppLayout {
 
         addToNavbar(true, toggle, viewTitle);
     }
-
-    // private void addDrawerContent() {
-        // presenter.getSessionToken(token -> {
-        //     if (token != null && presenter.validateToken(token)) {
-        //          Span appName;
-        //         if (presenter.isLoggedIn(token)) {
-        //             appName = new Span("Hello, " + presenter.getUsername(token));
-        //         } else {
-        //             appName = new Span("Hello, sign in");
-        //         }
-            //     appName.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
-            //     Header header = new Header(appName);
-
-            //     Scroller scroller = new Scroller(createNavigation());
-
-            //     addToDrawer(header, scroller, createFooter());   
-            // }
-        // });
-    // }
 
     private SideNav createNavigation() {
         SideNav nav = new SideNav();
@@ -191,25 +166,28 @@ public class MainLayout extends AppLayout {
         return MenuConfiguration.getPageHeader(getContent()).orElse("");
     }
 
+    // ---------------------------------------------------------------------------------------
+
     public void registerForNotifications(String userId) {
         unregisterNotifications();  // in case we already had one
-        
-        // Register broadcaster
-        broadcasterRegistration = Broadcaster.register(userId, message -> {
-            UI ui = UI.getCurrent();
-            if (ui != null && ui.isAttached()) {
-                ui.access(() -> {
-                    Notification.show("Notification: " + message, 
-                                    10000, Notification.Position.TOP_CENTER);
-                });
-            }
-        });
         
         // JavaScript-based detection for browser close
         UI ui = UI.getCurrent();
         if (ui != null) {
+
             // Generate a unique session ID to identify this specific connection
             String sessionId = UI.getCurrent().getUIId() + "-" + System.currentTimeMillis();
+
+            // Register broadcaster
+            broadcasterRegistration = Broadcaster.register(sessionId, userId, message -> {
+                if (ui != null && ui.isAttached()) {
+                    ui.access(() -> {
+                        Notification.show("Notification: " + message, 
+                                        10000, Notification.Position.TOP_CENTER);
+                    });
+                }
+            });
+        
             
             // Use multiple approaches for better reliability
             ui.getPage().executeJs(
@@ -221,11 +199,7 @@ public class MainLayout extends AppLayout {
                 // 2. Also use unload as backup
                 "window.addEventListener('unload', function() {" +
                 "  navigator.sendBeacon('/unregister-notification?sessionId=' + sessionId);" +
-                "});" +
-                // 3. Setup ping/heartbeat to detect disconnection
-                "const heartbeatInterval = setInterval(function() {" +
-                "  fetch('/ping?sessionId=' + sessionId).catch(e => {});" +
-                "}, 30000);", // 30 second interval
+                "});",
                 sessionId
             );
             
@@ -237,8 +211,6 @@ public class MainLayout extends AppLayout {
         System.out.println("MainLayout: Registered notifications for user " + userId);
     }
     
-    @PostMapping("/unregister-notification")
-    @GetMapping("/unregister-notification")
     public void unregisterNotifications() {
         if (broadcasterRegistration != null) {
             broadcasterRegistration.remove();
@@ -254,26 +226,39 @@ public class MainLayout extends AppLayout {
                 System.out.println(Broadcaster.getListenerCount(userId) + 
                     " listeners left for current user: " + userId);
             }
+            
+            ui.getSession().setAttribute("notificationSessionId", null);
+            ui.getSession().setAttribute("userId", null); // optional, if not needed anymore
         }
     }
 
-    
     @Override
-    protected void onDetach(DetachEvent event) {
-        super.onDetach(event);
-        
-        // Check if this is happening because of navigation within the app
-        // In navigation/refresh cases, we want to keep the listener active
-        VaadinSession session = VaadinSession.getCurrent();
-        if (session != null && session.hasLock()) {
-            // If we still have a valid session with lock, this is likely 
-            // just a navigation - don't unregister notifications
-            System.out.println("MainLayout: UI detached but session active, keeping notifications");
-            return;
-        }
-        
-        // Otherwise, this is likely a browser close or timeout
-        System.out.println("MainLayout: UI detached, unregistering notifications");
-        unregisterNotifications();
+    protected void onAttach(AttachEvent event) {
+        super.onAttach(event);
+        System.out.println("MainLayout onAttach called");
+        refreshDrawer();
+        presenter.getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            
+            if (ui == null || !ui.isAttached()) {
+                System.out.println("UI not available or not attached in getSessionToken callback");
+                return;
+            }
+
+            ui.access(() -> {
+                try {
+                    boolean valid = token != null && presenter.validateToken(token);
+                    boolean loggedIn = valid && presenter.isLoggedIn(token);
+                    if (loggedIn) {
+                        String id = presenter.extractUserId(token);
+                        registerForNotifications(id);
+                    }
+                    
+                } catch (Exception e) {
+                    System.err.println("Error in onAttach: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        });
     }
 }
