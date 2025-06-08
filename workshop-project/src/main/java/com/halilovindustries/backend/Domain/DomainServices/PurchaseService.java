@@ -164,7 +164,7 @@ public class PurchaseService {
         itemsToShip.put(shop.getId(), itemsList);
         Integer paymentId = payment.processPayment(offer.getValue(), paymentDetails);
         Integer shipmentId = shipment.processShipment(shipmentDetails);
-        Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
+        Order order= new Order(orderID, user.getUserID(), offer.getValue(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
         return order;
     }
 
