@@ -945,8 +945,9 @@ public class ShopService {
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.submitCounterBid(user, shop, bidID, offerAmount);
-                // Notify the user about the counter bid
-                notificationHandler.notifyUser(""+userID, "You have got a counter bid of " + offerAmount
+                // Notify the customer about the counter bid
+                String customerName = userRepository.getUserById(shop.getBidPurchase(bidID).getSubmitterId()).getUsername();
+                notificationHandler.notifyUser(""+customerName, "You have got a counter bid of " + offerAmount
                         + " in shop: " + shop.getName());
                 logger.info(() -> "Counter bid submitted: " + bidID + " in shop: " + shop.getName() + " by user: "
                         + userID);

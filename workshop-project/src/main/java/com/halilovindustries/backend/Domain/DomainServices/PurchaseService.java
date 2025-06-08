@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
+import java.util.Set;
 
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -169,17 +170,23 @@ public class PurchaseService {
         return order;
     }
 
-    public Pair<Integer,String> answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
+    public void answerOnCounterBid(Registered user, Shop shop, int bidId, boolean accept) {
         shop.answerOnCounterBid(bidId, accept, user.getUserID());
-        return notifyBid(shop.getBidPurchase(bidId));
+        // Set<Integer> managersId = shop.getManagerIDs();
+        // managersId.stream().filter()
+
+
+
+
+        // return notifyBid(shop.getBidPurchase(bidId));
     }
-    private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {
-        Pair<Integer,String> notificationPair= null;
-        if(bidPurchase.isAccepted()==1){
-            notificationPair= new Pair(bidPurchase.getBuyerId() ,"Bid " + bidPurchase.getId() + " has been accepted by all members");
-        } else if(bidPurchase.isAccepted()==-1){
-            notificationPair =new Pair(bidPurchase.getBuyerId(), "Bid " + bidPurchase.getId() + " has been rejected");
-        }
-        return notificationPair;
-    }
+    // private Pair<List<Integer>,String> notifyBid(BidPurchase bidPurchase) {
+    //     Pair<List<Integer>,String> notificationPair= null;
+    //     if(bidPurchase.isAccepted()==1){
+    //         notificationPair= new Pair(bidPurchase.getBuyerId() ,"Bid " + bidPurchase.getId() + " has been accepted by " + bidPurchase.getSubmitterId());
+    //     } else if(bidPurchase.isAccepted()==-1){
+    //         notificationPair =new Pair(bidPurchase.getBuyerId(), "Bid " + bidPurchase.getId() + " has been rejected by " + bidPurchase.getSubmitterId());
+    //     }
+    //     return notificationPair;
+    // }
 }
