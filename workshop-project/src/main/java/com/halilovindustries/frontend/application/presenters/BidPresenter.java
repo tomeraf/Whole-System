@@ -28,7 +28,7 @@ public class BidPresenter extends AbstractPresenter {
         this.orderService  = orderService;
     }
     
-    public void answerBid(int auctionID, double bidAmount, Consumer<Boolean> onFinish) {
+    public void answerBid(int shopID, int bidID, boolean accept, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;
@@ -40,7 +40,7 @@ public class BidPresenter extends AbstractPresenter {
                 return;
             }
 
-            Response<Void> resp = shopService.answerBid(token, auctionID, auctionID, false);
+            Response<Void> resp = shopService.answerBid(token, shopID, bidID, accept);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);
@@ -52,7 +52,7 @@ public class BidPresenter extends AbstractPresenter {
     });
 }
 
-    public void submitCounterBid(int auctionID, double bidAmount, Consumer<Boolean> onFinish) {
+    public void submitCounterBid(int shopID, int bidID, double offerAmount, Consumer<Boolean> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;
@@ -64,7 +64,7 @@ public class BidPresenter extends AbstractPresenter {
                 return;
             }
 
-            Response<Void> resp = shopService.submitCounterBid(token, auctionID, auctionID, bidAmount);
+            Response<Void> resp = shopService.submitCounterBid(token, shopID, bidID, offerAmount);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(false);

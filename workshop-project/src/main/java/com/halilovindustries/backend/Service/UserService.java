@@ -12,8 +12,8 @@ import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
 import com.halilovindustries.backend.Domain.User.*;
-import com.halilovindustries.websocket.INotifier;
 
+import jakarta.transaction.Transactional;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
@@ -21,7 +21,7 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthenticat
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import com.halilovindustries.backend.Domain.Message;
 
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +39,7 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @Autowired
     public UserService(IUserRepository userRepository, IAuthentication jwtAdapter, ConcurrencyHandler concurrencyHandler,
             NotificationHandler notificationHandler) {
         this.userRepository = userRepository;
@@ -59,6 +60,7 @@ public class UserService {
      *
      * @return the newly generated session token for the guest
      */
+    @Transactional
     public Response<String> enterToSystem() {
         logger.info(() -> "User entered the system");
         int guestUserID = userRepository.getIdToAssign(); // Get a unique ID for the guest user
@@ -76,6 +78,7 @@ public class UserService {
      *
      * @param sessionToken the token of the guest session to terminate
      */
+    @Transactional
     public Response<Void> exitAsGuest(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -97,6 +100,7 @@ public class UserService {
      * @param sessionToken the current token of the registered user
      * @return a new session token as a guest, or empty string on failure
      */
+    @Transactional
     public Response<String> logoutRegistered(String sessionToken) {
     // After logout - the user remains in the system, as guest
         try {
@@ -124,6 +128,7 @@ public class UserService {
      * @param password desired password
      * @param dateOfBirth user's date of birth
      */
+    @Transactional
     public Response<Void> registerUser(String sessionToken, String username, String password, LocalDate dateOfBirth) {
         ReentrantLock usernameLock = concurrencyHandler.getUsernameLock(username);
 
@@ -146,13 +151,13 @@ public class UserService {
                 
                 if (userRepository.getUserByName(username) != null)
                     throw new Exception("Username already exists");
-                if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
-                    // this is a special case for the system manager
-                    registered.setSystemManager(true);
-                }
+                // if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
+                //     // this is a special case for the system manager
+                //     registered.setSystemManager(true);
+                // }
                 userRepository.removeGuestById(userID); // Remove the guest from the repository
                 userRepository.saveUser(registered);
-                 // should be actually inside guest.register..
+                // should be actually inside guest.register..
                 return Response.ok();
             } catch (Exception e) {
                 logger.error(() -> "Error registering user: " + e.getMessage());
@@ -177,6 +182,7 @@ public class UserService {
      * @param password registered user's password
      * @return the new session token if login succeeds, or null on failure
      */
+    @Transactional
     public Response<String> loginUser(String sessionToken, String username, String password) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -206,6 +212,7 @@ public class UserService {
             return Response.error("Error logging in user: " + e.getMessage());
         }
     }
+    //@Transactional
     public Response<Void> loginNotify(String sessionToken){
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -223,6 +230,7 @@ public class UserService {
 
     //SystemManager only(need to decide how to implement system manager)
     //requirement:2.6.6
+    @Transactional
     public Response<Void> suspendUser(String sessionToken,String username,Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -241,6 +249,7 @@ public class UserService {
         }
     }
     //requirement:2.6.7
+    @Transactional
     public Response<Void> unsuspendUser(String sessionToken,String username) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -259,6 +268,7 @@ public class UserService {
         }
     }
     //requirement:2.6.8
+    @Transactional
     public Response<String> watchSuspensions(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -280,7 +290,7 @@ public class UserService {
         }
     }
 
-
+    @Transactional
     public boolean isLoggedIn(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -295,6 +305,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public Response<List<Message>> getInbox(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -309,7 +320,7 @@ public class UserService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public boolean inSystem(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -323,6 +334,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public String getUsername(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {
@@ -336,6 +348,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public Response<Void> isSystemManager(String sessionToken) {
         try {
             if (!jwtAdapter.validateToken(sessionToken)) {

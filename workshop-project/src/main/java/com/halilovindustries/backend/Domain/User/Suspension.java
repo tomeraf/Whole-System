@@ -2,6 +2,9 @@ package com.halilovindustries.backend.Domain.User;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Suspension {
     private LocalDateTime startDate=null;
     private LocalDateTime endDate=null;

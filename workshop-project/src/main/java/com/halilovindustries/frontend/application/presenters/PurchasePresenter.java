@@ -31,14 +31,14 @@ public class PurchasePresenter extends AbstractPresenter {
         this.orderService  = orderService;           // ← assign
     }
 
-    public ShipmentDetailsDTO fillShipmentDetails(String ID, String name, String email, String phone,
-            String contry, String city, String address, String zipcode) {
-        return new ShipmentDetailsDTO(ID, name, email, phone, contry, city, address, zipcode);
-    }
+    // public ShipmentDetailsDTO fillShipmentDetails(String ID, String name, String email, String phone,
+    //         String contry, String city, String address, String zipcode) {
+    //     return new ShipmentDetailsDTO(ID, name, email, phone, contry, city, address, zipcode);
+    // }
 
-    public PaymentDetailsDTO fillPaymentDetails(String cardNumber, String cardHolderName, String holderID, String expirationDate, String cvv) {
-        return new PaymentDetailsDTO(cardNumber, cardHolderName, holderID, expirationDate, cvv);
-    }
+    // public PaymentDetailsDTO fillPaymentDetails(String cardNumber, String cardHolderName, String holderID, String cvv, String month, String year) {
+    //     return new PaymentDetailsDTO(cardNumber, cardHolderName, holderID, expirationDate, cvv);
+    // }
 
     public void purchase(ShipmentDetailsDTO shipmentDetails, PaymentDetailsDTO paymentDetails, Consumer<Order> onFinish) {
         getSessionToken(token -> {

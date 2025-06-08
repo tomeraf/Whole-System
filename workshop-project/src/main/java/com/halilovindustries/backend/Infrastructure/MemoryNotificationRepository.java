@@ -2,6 +2,8 @@ package com.halilovindustries.backend.Infrastructure;
 
 import com.halilovindustries.backend.Domain.Repositories.INotificationRepository;
 import com.halilovindustries.backend.Domain.DTOs.NotificationDTO;
+
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;

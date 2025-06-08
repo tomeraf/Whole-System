@@ -21,10 +21,12 @@ public class BidPurchase {
     private int itemId;
     private int buyerId;
     private int submitterId;
-    private int rejecterId = -1;
-    private int isAccepted = 0; // 0 = not accepted , 1 = accepted , -1 = rejected
-    private int counterBidID = -1;
-    private boolean done = false;
+    private List<Integer> AcceptingMembers;
+    private int rejecterId=-1;
+    private int isAccepted = 0; // 0 = not accepted , 1 = accepted , -1 = rejected 
+    private int CounterBidID=-1;
+    boolean done=false;
+    private double counterAmount = -1;
 
     @ElementCollection
     private List<Integer> acceptingMembers = new ArrayList<>();
@@ -43,7 +45,7 @@ public class BidPurchase {
         this.itemId = itemId;
         this.buyerId = buyerID;
         this.submitterId = submitterID;
-        this.acceptingMembers.add(submitterID);
+        this.AcceptingMembers = new ArrayList<>();
     }
 
     public int getId() {
@@ -62,9 +64,6 @@ public class BidPurchase {
         return buyerId;
     }
 
-    public int getSubmitterId() {
-        return submitterId;
-    }
 
     public List<Integer> getAcceptingMembers() {
         return acceptingMembers;
@@ -78,16 +77,10 @@ public class BidPurchase {
         return isAccepted;
     }
 
-    public int getCounterBidID() {
-        return counterBidID;
-    }
     public int getShopId(){
         return shopId;
     }
 
-    public boolean isDone() {
-        return done;
-    }
 
     public void reject(int rejecterID) {
         if (isAccepted == 1) {
@@ -104,7 +97,10 @@ public class BidPurchase {
         if (!acceptingMembers.contains(memberId)) {
             acceptingMembers.add(memberId);
         }
-        if (acceptingMembers.containsAll(members)) {
+        else {
+            throw new IllegalArgumentException("Member " + memberId + " has already accepted the bid.");
+        }
+        if(AcceptingMembers.containsAll(members)){
             isAccepted = 1;
         }
     }
@@ -127,13 +123,14 @@ public class BidPurchase {
         if (isAccepted == -1) {
             throw new IllegalStateException("Bid Purchase has already been rejected by " + rejecterId);
         }
-        BidPurchase counterBid = new BidPurchase(counterId,shopId,offerAmount, getItemId(), getBuyerId(), submitterId);
-        counterBid.setCounterBidID(counterBid.getId());
+        BidPurchase counterBid = new BidPurchase(counterId,shopId, this.getAmount(), getItemId(),getBuyerId(), submitterId);
+        setCounterBidID(counterId);
+        counterBid.counterAmount = offerAmount;
         return counterBid;
     }
 
     public void setCounterBidID(int counterID) {
-        this.counterBidID = counterID;
+        this.CounterBidID = counterID;
     }
 
     public Pair<Integer, Double> purchaseBidItem(int userID) {
@@ -146,16 +143,29 @@ public class BidPurchase {
         done = true;
         return new Pair<>(getItemId(), getAmount());
     }
-
-    public void answerOnCounterBid(int userID, boolean accept, List<Integer> members) {
-        if (getBuyerId() != userID) {
+    public void answerOnCounterBid(int userID, boolean accept) {
+        if(getBuyerId()!=userID)
+        {
             throw new IllegalArgumentException("Error: user is not the buyer of the bid.");
         }
         if (accept) {
             isAccepted = 1;
-            addAcceptingMember(userID, members);
-        } else {
+        }
+        else
+        {
             reject(userID);
         }
+    }
+    public int getSubmitterId() {
+        return submitterId;
+    }
+    public int getCounterBidID() {
+        return CounterBidID;
+    }
+    public boolean isDone() {
+        return done;
+    }
+    public double getCounterAmount() {
+        return counterAmount;
     }
 }

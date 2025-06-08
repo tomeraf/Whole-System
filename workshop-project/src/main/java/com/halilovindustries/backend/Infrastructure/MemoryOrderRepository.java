@@ -7,6 +7,8 @@ import java.util.List;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
+
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -35,8 +37,8 @@ public class MemoryOrderRepository implements IOrderRepository {
     }
 
     @Override
-    public HashMap<Integer, Order> getAllOrders() {
-        return orders;
+    public List<Order> getAllOrders() {
+        return orders.values().stream().toList();
     }
 
     @Override
@@ -58,6 +60,10 @@ public class MemoryOrderRepository implements IOrderRepository {
             }
         }
         return orderList;
+    }
+    @Override
+    public int getNextId() {
+        return orders.size();
     }
 
 

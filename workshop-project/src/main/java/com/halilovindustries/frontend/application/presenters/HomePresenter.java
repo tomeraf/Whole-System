@@ -7,7 +7,6 @@ import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
-import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.UI;
 
 import org.aspectj.weaver.ast.Not;
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.shared.Registration;
 
 @Component
 public class HomePresenter extends AbstractPresenter {
@@ -126,11 +124,6 @@ public class HomePresenter extends AbstractPresenter {
         return jwtAdapter.getUsername(token);
     }
 
-    /** Subscribe to server pushes for this user. */
-    public Registration subscribeToBroadcast(String userId, Consumer<String> callback) {
-        return Broadcaster.register(userId, callback);
-    }
-
     public void logoutUser() {
         // 1) get current token
         getSessionToken(oldToken -> {
@@ -159,7 +152,6 @@ public class HomePresenter extends AbstractPresenter {
             .executeJs("sessionStorage.setItem('token', $0);", guestToken);
 
             Notification.show("Logged out successfully.", 2000, Position.TOP_CENTER);
-            UI.getCurrent().getPage().reload();
         });
         });
     }
@@ -247,5 +239,31 @@ public class HomePresenter extends AbstractPresenter {
             });
         });
 
+    }
+
+    public void loginNotify() {
+        getSessionToken(token -> {userService.loginNotify(token);}
+        );
+    }
+
+    public void isSystemManager(Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(false);
+                    return;
+                }
+                Response<Void> resp = userService.isSystemManager(token);
+                if (!resp.isOk()) {
+                    onFinish.accept(false);
+                } else {
+                    onFinish.accept(true);
+                }
+            });
+        });
     }
 }

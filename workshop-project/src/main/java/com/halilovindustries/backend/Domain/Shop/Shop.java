@@ -455,7 +455,7 @@ public class Shop {
             .filter(bid -> bid.getId() == bidId)
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
-        bidPurchase.answerOnCounterBid(userID, accept, members);
+        bidPurchase.answerOnCounterBid(userID, accept);
     }
 
     public List<Integer> getMembersIDs() {
@@ -536,7 +536,7 @@ public class Shop {
     public List<BidDTO> getBids() {
         List<BidDTO> bids = new ArrayList<>();
         for (BidPurchase bid : bidPurchaseItems) {
-            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
+            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone(),bid.getCounterAmount()));
         }
         return bids;
     }

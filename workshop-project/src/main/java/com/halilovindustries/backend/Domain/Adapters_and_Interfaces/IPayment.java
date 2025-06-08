@@ -9,8 +9,9 @@ public interface IPayment {
     boolean validatePaymentDetails(PaymentDetailsDTO details);
 
     // return the transactionId for good payment; return null for bad payment
-    boolean processPayment(double price,PaymentDetailsDTO details);
+    Integer processPayment(double price, PaymentDetailsDTO details);
 
-    //PaymentDetailsDTO getPaymentDetails();
+    boolean cancelPayment(int transactionId);
 
+    //boolean handShake()
 }

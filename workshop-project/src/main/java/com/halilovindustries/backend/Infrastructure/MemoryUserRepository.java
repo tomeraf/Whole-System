@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.stereotype.Repository;
 
 import com.halilovindustries.backend.Domain.User.Guest;
+import com.halilovindustries.backend.Domain.User.IRole;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
@@ -28,14 +29,6 @@ public class MemoryUserRepository implements IUserRepository {
         users.put(user.getUserID(), user); // Add the user to the list 
     }
     public void saveUser(Registered user) {
-        if (users.containsKey(user.getUserID())) {
-            throw new RuntimeException("User already exists");
-        }
-        
-        if (getUserByName(user.getUsername()) != null) {
-            throw new RuntimeException("Username already exists");
-        }
-
         users.put(user.getUserID(), user); // Add the user to the list 
     }
 
@@ -70,11 +63,6 @@ public class MemoryUserRepository implements IUserRepository {
     }
 
     @Override
-    public Map<Integer, Guest> getAllUsers() {
-        return users;
-    }
-
-    @Override
     public List<Registered> getAllRegisteredUsers() {
         List<Registered> registeredUsers = new ArrayList<>();
         for (Guest user : users.values()) {
@@ -103,15 +91,29 @@ public class MemoryUserRepository implements IUserRepository {
     public List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission) {
         List<Integer> registeredUsers = new ArrayList<>();
         for (Guest user : users.values()) {
-            if (user instanceof Registered && ((Registered) user).hasPermission(shopID, permission)) {
-                registeredUsers.add(user.getUserID());
+            try {
+                if (user instanceof Registered && ((Registered) user).hasPermission(shopID, permission)) {
+                    registeredUsers.add(user.getUserID());
+                }
             }
+            catch (Exception e) {
+                // Handle the case where the user does not have a role in the shop
+                // or any other exception that might occur            
+                }
         }
         return registeredUsers;
     }
-
     @Override
-    public List<Integer> getRemovedIds() {
-        return removedIds;
+    public List<IRole> getAppointmentsOfUserInShop(int appointerId, int shopId) {
+        List<IRole> appointments = new ArrayList<>();
+        for (Guest user : users.values()) {
+            if (user instanceof Registered) {
+                Registered registeredUser = (Registered) user;
+                if (registeredUser.getUserID() == appointerId) {
+                    appointments.addAll(registeredUser.getAppointments(shopId).values());
+                }
+            }
+        }
+        return appointments;
     }
 }

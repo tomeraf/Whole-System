@@ -42,7 +42,7 @@ public class ManagementService {
     public void removeAppointment(Registered appointer, Shop shop, Registered userToRemove) {
         List<Integer> idsToRemove = appointer.removeAppointment(shop.getId(), userToRemove.getUserID());
         shop.removeAppointment(idsToRemove);
-    }
+        }
 
     public void addManager(Registered appointer, Shop shop, Registered appointee, Set<Permission> permission) {
         Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
@@ -250,11 +250,9 @@ public class ManagementService {
     }
     public List<BidDTO> getBids(Registered user, Shop shop) {
         if( user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            return shop.getBids();
+            return shop.getBids().stream().filter(bid -> bid.getCounterBidId() == -1).toList();
         } else {
             throw new IllegalArgumentException("You don't have permission to view bids");
         }
     }
-
-
 }

@@ -3,6 +3,7 @@ package com.halilovindustries.frontend.application.presenters;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.UserDTO;
@@ -472,6 +473,29 @@ public class MyShopPresenter extends AbstractPresenter {
                 }
 
                 Response<List<AuctionDTO>> res = shopService.getFutureAuctions(token, shopID);
+                if (!res.isOk()) {
+                    Notification.show("Error: " + res.getError(), 2000, Position.MIDDLE);
+                    onFinish.accept(List.of());
+                } else {
+                    onFinish.accept(res.getData());
+                }
+            });
+        });
+    }
+
+    public void getBids(int shopID, Consumer<List<BidDTO>> onFinish) {
+        getSessionToken(token -> {
+            UI ui = UI.getCurrent();
+            if (ui == null) return;
+
+            ui.access(() -> {
+                if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                    Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                    onFinish.accept(List.of());
+                    return;
+                }
+
+                Response<List<BidDTO>> res = shopService.getBids(token, shopID);
                 if (!res.isOk()) {
                     Notification.show("Error: " + res.getError(), 2000, Position.MIDDLE);
                     onFinish.accept(List.of());

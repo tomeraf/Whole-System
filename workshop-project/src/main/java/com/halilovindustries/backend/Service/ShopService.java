@@ -620,6 +620,12 @@ public class ShopService {
             }
             Shop shop = shopRepository.getShopById(shopId);
             interactionService.sendMessage(user, shop, title, content);
+            for (int reciverId : shop.getOwnerIDs()) {
+                notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
+            }
+            for (int reciverId : shop.getManagerIDs()) {
+                notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
+            }
             logger.info(() -> "Message sent: " + title + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok();
         } catch (Exception e) {
@@ -680,7 +686,6 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
     // management
     @Transactional
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
@@ -729,17 +734,28 @@ public class ShopService {
                 }
                 int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
                 Registered user = (Registered) this.userRepository.getUserById(userID);
+                
+                List<IRole> appointedRoles = userRepository.getAppointmentsOfUserInShop(userID, shopID);
+                IRole roleInShop = user.getRoleInShop(shopID);
+                roleInShop.setAppointments(appointedRoles);
+
                 if (user.isSuspended()) {
                     return Response.error("User is suspended");
                 }
                 Registered appointee = userRepository.getUserByName(appointeeName);
+
+                appointedRoles = userRepository.getAppointmentsOfUserInShop(appointee.getUserID(), shopID);
+                roleInShop = appointee.getRoleInShop(shopID);
+                roleInShop.setAppointments(appointedRoles);
+                
                 if (appointee.isSuspended()) {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.removeAppointment(user, shop, appointee);
+                
                 notificationHandler.notifyUser(appointee.getUserID() + "",
-                        "You no longer have your role in shop:" + shop.getName());
+                        "You no longer have your role in shop: " + shop.getName());
             } catch (Exception e) {
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -916,7 +932,7 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-
+    @Transactional
     public Response<Void> submitCounterBid(String sessionToken, int shopID, int bidID, double offerAmount) {
         ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
 
@@ -933,6 +949,10 @@ public class ShopService {
                 }
                 Shop shop = shopRepository.getShopById(shopID);
                 managementService.submitCounterBid(user, shop, bidID, offerAmount);
+                // Notify the customer about the counter bid
+                String customerName = userRepository.getUserById(shop.getBidPurchase(bidID).getSubmitterId()).getUsername();
+                notificationHandler.notifyUser(""+customerName, "You have got a counter bid of " + offerAmount
+                        + " in shop: " + shop.getName());
                 logger.info(() -> "Counter bid submitted: " + bidID + " in shop: " + shop.getName() + " by user: "
                         + userID);
                 return Response.ok();
@@ -1192,7 +1212,9 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
-            List<BidDTO> bids = managementService.getBids(user, shop);
+            List<BidDTO> bids = managementService.getBids(user, shop).stream()
+                .filter(bid -> !bid.isDone())
+                .toList();
             logger.info(() -> "Active bids retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(bids);
         } catch (Exception e) {
@@ -1200,6 +1222,62 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+
+    public Response<List<BidDTO>> getUserBids(String sessionToken, int shopID, String flag) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+             
+            if (shop.getBids() == null) {
+                throw new IllegalArgumentException("No bids found for the shop");
+            }
+            if (flag == null || flag.isEmpty()) {
+                throw new IllegalArgumentException("Flag cannot be null or empty");
+            }
+            if (!flag.equals("Counter") && !flag.equals("Accepted") && !flag.equals("Rejected") && !flag.equals("In Progress")) {
+                throw new IllegalArgumentException("Invalid flag value. Use 'Counter', 'In Progress', 'Accepted', or 'Rejected'.");
+            }
+            List<BidDTO> bids = shop.getBids().stream()
+                .filter(bid -> bid.getBuyerId() == userID && bid.getCounterBidId() == -1)
+                .toList();
+            switch (flag) {
+                case "Counter":
+                    bids = bids.stream()
+                        .filter(bid -> bid.getCounterAmount() != -1 && bid.getIsAccepted() == 0)
+                        .toList();
+                    break;
+                case "Accepted":
+                    bids = bids.stream()
+                        .filter(bid -> bid.getIsAccepted() == 1 && !bid.isDone())
+                        .toList();
+                    break;
+                case "Rejected":
+                    bids = bids.stream()
+                        .filter(bid -> bid.getIsAccepted() == -1)
+                        .toList();
+                    break;
+                case "In Progress":
+                    bids = bids.stream()
+                        .filter(bid -> bid.getIsAccepted() == 0 && bid.getCounterAmount() == -1)
+                        .toList();
+                    break;
+            }
+
+            logger.info(() -> "Active user bids retrieved in shop: " + shop.getName() + " for user: " + userID);
+            return Response.ok(bids);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving active bids: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
     @Transactional
     public Response<Integer> getShopId(String sessionToken, String shopName) {
         try {

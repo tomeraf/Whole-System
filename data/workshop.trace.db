@@ -1,0 +1,24 @@
+2025-06-04 20:04:31.887162+03:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "[*]BASKET_ITEMS"; expected "BACKUP, BEGIN"; SQL statement:
+BASKET_ITEMS [42001-232]
+2025-06-08 17:16:47.962362+03:00 jdbc[14]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "DROP [*]ALL ITEMS"; expected "TABLE, INDEX, USER, SEQUENCE, CONSTANT, TRIGGER, MATERIALIZED, VIEW, ROLE, ALIAS, SCHEMA, ALL OBJECTS, DOMAIN, TYPE, AGGREGATE, SYNONYM"; SQL statement:
+DROP ALL ITEMS [42001-232]
+2025-06-08 17:16:55.416285+03:00 jdbc[14]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "DROP [*]ALL ITEMS"; expected "TABLE, INDEX, USER, SEQUENCE, CONSTANT, TRIGGER, MATERIALIZED, VIEW, ROLE, ALIAS, SCHEMA, ALL OBJECTS, DOMAIN, TYPE, AGGREGATE, SYNONYM"; SQL statement:
+DROP ALL ITEMS [42001-232]
+2025-06-08 17:17:47.902171+03:00 jdbc[14]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "DROP [*]ITEMS"; expected "TABLE, INDEX, USER, SEQUENCE, CONSTANT, TRIGGER, MATERIALIZED, VIEW, ROLE, ALIAS, SCHEMA, ALL OBJECTS, DOMAIN, TYPE, AGGREGATE, SYNONYM"; SQL statement:
+DROP ITEMS [42001-232]
+2025-06-08 17:21:52.742867+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "REGISTERED" not found (this database is empty); SQL statement:
+select r1_0.id,c1_0.cart_id,r1_0.date_of_birth,r1_0.is_system_manager,r1_0.password,r1_0.end_date,r1_0.is_permanent,r1_0.start_date,r1_0.user_name from registered r1_0 left join shopping_cart c1_0 on c1_0.cart_id=r1_0.cart_id where r1_0.id=? [42104-232]
+2025-06-08 17:21:55.177186+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "REGISTERED" not found (this database is empty); SQL statement:
+select r1_0.id,c1_0.cart_id,r1_0.date_of_birth,r1_0.is_system_manager,r1_0.password,r1_0.end_date,r1_0.is_permanent,r1_0.start_date,r1_0.user_name from registered r1_0 left join shopping_cart c1_0 on c1_0.cart_id=r1_0.cart_id where r1_0.id=? [42104-232]
+2025-06-08 17:21:55.217890+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "REGISTERED" not found (this database is empty); SQL statement:
+select r1_0.id,c1_0.cart_id,r1_0.date_of_birth,r1_0.is_system_manager,r1_0.password,r1_0.end_date,r1_0.is_permanent,r1_0.start_date,r1_0.user_name from registered r1_0 left join shopping_cart c1_0 on c1_0.cart_id=r1_0.cart_id where r1_0.id=? [42104-232]
+2025-06-08 17:21:55.252711+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "REGISTERED" not found (this database is empty); SQL statement:
+select r1_0.id,c1_0.cart_id,r1_0.date_of_birth,r1_0.is_system_manager,r1_0.password,r1_0.end_date,r1_0.is_permanent,r1_0.start_date,r1_0.user_name from registered r1_0 left join shopping_cart c1_0 on c1_0.cart_id=r1_0.cart_id where r1_0.id=? [42104-232]
