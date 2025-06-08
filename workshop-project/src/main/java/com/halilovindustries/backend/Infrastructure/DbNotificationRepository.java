@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.LinkedList;
 
-/**
- * Database-backed implementation of INotificationRepository using Spring Data JPA.
- */
 @Primary
 @Repository
 public class DBNotificationRepository implements INotificationRepository {
