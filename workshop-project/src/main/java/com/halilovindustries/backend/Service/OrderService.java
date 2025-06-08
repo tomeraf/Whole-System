@@ -334,11 +334,18 @@ public class OrderService {
             Registered user = userRepository.getUserByName(guest.getUsername());
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             List<Integer> members=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
-            Pair<Integer,String> notification=purchaseService.answerOnCounterBid(user,shop,bidId,accept,members);
-            if(notification!=null) {
-                notificationHandler.notifyUsers(Collections.singletonList(notification.getKey()),notification.getValue());
+            purchaseService.answerOnCounterBid(user,shop,bidId,accept);
+            List<Integer> managers = shop.getManagerIDs().stream().filter(id -> ((Registered) userRepository.getUserById(id)).hasPermission(shopId, Permission.ANSWER_BID)).toList();
+            List<Integer> owners = shop.getOwnerIDs().stream().toList();
+            if (accept) {
+                notificationHandler.notifyUsers(managers, "Bid " + bidId + " has been accepted by " + user.getUsername());
+                notificationHandler.notifyUsers(owners, "Bid " + bidId + " has been accepted by " + user.getUsername());
             }
-            logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId);
+            else {
+                notificationHandler.notifyUsers(managers, "Bid " + bidId + " has been rejected by " + user.getUsername());
+                notificationHandler.notifyUsers(owners, "Bid " + bidId + " has been rejected by " + user.getUsername());
+            }
+            logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId + ", by user ID: " + user.getUsername());
             return Response.ok();
         } catch (Exception e) {
             logger.error(() -> "Error answering on counter bid: " + e.getMessage());

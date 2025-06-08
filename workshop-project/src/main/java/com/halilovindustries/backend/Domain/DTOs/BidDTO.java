@@ -67,5 +67,7 @@ public class BidDTO {
         return counterAmount;
     }
     
-
+    public double getPrice() {
+        return counterAmount > 0 ? counterAmount : amount;
+    }
 }

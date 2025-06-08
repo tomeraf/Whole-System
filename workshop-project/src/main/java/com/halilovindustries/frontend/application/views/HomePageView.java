@@ -1,4 +1,3 @@
-
 package com.halilovindustries.frontend.application.views;
 
 import com.halilovindustries.backend.Domain.Response;
@@ -424,7 +423,7 @@ public class HomePageView extends Composite<VerticalLayout> {
     }
 
     private void doLogin(String username, String password) {
-    boolean isDefaultUser = "idanTheManager".equals(username);
+    //boolean isDefaultUser = "idanTheManager".equals(username);
     
     presenter.loginUser(username, password, (token, success) -> {
         if (success && token != null && presenter.validateToken(token)) {
@@ -450,7 +449,15 @@ public class HomePageView extends Composite<VerticalLayout> {
 }
 
     private void doLogout() {
-        unregisterNotifications(); // clean up any existing subscription
+        // Find parent MainLayout and unregister there
+        getUI().ifPresent(ui -> {
+            ui.getChildren()
+                .filter(component -> component instanceof MainLayout)
+                .findFirst()
+                .map(layout -> (MainLayout) layout)
+                .ifPresent(MainLayout::unregisterNotifications);
+        });
+        
         presenter.logoutUser(); // performs backend logout and gets new guest token
         showGuestUI();          // switch back to guest view
     }
@@ -649,26 +656,31 @@ public class HomePageView extends Composite<VerticalLayout> {
 
     /** Subscribe to receive live pushes for this user */
     private void registerForNotifications(String userId) {
-        unregisterNotifications();  // in case we already had one
-        UI ui = UI.getCurrent();
-        
-        broadcasterRegistration = Broadcaster.register(userId, msg-> {
-            if (ui != null) {
-                ui.access(() -> {
-                    Notification.show("Notification from server" + ": " + msg, 10000, Position.TOP_CENTER);
-                });            
-            }
+        // Find parent MainLayout and register there
+        getUI().ifPresent(ui -> {
+            ui.getChildren()
+                .filter(component -> component instanceof MainLayout)
+                .findFirst()
+                .map(layout -> (MainLayout) layout)
+                .ifPresent(mainLayout -> mainLayout.registerForNotifications(userId));
         });
+        
+        // Still call your notification trigger
         presenter.loginNotify();
-        System.out.println("Subscribed to live notifications for " + userId);
     }
 
-    /** Clean up subscription */
-    private void unregisterNotifications() {
-        if (broadcasterRegistration != null) {
-            broadcasterRegistration.remove();
-            broadcasterRegistration = null;
-            System.out.println("Unsubscribed from live notifications");
-        }
+    // /** Clean up subscription */
+    // private void unregisterNotifications() {
+    //     if (broadcasterRegistration != null) {
+    //         broadcasterRegistration.remove();
+    //         broadcasterRegistration = null;
+    //         System.out.println("Unsubscribed from live notifications");
+    //     }
+    // }
+
+    @Override
+    protected void onDetach(DetachEvent event) {
+        super.onDetach(event);
+        System.out.println("HomePageView: UI detached");
     }
 }

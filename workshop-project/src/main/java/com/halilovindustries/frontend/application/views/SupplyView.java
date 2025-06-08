@@ -520,7 +520,7 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
 
         Span bidderName = new Span("Bidder: " + bid.getSubmitterId());
         Span itemNameSpan = new Span("Item: " + itemName);
-        Span offerPrice = new Span("Offer: $" + String.format("%.2f", bid.getAmount()));
+        Span offerPrice = new Span("Offer: $" + String.format("%.2f", bid.getPrice()));
 
         bidderName.getStyle().set("font-weight", "bold");
         itemNameSpan.getStyle().set("margin-top", "0.25rem");
@@ -577,11 +577,11 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
             NumberField newOfferField = new NumberField("New Offer Price");
             newOfferField.setStep(0.01);
             newOfferField.setMin(0.01);
-            newOfferField.setValue(bid.getAmount() + 1.0); // default
+            newOfferField.setValue(bid.getPrice() + 1.0); // default
 
             Button submitCounter = new Button("Submit", ev -> {
                 Double newOffer = newOfferField.getValue();
-                if (newOffer == null || newOffer <= bid.getAmount()) {
+                if (newOffer == null || newOffer <= bid.getPrice()) {
                     Notification.show("Counter must exceed current offer", 2000, Position.MIDDLE);
                     return;
                 }
@@ -606,6 +606,47 @@ public class SupplyView extends Composite<VerticalLayout> implements HasUrlParam
         // ─────────────────────────────────────────────────────────────────────────
 
         card.add(bidderName, itemNameSpan, offerPrice, new HorizontalLayout(answerBtn, counterBtn));
+
+        // ─── Status & Actions ───────────────────────────────────────────────────
+        if (bid.getCounterAmount() == -1 && bid.getIsAccepted() == 0) {
+            // initial state: show Answer & Counter
+            card.add(new HorizontalLayout(answerBtn, counterBtn));
+        }
+        else if (bid.getCounterAmount() != -1 && bid.getIsAccepted() == 0) {
+            // you’ve countered but customer hasn’t responded yet
+            counterBtn.setEnabled(false);
+            answerBtn.setEnabled(false);
+            Span counterSpan = new Span("Counter: $" + String.format("%.2f", bid.getCounterAmount()));
+            counterSpan.getStyle()
+                .set("margin-top", "0.5rem")
+                .set("color", "#c0392b")
+                .set("font-weight", "bold");
+            card.add(counterSpan);
+        }
+        else if (bid.getIsAccepted() == 1) {
+            // bid accepted
+            answerBtn.setEnabled(false);
+            counterBtn.setEnabled(false);
+            Span accepted = new Span("Accepted");
+            accepted.getStyle()
+                .set("margin-top", "0.5rem")
+                .set("color", "#27ae60")
+                .set("font-weight", "bold");
+            card.add(accepted);
+        }
+        else if (bid.getIsAccepted() == -1)
+        {
+            // bid rejected (isAccepted != 0 or counter logic)
+            answerBtn.setEnabled(false);
+            counterBtn.setEnabled(false);
+            Span rejected = new Span("Rejected");
+            rejected.getStyle()
+                .set("margin-top", "0.5rem")
+                .set("color", "#e74c3c")
+                .set("font-weight", "bold");
+            card.add(rejected);
+        }
+
         return card;
     }
 }

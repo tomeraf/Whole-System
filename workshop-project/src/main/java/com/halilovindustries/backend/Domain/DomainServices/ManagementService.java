@@ -256,18 +256,9 @@ public class ManagementService {
     }
     public List<BidDTO> getBids(Registered user, Shop shop) {
         if( user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            return shop.getBids();
+            return shop.getBids().stream().filter(bid -> bid.getCounterBidId() == -1).toList();
         } else {
             throw new IllegalArgumentException("You don't have permission to view bids");
         }
-    }
-
-    public List<BidDTO> getUserBids(int userId, Shop shop) {
-        if (shop.getBids() == null) {
-            throw new IllegalArgumentException("No bids found for the shop");
-        }
-        return shop.getBids().stream()
-                .filter(bid -> bid.getSubmitterId() == userId)
-                .toList();
     }
 }
