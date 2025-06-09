@@ -216,7 +216,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     @Test
     public void testRateShop_WhenNotLoggedIn_ShouldFail() {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1","12/25", "123"
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
         ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 

@@ -8,12 +8,16 @@ public class Order {
     private final int userId;
     private final double totalPrice;
     private final HashMap<Integer, List<ItemDTO>> items; // <Integer, List<ItemDTO> = shopId, List<ItemDTO> = items in the shop
+    private int paymentId;
+    private int shipmentId;
 
-    public Order(int orderID, int userId, double totalPrice, HashMap<Integer, List<ItemDTO>> items) {
+    public Order(int orderID, int userId, double totalPrice, HashMap<Integer, List<ItemDTO>> items, int paymentId, int shipmentId) {
         this.orderID = orderID;
         this.totalPrice = totalPrice;
         this.items = items;
         this.userId = userId;
+        this.paymentId = paymentId;
+        this.shipmentId = shipmentId;
     }
 
     public List<ItemDTO> getItems() {
@@ -34,6 +38,15 @@ public class Order {
     public double getTotalPrice() {
         return totalPrice;
     }
+    
+    public int getPaymentId() {
+        return paymentId;
+    }
+
+    public int getShipmentId() {
+        return shipmentId;
+    }
+    
     public String getOrderDetails() {
         StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
         for (int shopId : items.keySet()) {

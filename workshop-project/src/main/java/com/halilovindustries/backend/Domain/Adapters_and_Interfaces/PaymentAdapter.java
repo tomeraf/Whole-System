@@ -4,7 +4,7 @@ import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PaymentAdapter implements IPayment {
+public class PaymentAdapter {
 
     private final IPayment paymentMethod;
 
@@ -15,7 +15,6 @@ public class PaymentAdapter implements IPayment {
     }
 
     // checking if the payment details are valid
-    @Override
     public boolean validatePaymentDetails(PaymentDetailsDTO paymentDetails) {
         if (paymentDetails == null || paymentDetails.fullDetails()) {
             // If payment details are null or not complete, return false
@@ -25,17 +24,15 @@ public class PaymentAdapter implements IPayment {
     }
     
     // return the transactionId for good payment; return null for bad payment
-    @Override
-    public boolean processPayment(double price, PaymentDetailsDTO paymentDetails) {
+    public Integer processPayment(double price, PaymentDetailsDTO paymentDetails) {
         if (validatePaymentDetails(paymentDetails)) {
             // If payment details are not valid, return null
-            return false;
+            return null;
         }
         return paymentMethod.processPayment(price, paymentDetails);
     }
 
-    // @Override
-    // public PaymentDetailsDTO getPaymentDetails() {
-    //     return paymentMethod.getPaymentDetails();
-    // }
+    public boolean cancelPayment(int transactionId) {
+        return paymentMethod.cancelPayment(transactionId);
+    }
 }

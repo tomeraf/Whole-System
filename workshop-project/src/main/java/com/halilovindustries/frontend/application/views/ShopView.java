@@ -11,10 +11,13 @@ import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.halilovindustries.frontend.application.presenters.BidPresenter;
 import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.halilovindustries.frontend.application.presenters.ShopPresenter;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
@@ -136,8 +139,81 @@ public class ShopView extends VerticalLayout implements HasUrlParameter<Integer>
                         add(auctionSection);
                     }
                 });
+            
+                // — “Counter” bids —
+                shopPresenter.getUserBids(shopId, "Counter", bids -> {
+                    UI.getCurrent().access(() -> {
+                        if (bids != null && !bids.isEmpty()) {
+                            add(new H2("Bids Awaiting Your Response"));
+                            FlexLayout counterLayout = new FlexLayout();
+                            counterLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                            counterLayout.getStyle().set("gap", "1rem");
+
+                            for (BidDTO bid : bids) {
+                                // Here counterAmount != -1 and isAccepted == 0, so createCustomerBidCard adds buttons.
+                                counterLayout.add(createCustomerBidCard(bid, shop));
+                            }
+                            add(counterLayout);
+                        }
+                    });
+                });
+            
+            
+            // — “Accepted” bids (for example) —
+            shopPresenter.getUserBids(shopId, "Accepted", bids -> {
+                UI.getCurrent().access(() -> {
+                    if (bids != null && !bids.isEmpty()) {
+                        add(new H2("Accepted Bids"));
+                        FlexLayout acceptedLayout = new FlexLayout();
+                        acceptedLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        acceptedLayout.getStyle().set("gap", "1rem");
+
+                        for (BidDTO bid : bids) {
+                            // If isAccepted==1 ⇒ our if‐block (bid.getIsAccepted()==0) fails, so no buttons again.
+                            acceptedLayout.add(createCustomerBidCard(bid, shop));
+                        }
+                        add(acceptedLayout);
+                    }
+                });
             });
+
+            // ─── “My Rejected Bids” SECTION ────────────────────────────────────────────────
+            shopPresenter.getUserBids(shopId, "Rejected", bids -> {
+                UI.getCurrent().access(() -> {
+                    if (bids != null && !bids.isEmpty()) {
+                        add(new H2("Rejected Bids"));
+                        FlexLayout rejectedLayout = new FlexLayout();
+                        rejectedLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        rejectedLayout.getStyle().set("gap", "1rem");
+
+                        for (BidDTO bid : bids) {
+                            rejectedLayout.add(createCustomerBidCard(bid, shop));
+                        }
+                        add(rejectedLayout);
+                    }
+                });
+            });
+
+            // — “In Progress” bids —
+            shopPresenter.getUserBids(shopId, "In Progress", bids -> {
+                UI.getCurrent().access(() -> {
+                    if (bids != null && !bids.isEmpty()) {
+                        add(new H2("Bids In Progress"));
+                        FlexLayout inProgressLayout = new FlexLayout();
+                        inProgressLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                        inProgressLayout.getStyle().set("gap", "1rem");
+
+                        for (BidDTO bid : bids) {
+                            // Because counterAmount == -1 here, createCustomerBidCard will NOT add buttons.
+                            inProgressLayout.add(createCustomerBidCard(bid, shop));
+                        }
+                        add(inProgressLayout);
+                    }
+                });
+            });
+
         });
+    });
     }
 
     private void openMessageDialog() {
@@ -284,18 +360,20 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         VerticalLayout card = new VerticalLayout();
         card.setAlignItems(FlexComponent.Alignment.CENTER);
         card.getStyle()
-            .set("border", "1px solid #ddd").set("border-radius", "8px")
-            .set("padding", "1rem").set("width", "200px");
+            .set("border", "1px solid #ddd")
+            .set("border-radius", "8px")
+            .set("padding", "1rem")
+            .set("width", "200px");
 
         Span name = new Span(item.getName());
         name.getStyle().set("font-size", "0.9em");
         Span price = new Span("$" + item.getPrice());
         price.getStyle().set("font-weight", "bold");
 
-        // Quantity controls
+        // Quantity controls (as before)
         AtomicInteger qty = new AtomicInteger(1);
         Span qtyLabel = new Span(String.valueOf(qty.get()));
-        Button minus = new Button("–", e -> {
+        Button minus = new Button("-", e -> {
             if (qty.get() > 1) qty.decrementAndGet();
             qtyLabel.setText(String.valueOf(qty.get()));
         });
@@ -308,18 +386,26 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         HorizontalLayout qtyControls = new HorizontalLayout(minus, qtyLabel, plus);
         qtyControls.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        Button add = new Button("Add to Cart", e -> 
+        // “Add to Cart” button (as before)
+        Button add = new Button("Add to Cart", e ->
             shopPresenter.saveInCart(new ItemDTO(
                 item.getName(), item.getCategory(), item.getPrice(),
-                item.getShopId(), item.getItemID(), qty.get(), item.getRating(), item.getDescription(), item.getNumOfOrders()
+                item.getShopId(), item.getItemID(), qty.get(),
+                item.getRating(), item.getDescription(), item.getNumOfOrders()
             ))
         );
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add.setWidthFull();
         add.getElement().addEventListener("click", ev -> {}).addEventData("event.stopPropagation()");
 
-        card.add(name, price, qtyControls, add);
+        Button bidBtn = new Button("Place Bid", e -> openBidDialog(item));
+        bidBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        bidBtn.setWidthFull();
+        bidBtn.getElement().addEventListener("click", ev -> {}).addEventData("event.stopPropagation()");
 
+        card.add(name, price, qtyControls, add, bidBtn);
+
+        // Show item details on card click (same as before)
         card.addClickListener(e -> {
             Dialog details = new Dialog();
             details.setWidth("400px");
@@ -359,10 +445,10 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             Span endsAt = new Span("Ends: " + auction.getAuctionEndTime().toString());
             endsAt.getStyle().set("font-size", "0.85em").set("color", "#888");
 
-            Button bidButton = new Button("Place Bid", e -> openBidDialog(shopID, auction, currentPrice));
-            bidButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            Button offerButton = new Button("Place offer", e -> openOfferDialog(shopID, auction, currentPrice));
+            offerButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-            card.add(name, currentPrice, endsAt, bidButton);
+            card.add(name, currentPrice, endsAt, offerButton);
             onCardReady.accept(card);
         });
     }
@@ -396,16 +482,16 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         });
     }
 
-    private void openBidDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
+    private void openOfferDialog(int shopID, AuctionDTO auction, Span currentPriceLabel) {
         Dialog dialog = new Dialog();
         dialog.setWidth("300px");
 
-        NumberField bidField = new NumberField("Your Bid");
+        NumberField bidField = new NumberField("Your offer");
         bidField.setStep(0.01);
         bidField.setMin(auction.getHighestBid());
         bidField.setValue(auction.getHighestBid());
 
-        Button confirm = new Button("Confirm Bid", event -> {
+        Button confirm = new Button("Confirm offer", event -> {
             double bid = bidField.getValue();
             // Submit bid through presenter
             shopPresenter.submitAuctionOffer(shopID, auction.getId(), bid, success -> {
@@ -414,14 +500,14 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                     dialog.close();
                 } else {
                     bidField.setInvalid(true);
-                    bidField.setErrorMessage("Bid failed. Try again.");
+                    bidField.setErrorMessage("Offer failed. Try again.");
                 }
             });
         });
         confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         VerticalLayout layout = new VerticalLayout(
-            new H2("Place a Bid"),
+            new H2("Place an offer"),
             bidField,
             confirm
         );
@@ -442,7 +528,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         // —— Header ——
         H2 title = new H2("Checkout");
-        Button back = new Button("×", e -> dialog.close()); // Close dialog instead of navigating
+        Button back = new Button("x", e -> dialog.close()); // Close dialog instead of navigating
         back.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         HorizontalLayout header = new HorizontalLayout(title, back);
         header.setWidthFull();
@@ -536,8 +622,8 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                         cardNumber.getValue(),
                         cardHolderName.getValue(),
                         holderId.getValue(),
-                        expMonth.getValue() + "/" + expYear.getValue(),
-                        cvv.getValue()
+                        cvv.getValue(),
+                        expMonth.getValue(), expYear.getValue()
                     );
 
                     shopPresenter.purchaseAuctionItem(shopID, auction.getId(), payDto, shipDto, order -> {
@@ -562,4 +648,343 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         dialog.open();
     }
 
+    private void openBidPurchaseDialog(int shopID, BidDTO bid, Span currentPriceLabel) {
+        Dialog dialog = new Dialog();
+        dialog.setModal(true);
+        dialog.setCloseOnEsc(true);
+        dialog.setCloseOnOutsideClick(true);
+
+        VerticalLayout dialogLayout = new VerticalLayout();
+        dialogLayout.setPadding(true);
+        dialogLayout.setSpacing(true);
+        dialogLayout.setAlignItems(FlexComponent.Alignment.START);
+
+        // —— Header ——
+        H2 title = new H2("Checkout");
+        Button back = new Button("x", e -> dialog.close()); // Close dialog instead of navigating
+        back.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        HorizontalLayout header = new HorizontalLayout(title, back);
+        header.setWidthFull();
+        header.expand(title);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        dialogLayout.add(header);
+
+        // —— Shipment Details ——
+        dialogLayout.add(new H3("Shipment Details"));
+        FormLayout shipForm = new FormLayout();
+        shipForm.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("600px", 2)
+        );
+        shipForm.getElement().setAttribute("autocomplete", "off");
+
+        TextField fullName = new TextField("Full Name");
+        TextField email    = new TextField("Email");
+        TextField phone    = new TextField("Phone");
+        TextField address  = new TextField("Address");
+        TextField city     = new TextField("City");
+        TextField zipCode  = new TextField("Zip Code");
+        ComboBox<String> country = new ComboBox<>("Country");
+        country.setItems(
+            Arrays.stream(Locale.getISOCountries())
+                .map(c -> new Locale("",c).getDisplayCountry())
+                .sorted()
+                .collect(Collectors.toList())
+        );
+
+        shipForm.add(fullName, email, phone, address, city, country, zipCode);
+        dialogLayout.add(shipForm);
+
+        // —— Payment Details ——
+        dialogLayout.add(new H3("Payment Details"));
+        FormLayout payForm = new FormLayout();
+        payForm.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("600px", 2)
+        );
+        payForm.getElement().setAttribute("autocomplete", "off");
+
+        TextField cardHolderName = new TextField("Card Holder Name");
+        TextField holderId       = new TextField("Card Holder ID");
+        TextField cardNumber     = new TextField("Card Number");
+        ComboBox<String> expMonth = new ComboBox<>("Exp. Month");
+        expMonth.setItems("01","02","03","04","05","06","07","08","09","10","11","12");
+
+        ComboBox<String> expYear  = new ComboBox<>("Exp. Year");
+        int currentYear = Year.now().getValue();
+        List<String> years = IntStream
+            .range(currentYear, currentYear + 41)
+            .mapToObj(String::valueOf)
+            .collect(Collectors.toList());
+        expYear.setItems(years);
+
+        PasswordField cvv = new PasswordField("CVV");
+        expYear.getElement().setAttribute("autocomplete", "new-password");
+        cvv.getElement().setAttribute("autocomplete", "new-password");
+
+        payForm.add(cardHolderName, holderId, cardNumber, expMonth, expYear, cvv);
+        dialogLayout.add(payForm);
+
+        // —— Place Order ——
+        Button placeOrder = new Button("Place Order", VaadinIcon.CART.create());
+        placeOrder.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        placeOrder.getStyle().set("margin-top", "1rem");
+
+        placeOrder.addClickListener(e -> {
+            shopPresenter.getSessionToken(token -> {
+                UI ui = UI.getCurrent();
+                if (ui == null) return;
+                ui.access(() -> {
+                    if (token == null || !shopPresenter.validateToken(token)) {
+                        Notification.show("Session expired, please log in again", 2000, Notification.Position.MIDDLE);
+                        return;
+                    }
+
+                    ShipmentDetailsDTO shipDto = new ShipmentDetailsDTO(
+                        holderId.getValue(),
+                        fullName.getValue(),
+                        email.getValue(),
+                        phone.getValue(),
+                        country.getValue(),
+                        city.getValue(),
+                        address.getValue(),
+                        zipCode.getValue()
+                    );
+
+                    PaymentDetailsDTO payDto = new PaymentDetailsDTO(
+                        cardNumber.getValue(),
+                        cardHolderName.getValue(),
+                        holderId.getValue(),
+                        cvv.getValue(),
+                        expMonth.getValue(), expYear.getValue()
+                    );
+
+                    shopPresenter.purchaseBidItem(shopID, bid.getId(), payDto, shipDto, success -> {
+                    ui.access(() -> {
+                        if (success) {  // Check for boolean true/false
+                            Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
+                            dialog.close();
+                            // Consider delaying navigation slightly
+                            UI.getCurrent().getPage().executeJs("setTimeout(() => {$0.navigate('');}, 300)", UI.getCurrent());
+                        } else {
+                            Notification.show("Failed to place order", 2000, Position.MIDDLE);
+                        }
+                    });
+                });
+                });
+            });
+        });
+
+        dialogLayout.add(placeOrder);
+        dialogLayout.setHorizontalComponentAlignment(FlexComponent.Alignment.CENTER, placeOrder);
+
+        dialog.add(dialogLayout);
+        dialog.open();
+    }
+
+
+    /**
+    * Opens a modal dialog that lets the user enter a bid amount
+    * and submit it via ShopPresenter.submitBidOffer(…).
+    */
+    private void openBidDialog(ItemDTO item) {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("320px");
+
+        // Title
+        H2 title = new H2("Place a Bid");
+        title.getStyle().set("margin-bottom", "0.5rem");
+
+        // NumberField for bid amount, starting at current price
+        NumberField bidField = new NumberField("Your bid (USD)");
+        bidField.setStep(0.01);
+        bidField.setWidthFull();
+        // Minimum: item.getPrice() (so bid must exceed “list price”)
+        bidField.setMin(item.getPrice());
+        bidField.setValue(item.getPrice());
+
+        // “Confirm Bid” button
+        Button confirm = new Button("Confirm Bid", event -> {
+            Double bidAmount = bidField.getValue();
+            if (bidAmount == null || bidAmount <= 0) {
+                bidField.setInvalid(true);
+                bidField.setErrorMessage("Bid must be ≥ 0$");
+                return;
+            }
+
+            // 1) Obtain a session token & call presenter
+            shopPresenter.getSessionToken(token -> {
+                UI ui = UI.getCurrent();
+                if (ui == null) return;
+
+                ui.access(() -> {
+                    // Validate token / login status
+                    if (token == null || !shopPresenter.validateToken(token) || !shopPresenter.isLoggedIn(token)) {
+                        Notification.show("Please log in before bidding.", 2000, Position.MIDDLE);
+                        return;
+                    }
+
+                    // 2) Actually submit the bid to the backend
+                    shopPresenter.submitBidOffer(item.getShopId(), item.getItemID(), bidAmount, success -> {
+                        if (success) {
+                            Notification.show("Bid submitted: $" + String.format("%.2f", bidAmount),
+                                            2000, Position.TOP_END);
+                            dialog.close();
+                        } else {
+                            Notification.show("Bid failed. Try again.", 2000, Position.MIDDLE);
+                        }
+                    });
+                });
+            });
+        });
+        confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        // Layout everything vertically
+        VerticalLayout layout = new VerticalLayout(
+            title,
+            bidField,
+            confirm
+        );
+        layout.setSpacing(true);
+        layout.setPadding(true);
+        dialog.add(layout);
+
+        // Clear any prior values & open
+        bidField.clear();
+        dialog.open();
+    }
+
+    /**
+     * A small card for each BidDTO where the shop has already countered.
+     * If counterAmount == -1 (i.e. “In Progress”), we’ll show only basic info—
+     * no accept/reject buttons.  If counterAmount != -1 and isAccepted == 0,
+     * we add the Accept/Reject buttons.
+     */
+    private VerticalLayout createCustomerBidCard(BidDTO bid, ShopDTO shop) {
+        VerticalLayout card = new VerticalLayout();
+        card.setAlignItems(FlexComponent.Alignment.START);
+        card.getStyle()
+            .set("border", "1px solid #aaa")
+            .set("border-radius", "6px")
+            .set("padding", "0.75rem")
+            .set("width", "240px")
+            .set("background-color", "#f0f8ff");
+
+        // 1) Look up item name
+        ItemDTO item = shop.getItems().get(bid.getItemId());
+        String itemName = (item != null ? item.getName() : "Unknown Item");
+
+        // 2) Display item, original bid, and the shop’s “counter” field (could be -1)
+        Span itemSpan = new Span("Item: " + itemName);
+        itemSpan.getStyle().set("font-weight", "bold");
+
+        Span you = new Span("First Price: $" + String.format("%.2f", bid.getAmount()));
+        you.getStyle().set("margin-top", "0.3rem");
+
+        card.add(itemSpan, you);
+
+        // 3) Only if counterAmount != -1 AND isAccepted == 0 do we add “Accept/Reject”
+        if (bid.getCounterAmount() != -1 && bid.getIsAccepted() == 0) {
+            // Show the shop’s counter amount (which might be -1 if “in progress”)
+            Span counter = new Span("Shop's Counter: $" + String.format("%.2f", bid.getPrice()));
+            counter.getStyle()
+                .set("margin-top", "0.2rem")
+                .set("color", "#c0392b")
+                .set("font-weight", "bold");
+
+            card.add(counter);
+
+            Button acceptBtn = new Button("Accept", VaadinIcon.CHECK.create());
+            acceptBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+            acceptBtn.addClickListener(e -> {
+                Dialog d = new Dialog();
+                d.setHeaderTitle("Accept Counter Offer");
+
+                Span msg = new Span("Do you want to accept $" +
+                String.format("%.2f", bid.getPrice()) + "?");
+                msg.getStyle().set("margin-bottom", "0.5rem");
+
+                Button yes = new Button("Yes, Accept", ev -> {
+                    shopPresenter.answerOnCounterBid(
+                        item.getShopId(),
+                        bid.getId(),
+                        true,
+                        success -> {
+                            UI.getCurrent().access(() -> {
+                                if (success) {
+                                    Notification.show("Counter accepted!", 2000, Position.TOP_CENTER);
+                                    d.close();
+                                    // reload everything
+                                    loadShopData(item.getShopId());
+                                } else {
+                                    Notification.show("Failed to accept. Try again.", 2000, Position.MIDDLE);
+                                }
+                            });
+                        }
+                    );
+                });
+                yes.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+                Button no = new Button("Cancel", ev2 -> d.close());
+                HorizontalLayout h = new HorizontalLayout(yes, no);
+                h.setSpacing(true);
+
+                d.add(new VerticalLayout(msg, h));
+                d.open();
+            });
+
+            Button rejectBtn = new Button("Reject", VaadinIcon.CLOSE.create());
+            rejectBtn.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            rejectBtn.addClickListener(e -> {
+                Dialog d = new Dialog();
+                d.setHeaderTitle("Reject Counter Offer");
+
+                Span msg = new Span("Reject the shop's counter of $" +
+                String.format("%.2f", bid.getPrice()) + "?");
+                msg.getStyle().set("margin-bottom", "0.5rem");
+
+                Button yes = new Button("Yes, Reject", ev -> {
+                    shopPresenter.answerOnCounterBid(
+                        item.getShopId(),
+                        bid.getId(),
+                        false,
+                        success -> {
+                            UI.getCurrent().access(() -> {
+                                if (success) {
+                                    Notification.show("Counter rejected.", 2000, Position.TOP_CENTER);
+                                    d.close();
+                                    loadShopData(item.getShopId());
+                                } else {
+                                    Notification.show("Failed to reject. Try again.", 2000, Position.MIDDLE);
+                                }
+                            });
+                        }
+                    );
+                });
+                yes.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+                Button no = new Button("Cancel", ev2 -> d.close());
+                HorizontalLayout h = new HorizontalLayout(yes, no);
+                h.setSpacing(true);
+
+                d.add(new VerticalLayout(msg, h));
+                d.open();
+            });
+
+            HorizontalLayout buttons = new HorizontalLayout(acceptBtn, rejectBtn);
+            buttons.setSpacing(true);
+            buttons.setPadding(false);
+
+            card.add(buttons);
+        }
+        if (bid.getIsAccepted() == 1 && !bid.isDone()) {
+            Span price = new Span("Bid price: $" + String.format("%.2f", bid.getPrice()));
+            price.getStyle().set("font-weight", "bold").set("color", "#27ae60");
+            Button purchaseButton = new Button("Purchase", e -> openBidPurchaseDialog(shopId, bid, price));
+            purchaseButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            card.add(price, purchaseButton);
+        }
+        // If counterAmount == -1 (or isAccepted != 0), we never added Accept/Reject.
+        return card;
+    }
 }

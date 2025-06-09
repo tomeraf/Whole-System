@@ -1,11 +1,17 @@
 package com.halilovindustries.backend.Domain.User;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
 
+import jakarta.persistence.*;
+
+@MappedSuperclass
 public class Guest {
-    protected ShoppingCart cart;    
+    
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "cart_id")
+    protected ShoppingCart cart;   
+    
+    @Transient // This field is not persisted in the database
     protected String sessionToken = null; // Flag to check if the guest is in session.
     
     public Guest() {}
@@ -20,6 +26,7 @@ public class Guest {
         Registered newUser = new Registered(username, password, dateOfBirth);
         newUser.setCart(getCart());
         newUser.setSessionToken(sessionToken);
+        newUser.setId((long) getUserID());
         return newUser;
     }
 

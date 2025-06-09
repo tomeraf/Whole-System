@@ -43,6 +43,10 @@ public class OrdersView extends VerticalLayout {
             .setHeader("Order #").setAutoWidth(true);
         grid.addColumn(Order::getTotalPrice)
             .setHeader("Total Price").setAutoWidth(true);
+        grid.addColumn(Order::getPaymentId)
+            .setHeader("Payment ID").setAutoWidth(true);
+        grid.addColumn(Order::getShipmentId)
+            .setHeader("Shipment ID").setAutoWidth(true);
         grid.addComponentColumn(this::createDetailsButton)
             .setHeader("Details").setAutoWidth(true);
 
@@ -78,6 +82,8 @@ public class OrdersView extends VerticalLayout {
         layout.add(new H3("Order #" + order.getId()));
         layout.add(new Paragraph("Placed by User: " + order.getUserID()));
         layout.add(new Paragraph("Total: $" + order.getTotalPrice()));
+        layout.add(new Paragraph("Payment ID: " + order.getPaymentId()));
+        layout.add(new Paragraph("Shipment ID: " + order.getShipmentId()));
 
         for (ItemDTO item : order.getItems()) {
             String line = item.getQuantity() + " x " + item.getName() + " for $" + (item.getQuantity() * item.getPrice());

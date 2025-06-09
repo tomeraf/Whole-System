@@ -449,10 +449,10 @@ public class Shop {
         purchasePolicy.removeCondition(conditionID);
     }
 
-    public void answerOnCounterBid(int bidId, boolean accept, int userID,List<Integer> members) {
+    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
         if (bidPurchaseItems.containsKey(bidId)) {
             BidPurchase bidPurchase = bidPurchaseItems.get(bidId);
-            bidPurchase.answerOnCounterBid(userID, accept, members);
+            bidPurchase.answerOnCounterBid(userID, accept);
         } else {
             throw new IllegalArgumentException("Bid ID does not exist in the shop.");
         }
@@ -538,7 +538,7 @@ public class Shop {
     public List<BidDTO> getBids() {
         List<BidDTO> bids = new ArrayList<>();
         for (BidPurchase bid : bidPurchaseItems.values()) {
-            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone()));
+            bids.add(new BidDTO(bid.getId(), bid.getAmount(), bid.getItemId(), bid.getBuyerId(), bid.getSubmitterId(), bid.getAcceptingMembers(), bid.getRejecterId(), bid.isAccepted(), bid.getCounterBidID(), bid.isDone(), bid.getCounterAmount()));
         }
         return bids;
     }

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class NotificationsTests extends BaseAcceptanceTests{
@@ -57,7 +58,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
            System.out.println("Listener received: " + msg);
            messageReceived.complete(msg);
        };
-       Registration registration = Broadcaster.register(userUuid, listener);
+       Registration registration = Broadcaster.register("1", userUuid, listener);
 
        // Act
        boolean success = Broadcaster.broadcast(userUuid, expectedMessage);
@@ -104,8 +105,8 @@ public class NotificationsTests extends BaseAcceptanceTests{
        Consumer<String> listener1 = msg -> received1.complete(msg);
        Consumer<String> listener2 = msg -> received2.complete(msg);
 
-       Registration reg1 = Broadcaster.register(userUuid, listener1);
-       Registration reg2 = Broadcaster.register(userUuid, listener2);
+       Registration reg1 = Broadcaster.register("1", userUuid, listener1);
+       Registration reg2 = Broadcaster.register("1", userUuid, listener2);
 
        boolean success = Broadcaster.broadcast(userUuid, expectedMessage);
        assertTrue(success);
@@ -134,7 +135,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
         AtomicBoolean wasCalled = new AtomicBoolean(false);
         Consumer<String> listener = msg -> wasCalled.set(true);
 
-        Registration registration = Broadcaster.register(userUuid, listener);
+        Registration registration = Broadcaster.register("1", userUuid, listener);
         registration.remove(); // Remove immediately
 
         boolean success = Broadcaster.broadcast(userUuid, message);
@@ -161,8 +162,8 @@ public class NotificationsTests extends BaseAcceptanceTests{
        }).when(mockUI).access(any(Command.class));
        UI.setCurrent(mockUI);
 
-       Registration reg1 = Broadcaster.register(user1, msg -> receivedByUser1.complete(msg));
-       Registration reg2 = Broadcaster.register(user2, msg -> receivedByUser2.complete(msg));
+       Registration reg1 = Broadcaster.register("1", user1, msg -> receivedByUser1.complete(msg));
+       Registration reg2 = Broadcaster.register("1", user2, msg -> receivedByUser2.complete(msg));
 
        boolean success1 = Broadcaster.broadcast(user1, message1);
        boolean success2 = Broadcaster.broadcast(user2, message2);
@@ -193,8 +194,8 @@ public class NotificationsTests extends BaseAcceptanceTests{
        AtomicInteger callCount = new AtomicInteger(0);
        Consumer<String> listener = msg -> callCount.incrementAndGet();
 
-       Registration reg1 = Broadcaster.register(userUuid, listener);
-       Registration reg2 = Broadcaster.register(userUuid, listener);
+       Registration reg1 = Broadcaster.register("1", userUuid, listener);
+       Registration reg2 = Broadcaster.register("1", userUuid, listener);
 
        boolean success = Broadcaster.broadcast(userUuid, message);
        assertTrue(success);
@@ -220,7 +221,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
        }).when(mockUI).access(any(Command.class));
        UI.setCurrent(mockUI);
 
-       Registration reg = Broadcaster.register(userUuid, received::complete);
+       Registration reg = Broadcaster.register("1", userUuid, received::complete);
 
        boolean success = Broadcaster.broadcast(userUuid, null);
        assertTrue(success);
@@ -260,7 +261,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
 
        CompletableFuture<String> notificationReceived = new CompletableFuture<>();
        // Register broadcaster listener for founder id
-       Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
+       Registration registration = Broadcaster.register("1", String.valueOf(founderId), notificationReceived::complete);
 
        //close shop
        Response<Void> res = shopService.closeShop(ownerToken, shop.getId());
@@ -367,7 +368,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
 
         orderService.addItemToCart(buyerToken,shop.getId(),shop.getItems().get(0).getItemID(),1);
 
-        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "333", "12", "25");
         ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
 
@@ -386,7 +387,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
     public void testBuyCartContentEmptyCart() throws Exception {
         String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
 
-        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123","333", "12", "25");
         ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
 
