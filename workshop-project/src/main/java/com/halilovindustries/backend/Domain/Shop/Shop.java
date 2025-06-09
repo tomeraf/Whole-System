@@ -534,11 +534,14 @@ public class Shop {
         List<AuctionPurchase> pastAuctions = getPastAuctions();
         for (AuctionPurchase auction : pastAuctions) {
             if (!auction.isNotified()) {
-                messages.put(auction.getBuyerId(), "You have won the auction for item ID: " + auction.getItemId() + " with a bid of: " + auction.getHighestBid());
+                messages.put(auction.getBuyerId(), "You have won the auction for item: " + getItem(auction.getItemId()) + " with a bid of: " + auction.getHighestBid());
                 for(int bidderId : auction.getBidders()) {
                     if (bidderId != auction.getBuyerId()) {
-                        messages.put(bidderId, "You have lost the auction for item ID: " + auction.getItemId() + ". The winning bid was: " + auction.getHighestBid());
+                        messages.put(bidderId, "You have lost the auction for item: " + getItem(auction.getItemId()) + ". The winning bid was: " + auction.getHighestBid());
                     }
+                }
+                for(int ownerId: getOwnerIDs()) {
+                    messages.put(ownerId, "The auction for item: " + getItem(auction.getItemId()) + " has ended. The winning bid was: " + auction.getHighestBid());
                 }
                 auction.setNotified(true);
             }
