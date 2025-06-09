@@ -2,6 +2,9 @@ package com.halilovindustries.backend.Domain.Adapters_and_Interfaces;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.backend.Service.init.ExternalConfig;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +21,12 @@ import java.util.stream.Collectors;
 @Component
 public class ExternalSystems implements IExternalSystems {
 
-    private static final String API_URL = "https://damp-lynna-wsep-1984852e.koyeb.app/";
+    private final String apiUrl;
+
+    @Autowired
+    public ExternalSystems(ExternalConfig externalConfig) {
+        this.apiUrl = externalConfig.getExternalUrl();
+    }
 
     @Override
     public boolean handshake() {
@@ -30,7 +38,7 @@ public class ExternalSystems implements IExternalSystems {
                 .collect(Collectors.joining("&"));
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+                .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
                 .build();

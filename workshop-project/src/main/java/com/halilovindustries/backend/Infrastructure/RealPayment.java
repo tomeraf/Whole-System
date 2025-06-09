@@ -6,12 +6,13 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-
+import com.halilovindustries.backend.Service.init.ExternalConfig;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,12 @@ import java.util.stream.Collectors;
 @Primary
 public class RealPayment implements IPayment {
 
-    private static final String API_URL = "https://damp-lynna-wsep-1984852e.koyeb.app/";
+    private final String apiUrl;
+
+    @Autowired
+    public RealPayment(ExternalConfig externalConfig) {
+        this.apiUrl = externalConfig.getExternalUrl();
+    }
 
     @Override
     public boolean validatePaymentDetails(PaymentDetailsDTO details) {
@@ -54,7 +60,7 @@ public class RealPayment implements IPayment {
             String encodedForm = encodeFormData(formData);
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+                .uri(URI.create(apiUrl))
                 .timeout(Duration.ofSeconds(3))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(encodedForm))
@@ -90,7 +96,7 @@ public class RealPayment implements IPayment {
             String encodedForm = encodeFormData(formData);
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+                .uri(URI.create(apiUrl))
                 .timeout(Duration.ofSeconds(3))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(encodedForm))

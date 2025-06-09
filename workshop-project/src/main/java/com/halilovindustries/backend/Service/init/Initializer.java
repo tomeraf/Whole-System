@@ -44,11 +44,11 @@ public class Initializer {
     public void init() {
         System.out.println("Initializing application data...");
         
-        // First check if a system manager exists and create one if not
-        ensureSystemManagerExists();
-        
         // Then proceed with other initialization
         readAndApply();
+        
+        // check if a system manager exists and create one if not
+        ensureSystemManagerExists();
     }
 
     private void readAndApply() {
@@ -111,6 +111,13 @@ public class Initializer {
                     return res.isOk();
                 }
 
+                case "make-system-manager": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("make-system-manager should have 1 arg: username");
+                    Response<Void> res = userService.makeSystemManager(args[0]);
+                    return res.isOk();
+                }
+
                 case "login-user": {
                     if (args.length != 2)
                         throw new IllegalArgumentException("login-user should have 2 args");
@@ -118,6 +125,7 @@ public class Initializer {
                     initST= res.getData();
                     return res.isOk();
                 }
+
                 case "logout-user": {
                     if (args.length != 1)
                         throw new IllegalArgumentException("logout-user should have 1 arg: username");
@@ -442,9 +450,11 @@ public class Initializer {
 
     private void createDefaultSystemManager() {
         try {
-            // Default credentials - consider loading from a secure configuration or environment variables
-            String defaultUsername = "admin";
-            String defaultPassword = "Admin123!";
+            // Get credentials from config
+            String defaultUsername = initConfig.getDefaultSystemManager() != null ? 
+                                    initConfig.getDefaultSystemManager().getName() : "admin";
+            String defaultPassword = initConfig.getDefaultSystemManager() != null ? 
+                                    initConfig.getDefaultSystemManager().getPassword() : "Admin123!";
             LocalDate defaultDob = LocalDate.of(1990, 1, 1);
             
             // Register the user
@@ -457,7 +467,7 @@ public class Initializer {
                 if (makeManagerResponse.isOk()) {
                     System.out.println("Default system manager created successfully: " + defaultUsername);
                 } else {
-                     System.err.println("Failed to promote user to system manager: " + 
+                    System.err.println("Failed to promote user to system manager: " + 
                         (makeManagerResponse.getError() != null ? makeManagerResponse.getError() : "Unknown error"));
                 }
             } else {
