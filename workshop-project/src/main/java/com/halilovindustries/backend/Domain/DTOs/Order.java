@@ -40,9 +40,9 @@ public class Order {
         return items; // Flatten the list of lists into a single list
     }
 
-    public List<ItemDTO> getShopItems(int shopId) {
-        return items.stream().filter(item->item.getShopId()==shopId).toList(); // Return the list of items for the specified shop ID or null if not found
-    }
+    // public List<ItemDTO> getShopItems(int shopId) {
+    //     return items.stream().filter(item->item.getShopId()==shopId).toList(); // Return the list of items for the specified shop ID or null if not found
+    // }
     
     public int getId() {
         return orderID;
@@ -63,16 +63,16 @@ public class Order {
         return shipmentId;
     }
     
-    public String getOrderDetails() {
-        StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
-        Map<Integer, List<ItemDTO>> itemsByShop = items.stream()
-        .collect(Collectors.groupingBy(ItemDTO::getShopId));
-        for (int shopId : itemsByShop.keySet()) {
-            details.append("Shop ID: ").append(shopId).append("\nItems:\n");
-            for (ItemDTO item : itemsByShop.get(shopId)) {
-                details.append(item.toString()).append("\n");
-            }
-        }
-        return details.toString();
-    }
+    // public String getOrderDetails() {
+    //     StringBuilder details = new StringBuilder("Order ID: " + orderID + "\nUserId: " + userId + "\nTotal Price: " + totalPrice + "\nItems:\n");
+    //     Map<Integer, List<ItemDTO>> itemsByShop = items.stream()
+    //     .collect(Collectors.groupingBy(ItemDTO::getShopId));
+    //     for (int shopId : itemsByShop.keySet()) {
+    //         details.append("Shop ID: ").append(shopId).append("\nItems:\n");
+    //         for (ItemDTO item : itemsByShop.get(shopId)) {
+    //             details.append(item.toString()).append("\n");
+    //         }
+    //     }
+    //     return details.toString();
+    // }
 }

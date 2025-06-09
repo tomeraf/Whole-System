@@ -1,6 +1,7 @@
 package Tests.AcceptanceTests;
 
 import com.halilovindustries.backend.Domain.DTOs.*;
+import com.halilovindustries.backend.Domain.DTOs.NotificationDTO;
 import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Shop.Shop;
@@ -59,7 +60,6 @@ public class NotificationsTests extends BaseAcceptanceTests{
            messageReceived.complete(msg);
        };
        Registration registration = Broadcaster.register("1", userUuid, listener);
-
        // Act
        boolean success = Broadcaster.broadcast(userUuid, expectedMessage);
 
@@ -521,4 +521,40 @@ public class NotificationsTests extends BaseAcceptanceTests{
 //        storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
 //        assertEquals(0, storedNotifs.size(), "Notification queue should be cleared after delivery");
 //    }
+    @Test
+    public void testDeleteNotification_Success() throws Exception {
+        // Arrange: owner creates shop and bidder submits a bid to trigger a notification
+        String ownerToken  = fixtures.generateRegisteredUserSession("ownerDel", "ownerDel");
+        ShopDTO shop       = fixtures.generateShopAndItems(ownerToken, "DelShop");
+        String bidderToken = fixtures.generateRegisteredUserSession("bidderUser", "pass");
+        int itemId         = shop.getItems().get(0).getItemID();
+        // submitBid(token, shopId, itemId, bidPrice)
+        Response<Void> bidRes = orderService.submitBidOffer(bidderToken, shop.getId(), itemId, 50.0);
+        assertTrue(bidRes.isOk(), "Submitting a bid should succeed");
+
+        // Founder should now have one notification
+        String userId = String.valueOf(
+            shopRepository.getShopById(shop.getId()).getFounderID()
+        );
+        Queue<NotificationDTO> before = notificationHandler.getNotifications(userId);
+        assertFalse(before.isEmpty(), "There should be at least one notification before deletion");
+        int notifId = before.peek().getId();
+
+        // Act: delete it
+        notificationHandler.deleteNotification(userId, notifId);
+
+        // Assert: queue is now empty
+        Queue<NotificationDTO> after = notificationHandler.getNotifications(userId);
+        assertTrue(after.isEmpty(), "Notification queue should be empty after deletion");
+    }
+
+    @Test
+    public void testDeleteNotification_WrongId_Throws() {
+        // Arrange: use a new random user ID with no notifications
+        String userId = "no-notifs-user";
+        // Act & Assert: deleting non-existent notification should throw
+        assertThrows(RuntimeException.class, () -> {
+            notificationHandler.deleteNotification(userId, 9999);
+        }, "Deleting a notification for unknown user or ID should throw");
+    }
 }

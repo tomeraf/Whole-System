@@ -43,9 +43,9 @@ public abstract class CompositeDiscount extends Discount {
     public List<Discount> getDiscounts() {
         return discounts;
     }
-    public List<Discount> getDiscountsList() {
-        return new ArrayList<>(discounts);
-    }
+    // public List<Discount> getDiscountsList() {
+    //     return new ArrayList<>(discounts);
+    // }
     public void addDiscount(Discount discount) {
         if (discounts.contains(discount)) {
             throw new IllegalArgumentException("Discount already exists");
