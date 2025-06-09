@@ -29,7 +29,7 @@ public class AuctionPurchase {
     private boolean done = false;
     private boolean notified=false;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<Integer> bidders = new ArrayList<>();
 
     public AuctionPurchase() {
