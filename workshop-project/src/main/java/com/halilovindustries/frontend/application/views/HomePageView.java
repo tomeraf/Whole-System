@@ -422,9 +422,7 @@ public class HomePageView extends Composite<VerticalLayout> {
         dialog.open();
     }
 
-    private void doLogin(String username, String password) {
-    //boolean isDefaultUser = "idanTheManager".equals(username);
-    
+    private void doLogin(String username, String password) {    
     presenter.loginUser(username, password, (token, success) -> {
         if (success && token != null && presenter.validateToken(token)) {
             String userId = presenter.extractUserId(token);

@@ -1,5 +1,6 @@
-// System setup - first registered user is system manager (need to implement)
+// System setup - first registered user is system manager
 register-user(u1, u1, 1999-06-16);
+make-system-manager(u1);
 
 // Registering users
 register-user(u2, u2, 2000-01-01);
@@ -19,8 +20,6 @@ add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
 
 // User u2 appoints u3 as manager of the shop with permission to manage inventory
 add-shop-manager(0, u3, UPDATE_ITEM_QUANTITY);
-
-
 
 // u2 appoints u4 and u5 as shop owners
 add-shop-owner(0, u4);
