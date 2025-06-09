@@ -47,40 +47,38 @@ public class AcceptanceTestFixtures {
     }
 
     public String generateRegisteredUserSession(String name, String password) {
+        // Create a unique username for each test run to avoid conflicts
+        String uniqueName = name + "_" + System.currentTimeMillis();
+        
         Response<String> guestResp = userService.enterToSystem();
-        assertTrue(guestResp.isOk(), "Owner enterToSystem should succeed");
-        String userToken = guestResp.getData();
-        assertNotNull(userToken, "Owner guest token must not be null");
-
-        // User registers
-        Response<Void> ownerReg = userService.registerUser(
-            userToken, name, password, LocalDate.now().minusYears(30)
-        );
-        assertTrue(ownerReg.isOk(), "Owner registration should succeed");
-
-        // User logs in
-        Response<String> ownerLogin = userService.loginUser(
-            userToken, name, password
-        );
-        assertTrue(ownerLogin.isOk(), "Owner login should succeed");
-        String ownerToken = ownerLogin.getData();
-        assertNotNull(ownerToken, "Owner token must not be null");
-        return ownerToken;
+        assertTrue(guestResp.isOk(), "Guest entry should succeed");
+        String guestToken = guestResp.getData();
+        
+        Response<Void> regRes = userService.registerUser(guestToken, uniqueName, password, LocalDate.now().minusYears(25));
+        assertTrue(regRes.isOk(), "User registration should succeed");
+        
+        Response<String> loginRes = userService.loginUser(guestToken, uniqueName, password);
+        assertTrue(loginRes.isOk(), "Login should succeed");
+        
+        return loginRes.getData();
     }
 
     public String registerUserWithoutLogin(String name, String password) {
+        // Create a unique username for each test run
+        String uniqueName = name + "_" + System.currentTimeMillis();
         Response<String> guestResp = userService.enterToSystem();
         assertTrue(guestResp.isOk(), "Guest entry should succeed");
         String guestToken = guestResp.getData();
         assertNotNull(guestToken, "Guest token must not be null");
 
         Response<Void> regRes = userService.registerUser(
-                guestToken, name, password, LocalDate.now().minusYears(25)
+                guestToken, uniqueName, password, LocalDate.now().minusYears(25)
         );
         assertTrue(regRes.isOk(), "User registration should succeed");
 
         return guestToken; // Still a guest token, since user is not logged in
     }
+
     public String loginUser(String guestToken, String username, String password) {
         Response<String> loginRes = userService.loginUser(guestToken, username, password);
         assertTrue(loginRes.isOk(), "Login should succeed");

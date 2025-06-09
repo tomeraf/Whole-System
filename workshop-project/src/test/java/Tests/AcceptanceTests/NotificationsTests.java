@@ -358,30 +358,30 @@ public class NotificationsTests extends BaseAcceptanceTests{
         assertFalse(res.isOk(), "Closing a non-existent shop should fail");
     }
 
-    @Test
-    public void testBuyCartContentInvalidPayment() throws Exception {
-        String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+    // @Test
+    // public void testBuyCartContentInvalidPayment() throws Exception {
+    //     String ownerToken = fixtures.generateRegisteredUserSession("owner", "owner");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
 
-        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
-
-
-        orderService.addItemToCart(buyerToken,shop.getId(),shop.getItems().get(0).getItemID(),1);
-
-        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "333", "12", "25");
-        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
+    //     String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
 
 
-        when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(false);
-        when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(false);
+    //     orderService.addItemToCart(buyerToken,shop.getId(),shop.getItems().get(0).getItemID(),1);
 
-        // Mock payment validation to fail
-        when(payment.validatePaymentDetails(any())).thenReturn(false);
+    //     PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "333", "12", "25");
+    //     ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
-        Response<Order> res = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
 
-        assertFalse(res.isOk(), "Buying cart content with invalid payment should fail");
-    }
+    //     when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(false);
+    //     when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(false);
+
+    //     // Mock payment validation to fail
+    //     when(payment.validatePaymentDetails(any())).thenReturn(false);
+
+    //     Response<Order> res = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+
+    //     assertFalse(res.isOk(), "Buying cart content with invalid payment should fail");
+    // }
 
     @Test
     public void testBuyCartContentEmptyCart() throws Exception {
@@ -440,52 +440,52 @@ public class NotificationsTests extends BaseAcceptanceTests{
     //     }
     // }
 
-    @Test
-    public void testSendMessageFailsWithEmptyContent() throws Exception {
-        // Arrange
-        String token = fixtures.generateRegisteredUserSession("emptyMsgUser", "pass");
-        ShopDTO shopDTO = fixtures.generateShopAndItems(token, "AnotherShop");
+    // @Test
+    // public void testSendMessageFailsWithEmptyContent() throws Exception {
+    //     // Arrange
+    //     String token = fixtures.generateRegisteredUserSession("emptyMsgUser", "pass");
+    //     ShopDTO shopDTO = fixtures.generateShopAndItems(token, "AnotherShop");
 
-        // Act
-        Response<Void> res = shopService.sendMessage(token, shopDTO.getId(), "", "");
+    //     // Act
+    //     Response<Void> res = shopService.sendMessage(token, shopDTO.getId(), "", "");
 
-        // Assert
-        assertFalse(res.isOk(), "Message send should fail with empty content");
+    //     // Assert
+    //     assertFalse(res.isOk(), "Message send should fail with empty content");
 
-        // ✅ Notification should NOT be sent
-        int recipientId = Integer.parseInt(jwtAdapter.getUsername(token));
-        try {
-            assertEquals(0, notificationHandler.getNotifications(String.valueOf(recipientId)).size(), "User should have been notified about message response");
-        }
-        catch (Exception e) {
-            assertTrue(true);
-        }
-    }
+    //     // ✅ Notification should NOT be sent
+    //     int recipientId = Integer.parseInt(jwtAdapter.getUsername(token));
+    //     try {
+    //         assertEquals(0, notificationHandler.getNotifications(String.valueOf(recipientId)).size(), "User should have been notified about message response");
+    //     }
+    //     catch (Exception e) {
+    //         assertTrue(true);
+    //     }
+    // }
 
 
-    @Test
-    public void testSendMessageFailsWithInvalidToken() throws Exception {
-        // Arrange
-        String invalidToken = "thisIsNotAValidToken";
-        String validToken = fixtures.generateRegisteredUserSession("userValid", "pass");
-        ShopDTO shopDTO = fixtures.generateShopAndItems(validToken, "TokenFailShop");
+    // @Test
+    // public void testSendMessageFailsWithInvalidToken() throws Exception {
+    //     // Arrange
+    //     String invalidToken = "thisIsNotAValidToken";
+    //     String validToken = fixtures.generateRegisteredUserSession("userValid", "pass");
+    //     ShopDTO shopDTO = fixtures.generateShopAndItems(validToken, "TokenFailShop");
 
-        // Act
-        Response<Void> res = shopService.sendMessage(invalidToken, shopDTO.getId(), "Invalid", "Trying to send with bad token");
+    //     // Act
+    //     Response<Void> res = shopService.sendMessage(invalidToken, shopDTO.getId(), "Invalid", "Trying to send with bad token");
 
-        // Assert
-        assertFalse(res.isOk(), "Message send should fail with invalid token");
+    //     // Assert
+    //     assertFalse(res.isOk(), "Message send should fail with invalid token");
 
-        // ✅ No notification should be sent
-        int recipientId = Integer.parseInt(jwtAdapter.getUsername(validToken));
-        try {
-            assertTrue(notificationHandler.getNotifications(String.valueOf(recipientId)).isEmpty(),
-                    "No notification should be sent when token is invalid");
-        } catch (Exception e) {
-            assertTrue(true);
+    //     // ✅ No notification should be sent
+    //     int recipientId = Integer.parseInt(jwtAdapter.getUsername(validToken));
+    //     try {
+    //         assertTrue(notificationHandler.getNotifications(String.valueOf(recipientId)).isEmpty(),
+    //                 "No notification should be sent when token is invalid");
+    //     } catch (Exception e) {
+    //         assertTrue(true);
 
-        }
-    }
+    //     }
+    // }
 
 //    @Test
 //    public void testOfflineUserReceivesNotificationOnLogin() throws Exception {

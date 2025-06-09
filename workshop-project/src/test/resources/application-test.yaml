@@ -1,0 +1,5 @@
+startup:
+  initFile: empty_init.txt
+  defaultSystemManager:
+    name: idan
+    password: 1234

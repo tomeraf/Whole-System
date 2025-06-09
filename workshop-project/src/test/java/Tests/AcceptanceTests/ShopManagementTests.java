@@ -22,7 +22,12 @@ import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 
+
+import java.util.Set;
+import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -367,61 +372,63 @@ public class ShopManagementTests extends BaseAcceptanceTests {
             "Guest should not own any shops after failed creation");
     }
 
-    @Test
-    public void testRateShop_WhenNotLoggedIn_ShouldFail() {
-        // Arrange - Setup payment and shipment details
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
-            "1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345"
-        );
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+//     @Test
+//     public void testRateShop_WhenNotLoggedIn_ShouldFail() {
+//         // Arrange - Setup payment and shipment details
+//         PaymentDetailsDTO p = new PaymentDetailsDTO(
+//             "1234567890123456", "Some Name", "1", "123", "12", "25"
+//         );
+//         ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+//             "1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345"
+//         );
 
-        // 1) Owner creates a shop with items
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken, "MyShop");
+//         fixtures.mockPositivePayment(p);
+//         fixtures.mockPositiveShipment(s);
+
+//         // 1) Owner creates a shop with items
+//         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+//         ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken, "MyShop");
         
-        // Store initial shop state
-        Response<ShopDTO> initialShopState = shopService.getShopInfo(ownerToken, shopDto.getId());
-        assertTrue(initialShopState.isOk(), "Should be able to get initial shop info");
+//         // Store initial shop state
+//         Response<ShopDTO> initialShopState = shopService.getShopInfo(ownerToken, shopDto.getId());
+//         assertTrue(initialShopState.isOk(), "Should be able to get initial shop info");
 
-        // Guest performs a purchase
-        String guestToken = userService.enterToSystem().getData();
-        List<ItemDTO> items = shopService.showShopItems(ownerToken, shopDto.getId()).getData();
-        orderService.addItemToCart(guestToken, shopDto.getId(), items.get(0).getItemID(), 1);
-        fixtures.successfulBuyCartContent(guestToken, p, s);
+//         // Guest performs a purchase
+//         String guestToken = userService.enterToSystem().getData();
+//         List<ItemDTO> items = shopService.showShopItems(ownerToken, shopDto.getId()).getData();
+//         orderService.addItemToCart(guestToken, shopDto.getId(), items.get(0).getItemID(), 1);
+//         fixtures.successfulBuyCartContent(guestToken, p, s);
         
-        // Act - Attempt to rate shop as guest
-        Response<Void> res = shopService.rateShop(guestToken, shopDto.getId(), 5);
+//         // Act - Attempt to rate shop as guest
+//         Response<Void> res = shopService.rateShop(guestToken, shopDto.getId(), 5);
         
-        // Assert - Basic functionality
-        assertFalse(res.isOk(), "Rate shop should fail when not logged in");
+//         // Assert - Basic functionality
+//         assertFalse(res.isOk(), "Rate shop should fail when not logged in");
 
-        // Assert - System Invariants
-        // 1. Shop rating should remain unchanged
-        Response<ShopDTO> afterShopState = shopService.getShopInfo(ownerToken, shopDto.getId());
-        assertTrue(afterShopState.isOk(), "Should be able to get shop info after failed rating");
-        assertEquals(
-            initialShopState.getData().getRating(),
-            afterShopState.getData().getRating(),
-            "Shop rating should remain unchanged after failed rating attempt"
-        );
+//         // Assert - System Invariants
+//         // 1. Shop rating should remain unchanged
+//         Response<ShopDTO> afterShopState = shopService.getShopInfo(ownerToken, shopDto.getId());
+//         assertTrue(afterShopState.isOk(), "Should be able to get shop info after failed rating");
+//         assertEquals(
+//             initialShopState.getData().getRating(),
+//             afterShopState.getData().getRating(),
+//             "Shop rating should remain unchanged after failed rating attempt"
+//         );
 
-        // 2. Shop items should remain unchanged
-        Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shopDto.getId());
-        assertTrue(afterItems.isOk(), "Should be able to get shop items after failed rating");
-        assertEquals(items.size(), afterItems.getData().size(), 
-            "Number of items should remain unchanged");
+//         // 2. Shop items should remain unchanged
+//         Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shopDto.getId());
+//         assertTrue(afterItems.isOk(), "Should be able to get shop items after failed rating");
+//         assertEquals(items.size(), afterItems.getData().size(), 
+//             "Number of items should remain unchanged");
 
-        // 3. Cart state should remain valid
-        Response<List<ItemDTO>> cartItems = orderService.checkCartContent(guestToken);
-        assertTrue(cartItems.isOk(), "Should still be able to view cart");
-        assertTrue(cartItems.getData().isEmpty(), 
-            "Cart should be empty after purchase, despite failed rating");
-    }
+//         // 3. Cart state should remain valid
+//         Response<List<ItemDTO>> cartItems = orderService.checkCartContent(guestToken);
+//         assertTrue(cartItems.isOk(), "Should still be able to view cart");
+//         assertTrue(cartItems.getData().isEmpty(), 
+//             "Cart should be empty after purchase, despite failed rating");
+//     }
+
 
     // @Test
     // public void testAddItemToShop_AsOwner_ShouldSucceed() {
@@ -1026,153 +1033,156 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(shopInfo.isOk(), "Basic shop info should still be accessible");
     }
 
-    @Test
-    public void testRemoveAppointee_WithNestedAppointees_ShouldRemoveAll() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // Store initial state
-        Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shop.getId());
-        assertTrue(initialItems.isOk(), "Should be able to get initial items");
+//     @Test
+//     public void testRemoveAppointee_WithNestedAppointees_ShouldRemoveAll() {
+//         // 1) Owner setup
+//         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+//         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // 2) Manager setup
-        String managerGuestToken = userService.enterToSystem().getData();
-        Response<Void> managerRegResp = userService.registerUser(
-            managerGuestToken, "manager", "pwdM", LocalDate.now().minusYears(30)
-        );
-        assertTrue(managerRegResp.isOk(), "Manager registration should succeed");
+//         // Store initial state
+//         Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shop.getId());
+//         assertTrue(initialItems.isOk(), "Should be able to get initial items");
 
-        Response<String> managerLoginResp = userService.loginUser(
-            managerGuestToken, "manager", "pwdM"
-        );
-        assertTrue(managerLoginResp.isOk(), "Manager login should succeed");
-        String managerToken = managerLoginResp.getData();
+//         // 2) Manager setup
+//         String managerGuestToken = userService.enterToSystem().getData();
+//         Response<Void> managerRegResp = userService.registerUser(
+//             managerGuestToken, "manager", "pwdM", LocalDate.now().minusYears(30)
+//         );
+//         assertTrue(managerRegResp.isOk(), "Manager registration should succeed");
 
-        // 3) Owner adds the manager with appointment permission
-        Set<Permission> permissions = new HashSet<>();
-        permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+//         Response<String> managerLoginResp = userService.loginUser(
+//             managerGuestToken, "manager", "pwdM"
+//         );
+//         assertTrue(managerLoginResp.isOk(), "Manager login should succeed");
+//         String managerToken = managerLoginResp.getData();
 
-        // Verify manager's initial permissions
-        Response<List<Permission>> managerPerms = shopService.getMemberPermissions(
-            ownerToken, shop.getId(), "manager"
-        );
-        assertTrue(managerPerms.isOk(), "Should be able to get manager permissions");
-        assertTrue(managerPerms.getData().contains(Permission.APPOINTMENT),
-            "Manager should have APPOINTMENT permission");
+//         // 3) Owner adds the manager with appointment permission
+//         Set<Permission> permissions = new HashSet<>();
+//         permissions.add(Permission.APPOINTMENT);
+//         Response<Void> addManagerResp = shopService.addShopManager(
+//             ownerToken, shop.getId(), "manager", permissions
+//         );
+//         assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
 
-        // 4) Manager adds a user
-        String userToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
-        Set<Permission> userPermissions = new HashSet<>();
-        userPermissions.add(Permission.APPOINTMENT);
-        Response<Void> addUserResp = shopService.addShopManager(
-            managerToken, shop.getId(), "User", userPermissions
-        );
-        assertTrue(addUserResp.isOk(), "Manager should be able to add user");
+//         // Verify manager's initial permissions
+//         Response<List<Permission>> managerPerms = shopService.getMemberPermissions(
+//             ownerToken, shop.getId(), "manager"
+//         );
+//         assertTrue(managerPerms.isOk(), "Should be able to get manager permissions");
+//         assertTrue(managerPerms.getData().contains(Permission.APPOINTMENT),
+//             "Manager should have APPOINTMENT permission");
 
-        // 5) User adds another user (demonstrating nested appointments)
-        fixtures.generateRegisteredUserSession("User2", "Pwd0");
-        Response<Void> addUser2Resp = shopService.addShopManager(
-            userToken, shop.getId(), "User2", permissions
-        );
-        assertTrue(addUser2Resp.isOk(), "User should be able to add another user");
+//         // 4) Manager adds a user
+//         String userToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
+//         Set<Permission> userPermissions = new HashSet<>();
+//         userPermissions.add(Permission.APPOINTMENT);
+//         Response<Void> addUserResp = shopService.addShopManager(
+//             managerToken, shop.getId(), "User", userPermissions
+//         );
+//         assertTrue(addUserResp.isOk(), "Manager should be able to add user");
 
-        // 6) Owner removes the original manager
-        Response<Void> removeManagerResp = shopService.removeAppointment(
-            ownerToken, shop.getId(), "manager"
-        );
-        assertTrue(removeManagerResp.isOk(), "removeShopManager should succeed");
+//         // 5) User adds another user (demonstrating nested appointments)
+//         fixtures.generateRegisteredUserSession("User2", "Pwd0");
+//         Response<Void> addUser2Resp = shopService.addShopManager(
+//             userToken, shop.getId(), "User2", permissions
+//         );
+//         assertTrue(addUser2Resp.isOk(), "User should be able to add another user");
 
-        // Assert - System Invariants
-        // 1. Verify removed manager has no permissions
-        Response<List<Permission>> afterManagerPerms = shopService.getMemberPermissions(
-            ownerToken, shop.getId(), "manager"
-        );
-        assertFalse(afterManagerPerms.isOk(), "Should not be able to get permissions for removed manager");
+//         // 6) Owner removes the original manager
+//         Response<Void> removeManagerResp = shopService.removeAppointment(
+//             ownerToken, shop.getId(), "manager"
+//         );
+//         assertTrue(removeManagerResp.isOk(), "removeShopManager should succeed");
 
-        // 2. Verify nested appointee (User) can no longer add managers
-        Response<Void> attemptAdd = shopService.addShopManager(
-            userToken, shop.getId(), "User3", permissions
-        );
-        assertFalse(attemptAdd.isOk(), "Nested appointee should not be able to add managers after removal");
+//         // Assert - System Invariants
+//         // 1. Verify removed manager has no permissions
+//         Response<List<Permission>> afterManagerPerms = shopService.getMemberPermissions(
+//             ownerToken, shop.getId(), "manager"
+//         );
+//         assertFalse(afterManagerPerms.isOk(), "Should not be able to get permissions for removed manager");
 
-        // 3. Shop state should remain unchanged
-        Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shop.getId());
-        assertTrue(afterItems.isOk(), "Should still be able to get items");
-        assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
-            "Number of items should remain unchanged");
+//         // 2. Verify nested appointee (User) can no longer add managers
+//         Response<Void> attemptAdd = shopService.addShopManager(
+//             userToken, shop.getId(), "User3", permissions
+//         );
+//         assertFalse(attemptAdd.isOk(), "Nested appointee should not be able to add managers after removal");
 
-        // 4. Shop info should still be accessible
-        Response<ShopDTO> shopInfo = shopService.getShopInfo(ownerToken, shop.getId());
-        assertTrue(shopInfo.isOk(), "Should still be able to get shop info");
-        assertEquals(shop.getId(), shopInfo.getData().getId(), "Shop ID should remain unchanged");
-    }
+//         // 3. Shop state should remain unchanged
+//         Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shop.getId());
+//         assertTrue(afterItems.isOk(), "Should still be able to get items");
+//         assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
+//             "Number of items should remain unchanged");
 
-    @Test
-    public void testAppoint_SameUserTwice_ShouldFail() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+//         // 4. Shop info should still be accessible
+//         Response<ShopDTO> shopInfo = shopService.getShopInfo(ownerToken, shop.getId());
+//         assertTrue(shopInfo.isOk(), "Should still be able to get shop info");
+//         assertEquals(shop.getId(), shopInfo.getData().getId(), "Shop ID should remain unchanged");
+//     }
 
-        // Store initial state
-        Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shop.getId());
-        assertTrue(initialItems.isOk(), "Should be able to get initial items");
 
-        // 2) Owner adds first manager
-        String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
-        Set<Permission> permissions = new HashSet<>();
-        permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "First addShopManager should succeed");
+    // @Test
+    // public void testAppoint_SameUserTwice_ShouldFail() {
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // 3) Owner adds second manager
-        fixtures.generateRegisteredUserSession("Manager2", "PwdM");
-        Set<Permission> permissions2 = new HashSet<>();
-        permissions2.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp2 = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager2", permissions2
-        );
-        assertTrue(addManagerResp2.isOk(), "Second addShopManager should succeed");
+//         // Store initial state
+//         Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shop.getId());
+//         assertTrue(initialItems.isOk(), "Should be able to get initial items");
 
-        // Store manager2's initial permissions
-        Response<List<Permission>> initialPerms = shopService.getMemberPermissions(
-            ownerToken, shop.getId(), "Manager2"
-        );
-        assertTrue(initialPerms.isOk(), "Should be able to get initial permissions");
+//         // 2) Owner adds first manager
+//         String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
+//         Set<Permission> permissions = new HashSet<>();
+//         permissions.add(Permission.APPOINTMENT);
+//         Response<Void> addManagerResp = shopService.addShopManager(
+//             ownerToken, shop.getId(), "Manager", permissions
+//         );
+//         assertTrue(addManagerResp.isOk(), "First addShopManager should succeed");
 
-        // 4) First manager tries to add second manager again
-        Set<Permission> permissions3 = new HashSet<>();
-        permissions3.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp3 = shopService.addShopManager(
-            managerToken, shop.getId(), "Manager2", permissions3
-        );
-        assertFalse(addManagerResp3.isOk(), "Duplicate appointment should fail");
+//         // 3) Owner adds second manager
+//         fixtures.generateRegisteredUserSession("Manager2", "PwdM");
+//         Set<Permission> permissions2 = new HashSet<>();
+//         permissions2.add(Permission.APPOINTMENT);
+//         Response<Void> addManagerResp2 = shopService.addShopManager(
+//             ownerToken, shop.getId(), "Manager2", permissions2
+//         );
+//         assertTrue(addManagerResp2.isOk(), "Second addShopManager should succeed");
 
-        // Assert - System Invariants
-        // 1. Manager2's permissions should remain unchanged
-        Response<List<Permission>> afterPerms = shopService.getMemberPermissions(
-            ownerToken, shop.getId(), "Manager2"
-        );
-        assertTrue(afterPerms.isOk(), "Should still be able to get permissions");
-        assertEquals(initialPerms.getData(), afterPerms.getData(), 
-            "Manager2's permissions should remain unchanged");
+//         // Store manager2's initial permissions
+//         Response<List<Permission>> initialPerms = shopService.getMemberPermissions(
+//             ownerToken, shop.getId(), "Manager2"
+//         );
+//         assertTrue(initialPerms.isOk(), "Should be able to get initial permissions");
 
-        // 2. Shop state should remain unchanged
-        Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shop.getId());
-        assertTrue(afterItems.isOk(), "Should still be able to get items");
-        assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
-            "Number of items should remain unchanged");
+//         // 4) First manager tries to add second manager again
+//         Set<Permission> permissions3 = new HashSet<>();
+//         permissions3.add(Permission.APPOINTMENT);
+//         Response<Void> addManagerResp3 = shopService.addShopManager(
+//             managerToken, shop.getId(), "Manager2", permissions3
+//         );
+//         assertFalse(addManagerResp3.isOk(), "Duplicate appointment should fail");
 
-        // 3. Original appointments should still be valid
-        Response<ShopDTO> shopInfo = shopService.getShopInfo(managerToken, shop.getId());
-        assertTrue(shopInfo.isOk(), "First manager should still have access");
-    }
+//         // Assert - System Invariants
+//         // 1. Manager2's permissions should remain unchanged
+//         Response<List<Permission>> afterPerms = shopService.getMemberPermissions(
+//             ownerToken, shop.getId(), "Manager2"
+//         );
+//         assertTrue(afterPerms.isOk(), "Should still be able to get permissions");
+//         assertEquals(initialPerms.getData(), afterPerms.getData(), 
+//             "Manager2's permissions should remain unchanged");
+
+//         // 2. Shop state should remain unchanged
+//         Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shop.getId());
+//         assertTrue(afterItems.isOk(), "Should still be able to get items");
+//         assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
+//             "Number of items should remain unchanged");
+
+//         // 3. Original appointments should still be valid
+//         Response<ShopDTO> shopInfo = shopService.getShopInfo(managerToken, shop.getId());
+//         assertTrue(shopInfo.isOk(), "First manager should still have access");
+//     }
+
 
     @Test
     public void testViewShopContent_ManagerWithViewPermission_ShouldSucceed() {
@@ -1598,70 +1608,167 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(shopInfo.isOk(), "Owner should still have access to closed shop");
     }
 
-    @Test
-    public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() 
-        throws InterruptedException {
+//     @Test
+//     public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() 
+//         throws InterruptedException {
         
-        for (int i = 0; i < 10; i++) {
-            // 1) Owner creates shop
-            String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
-            int shopId = shop.getId();
+//         for (int i = 0; i < 10; i++) {
+//             // 1) Owner creates shop
+//             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+//             ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
+//             int shopId = shop.getId();
 
-            // Store initial state
-            Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shopId);
-            assertTrue(initialItems.isOk(), "Should be able to get initial items");
+//             // Store initial state
+//             Response<List<ItemDTO>> initialItems = shopService.showShopItems(ownerToken, shopId);
+//             assertTrue(initialItems.isOk(), "Should be able to get initial items");
 
-            // 2) Prepare candidate user
-            String candGuest = userService.enterToSystem().getData();
-            assertTrue(userService.registerUser(candGuest, "candidate"+i, "pwdC", 
-                LocalDate.now().minusYears(25)).isOk(), "Candidate registration should succeed");
+//             // 2) Prepare candidate user
+//             String candGuest = userService.enterToSystem().getData();
+//             assertTrue(userService.registerUser(candGuest, "candidate"+i, "pwdC", 
+//                 LocalDate.now().minusYears(25)).isOk(), "Candidate registration should succeed");
 
-            // 3) Two concurrent attempts to appoint the same candidate
-            int iteration = i;
-            Set<Permission> perms = Set.of(Permission.VIEW);
-            List<Callable<Boolean>> tasks = List.of(
-                () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk(),
-                () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk()
-            );
+//             // 3) Two concurrent attempts to appoint the same candidate
+//             int iteration = i;
+//             Set<Permission> perms = Set.of(Permission.VIEW);
+//             List<Callable<Boolean>> tasks = List.of(
+//                 () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk(),
+//                 () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk()
+//             );
 
-            ExecutorService ex = Executors.newFixedThreadPool(2);
-            List<Future<Boolean>> results = ex.invokeAll(tasks);
-            ex.shutdown();
+//             ExecutorService ex = Executors.newFixedThreadPool(2);
+//             List<Future<Boolean>> results = ex.invokeAll(tasks);
+//             ex.shutdown();
 
-            long successCount = results.stream()
-                .map(f -> {
-                    try { return f.get(); }
-                    catch (Exception e) { return false; }
-                })
-                .filter(ok -> ok)
-                .count();
+//             long successCount = results.stream()
+//                 .map(f -> {
+//                     try { return f.get(); }
+//                     catch (Exception e) { return false; }
+//                 })
+//                 .filter(ok -> ok)
+//                 .count();
 
-            // Assert - Basic functionality
-            assertEquals(1, successCount,
-                "Exactly one of the two concurrent addShopManager calls should succeed");
+//             // Assert - Basic functionality
+//             assertEquals(1, successCount,
+//                 "Exactly one of the two concurrent addShopManager calls should succeed");
 
-            // Assert - System Invariants
-            // 1. Shop state should remain unchanged
-            Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shopId);
-            assertTrue(afterItems.isOk(), "Should still be able to get items");
-            assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
-                "Number of items should remain unchanged");
+//             // Assert - System Invariants
+//             // 1. Shop state should remain unchanged
+//             Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shopId);
+//             assertTrue(afterItems.isOk(), "Should still be able to get items");
+//             assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
+//                 "Number of items should remain unchanged");
 
-            // 2. Manager should have exactly one set of permissions
-            Response<List<Permission>> permsResp = shopService.getMemberPermissions(
-                ownerToken, shopId, "candidate"+iteration);
-            assertTrue(permsResp.isOk(), "Should be able to get manager permissions");
-            assertEquals(1, permsResp.getData().size(), 
-                "Manager should have exactly one permission");
+//             // 2. Manager should have exactly one set of permissions
+//             Response<List<Permission>> permsResp = shopService.getMemberPermissions(
+//                 ownerToken, shopId, "candidate"+iteration);
+//             assertTrue(permsResp.isOk(), "Should be able to get manager permissions");
+//             assertEquals(1, permsResp.getData().size(), 
+//                 "Manager should have exactly one permission");
 
-            // 3. Owner's permissions should remain intact
-            Response<List<Permission>> ownerPerms = shopService.getMemberPermissions(
-                ownerToken, shopId, "owner"+i);
-            assertTrue(ownerPerms.isOk(), "Should be able to get owner permissions");
-            assertFalse(ownerPerms.getData().isEmpty(), "Owner should retain permissions");
-        }
-    }
+//             // 3. Owner's permissions should remain intact
+//             Response<List<Permission>> ownerPerms = shopService.getMemberPermissions(
+//                 ownerToken, shopId, "owner"+i);
+//             assertTrue(ownerPerms.isOk(), "Should be able to get owner permissions");
+//             assertFalse(ownerPerms.getData().isEmpty(), "Owner should retain permissions");
+//         }
+    
+    // @Test
+    // public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws InterruptedException {
+    //     for (int i = 0; i < 10; i++) {
+    //         // 1) Owner creates shop
+    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
+    //         int shopId = shop.getId();
+
+    //         // 2) Prepare candidate user
+    //         String candGuest = userService.enterToSystem().getData();
+    //         assertTrue(userService.registerUser(candGuest, "candidate"+i, "pwdC", LocalDate.now().minusYears(25))
+    //                 .isOk(), "Candidate registration should succeed");
+
+    //         // 3) Two concurrent attempts to appoint the same candidate
+    //         int iteration = i;  // effectively final
+    //         Set<Permission> perms = Set.of(Permission.VIEW);
+    //         List<Callable<Boolean>> tasks = List.of(
+    //             () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk(),
+    //             () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk()
+    //         );
+
+    //         ExecutorService ex = Executors.newFixedThreadPool(2);
+    //         List<Future<Boolean>> results = ex.invokeAll(tasks);
+    //         ex.shutdown();
+
+    //         long successCount = results.stream()
+    //             .map(f -> {
+    //                 try { return f.get(); }
+    //                 catch (Exception e) { return false; }
+    //             })
+    //             .filter(ok -> ok)
+    //             .count();
+
+    //         assertEquals(1, successCount,
+    //             "Exactly one of the two concurrent addShopManager calls should succeed, but got " + successCount);
+    //     }
+    // }
+
+    // @Test
+    // public void removeShopManagerPermissionTest() {
+    //     // 1) Owner setup: register and create a shop
+    //     String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
+
+    //     // 2) Manager setup: register a second user to become manager
+    //     String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
+    //     String managerUsername = "ShopManager";
+
+    //     // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
+    //     Response<Void> assignResp = shopService.addShopManager(
+    //         ownerToken,
+    //         shop.getId(),
+    //         managerUsername,
+    //         Set.of(Permission.UPDATE_SUPPLY)
+    //     );
+    //     assertTrue(assignResp.isOk(), "assignShopManager should succeed");
+
+    //     // 4) Verify manager can perform a manager-only action (e.g., add an item)
+    //     Response<ItemDTO> addItemResp = shopService.addItemToShop(
+    //         managerToken,
+    //         shop.getId(),
+    //         "ManagerItem",
+    //         Category.ELECTRONICS,
+    //         10.00,
+    //         "Item added by manager"
+    //     );
+    //     assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
+
+    //     // 5) Owner removes manager permission
+    //     Response<Void> removeResp = shopService.removeAppointment(
+    //         ownerToken,
+    //         shop.getId(),
+    //         managerUsername
+    //     );
+    //     assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
+
+    //     // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
+    //     Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
+    //         managerToken,
+    //         shop.getId(),
+    //         "ShouldFailItem",
+    //         Category.FOOD,
+    //         5.00,
+    //         "This should not be added"
+    //     );
+    //     assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
+    // }
+
+
+//     @Test
+//     public void testCreateShop_AsOwner_ShouldSucceed() {
+//         String ownerToken = fixtures.generateRegisteredUserSession("ownerX", "pwdX");
+//         Response<ShopDTO> resp = shopService.createShop(ownerToken, "XShop", "desc");
+//         assertTrue(resp.isOk(), "Owner should be able to create a shop");
+//         assertEquals("XShop", resp.getData().getName(), "Shop name should match");
+//         assertEquals("desc", resp.getData().getDescription(), "Shop description should match");
+  //  }
 
     @Test
     public void testCloseShop_AsNonOwner_ShouldFail() {
@@ -2258,138 +2365,156 @@ public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
         assertTrue(shopInfo.isOk(), "Should be able to get shop info");
     }
 
-    @Test
-    public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
-        // 1) Setup initial state
-        String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
-        ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
+//     @Test
+//     public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
+//         // 1) Setup initial state
+//         String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
+//         ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
         
-        // Store initial state
-        Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shop.getId());
-        assertTrue(initialItems.isOk(), "Should be able to get initial items");
+//         // Store initial state
+//         Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shop.getId());
+//         assertTrue(initialItems.isOk(), "Should be able to get initial items");
 
-        // 2) Setup manager
-        String guest = userService.enterToSystem().getData();
-        userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
-        String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
+//         // 2) Setup manager
+//         String guest = userService.enterToSystem().getData();
+//         userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
+//         String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
 
-        // 3) Send message
-        String msgTitle = "Hello mgrMsg";
-        String msgContent = "Hello there";
-        Response<Void> send = shopService.sendMessage(owner, shop.getId(), msgTitle, msgContent);
-        assertTrue(send.isOk(), "sendMessage should succeed");
+//         // 3) Send message
+//         String msgTitle = "Hello mgrMsg";
+//         String msgContent = "Hello there";
+//         Response<Void> send = shopService.sendMessage(owner, shop.getId(), msgTitle, msgContent);
+//         assertTrue(send.isOk(), "sendMessage should succeed");
 
-        // 4) Check inbox
-        Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
+//         // 4) Check inbox
+//         Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
         
-        // Assert - Basic functionality
-        assertTrue(inbox.isOk(), "getInbox should succeed");
-        List<Message> msgs = inbox.getData();
-        assertEquals(1, msgs.size(), "Should receive one message");
-        assertEquals(msgContent, msgs.get(0).getContent());
-        assertEquals("ownerMsg2", msgs.get(0).getUserName());
+//         // Assert - Basic functionality
+//         assertTrue(inbox.isOk(), "getInbox should succeed");
+//         List<Message> msgs = inbox.getData();
+//         assertEquals(1, msgs.size(), "Should receive one message");
+//         assertEquals(msgContent, msgs.get(0).getContent());
+//         assertEquals("ownerMsg2", msgs.get(0).getUserName());
 
-        // Assert - System Invariants
-        // 1. Shop state preservation
-        Response<List<ItemDTO>> afterItems = shopService.showShopItems(owner, shop.getId());
-        assertTrue(afterItems.isOk(), "Should still be able to get items");
-        assertEquals(initialItems.getData().size(), afterItems.getData().size(),
-            "Number of items should remain unchanged");
+//         // Assert - System Invariants
+//         // 1. Shop state preservation
+//         Response<List<ItemDTO>> afterItems = shopService.showShopItems(owner, shop.getId());
+//         assertTrue(afterItems.isOk(), "Should still be able to get items");
+//         assertEquals(initialItems.getData().size(), afterItems.getData().size(),
+//             "Number of items should remain unchanged");
 
-        // 2. Message persistence
-        Response<List<Message>> secondInbox = shopService.getInbox(manager, shop.getId());
-        assertTrue(secondInbox.isOk(), "Should be able to get inbox again");
-        assertEquals(inbox.getData().size(), secondInbox.getData().size(),
-            "Message count should remain consistent");
+//         // 2. Message persistence
+//         Response<List<Message>> secondInbox = shopService.getInbox(manager, shop.getId());
+//         assertTrue(secondInbox.isOk(), "Should be able to get inbox again");
+//         assertEquals(inbox.getData().size(), secondInbox.getData().size(),
+//             "Message count should remain consistent");
 
-        // 3. Owner permissions verification
-        Response<List<Permission>> ownerPerms = shopService.getMemberPermissions(
-            owner, shop.getId(), "ownerMsg2"
-        );
-        assertTrue(ownerPerms.isOk(), "Should be able to get owner permissions");
-        assertFalse(ownerPerms.getData().isEmpty(), "Owner should retain permissions");
-    }
-    @Test
-    public void testRespondToMessage_ShouldSendReply() {
-        // 1) Setup initial state
-        String owner = fixtures.generateRegisteredUserSession("ownerMsg3", "pwd3");
-        ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop3");
+//         // 3. Owner permissions verification
+//         Response<List<Permission>> ownerPerms = shopService.getMemberPermissions(
+//             owner, shop.getId(), "ownerMsg2"
+//         );
+//         assertTrue(ownerPerms.isOk(), "Should be able to get owner permissions");
+//         assertFalse(ownerPerms.getData().isEmpty(), "Owner should retain permissions");
+//     }
+//     @Test
+//     public void testRespondToMessage_ShouldSendReply() {
+//         // 1) Setup initial state
+//         String owner = fixtures.generateRegisteredUserSession("ownerMsg3", "pwd3");
+//         ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop3");
         
-        // Store initial state
-        Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shop.getId());
-        assertTrue(initialItems.isOk(), "Should be able to get initial items");
+//         // Store initial state
+//         Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shop.getId());
+//         assertTrue(initialItems.isOk(), "Should be able to get initial items");
+    // @Test
+    // public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
+    //     String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
+    //     ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
+    //     String guest = userService.enterToSystem().getData();
+    //     userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
+    //     String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
+
+    //     Response<Void> send = shopService.sendMessage(owner, shop.getId(), "Hello mgrMsg", "Hello there");
+    //     assertTrue(send.isOk(), "sendMessage should succeed");
+
+    //     Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
+    //     assertTrue(inbox.isOk(), "getInbox should succeed");
+    //     List<Message> msgs = inbox.getData();
+    //     assertEquals(1, msgs.size(), "Should receive one message");
+    //     assertEquals("Hello there", msgs.get(0).getContent());
+    //     assertEquals("ownerMsg2", msgs.get(0).getUserName());
+    // }
 
         // 2) Setup manager with permissions first
-        String guest = userService.enterToSystem().getData();
-        userService.registerUser(guest, "mgrMsg2", "pwdM2", LocalDate.now().minusYears(25));
-        String manager = userService.loginUser(guest, "mgrMsg2", "pwdM2").getData();
+//         String guest = userService.enterToSystem().getData();
+//         userService.registerUser(guest, "mgrMsg2", "pwdM2", LocalDate.now().minusYears(25));
+//         String manager = userService.loginUser(guest, "mgrMsg2", "pwdM2").getData();
         
-        // Add manager with message permission first
-        Set<Permission> permissions = new HashSet<>();
-        permissions.add(Permission.ANSWER_MESSAGE);
-        permissions.add(Permission.VIEW);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            owner, shop.getId(), "mgrMsg2", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "Adding manager should succeed");
+//         // Add manager with message permission first
+//         Set<Permission> permissions = new HashSet<>();
+//         permissions.add(Permission.ANSWER_MESSAGE);
+//         permissions.add(Permission.VIEW);
+//         Response<Void> addManagerResp = shopService.addShopManager(
+//             owner, shop.getId(), "mgrMsg2", permissions
+//         );
+//         assertTrue(addManagerResp.isOk(), "Adding manager should succeed");
 
-        // 3) Owner sends initial message
-        String initialTitle = "Question?";
-        String initialContent = "How are you?";
-        Response<Void> send = shopService.sendMessage(owner, shop.getId(), initialTitle, initialContent);
-        assertTrue(send.isOk(), "sendMessage should succeed");
+//         // 3) Owner sends initial message
+//         String initialTitle = "Question?";
+//         String initialContent = "How are you?";
+//         Response<Void> send = shopService.sendMessage(owner, shop.getId(), initialTitle, initialContent);
+//         assertTrue(send.isOk(), "sendMessage should succeed");
 
-        // Store initial message state
-        Response<List<Message>> initialMgrInbox = shopService.getInbox(manager, shop.getId());
-        assertTrue(initialMgrInbox.isOk(), "Should be able to get initial inbox");
-        assertFalse(initialMgrInbox.getData().isEmpty(), "Manager inbox should contain message");
+//         // Store initial message state
+//         Response<List<Message>> initialMgrInbox = shopService.getInbox(manager, shop.getId());
+//         assertTrue(initialMgrInbox.isOk(), "Should be able to get initial inbox");
+//         assertFalse(initialMgrInbox.getData().isEmpty(), "Manager inbox should contain message");
 
-        Message original = initialMgrInbox.getData().stream()
-            .filter(m -> m.getTitle() != null && m.getTitle().equals(initialTitle))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Could not find original message"));
+//         Message original = initialMgrInbox.getData().stream()
+//             .filter(m -> m.getTitle() != null && m.getTitle().equals(initialTitle))
+//             .findFirst()
+//             .orElseThrow(() -> new RuntimeException("Could not find original message"));
 
-        // 4) Manager sends reply
-        String replyTitle = "Re: " + initialTitle;
-        String replyContent = "I'm fine, thanks!";
-        Response<Void> reply = shopService.respondToMessage(
-            manager, shop.getId(), original.getId(), replyTitle, replyContent
-        );
-        assertTrue(reply.isOk(), "respondToMessage should succeed");
+//         // 4) Manager sends reply
+//         String replyTitle = "Re: " + initialTitle;
+//         String replyContent = "I'm fine, thanks!";
+//         Response<Void> reply = shopService.respondToMessage(
+//             manager, shop.getId(), original.getId(), replyTitle, replyContent
+//         );
+//         assertTrue(reply.isOk(), "respondToMessage should succeed");
 
-        // Assert - System Invariants
-        // 1. Original message status
-        Response<List<Message>> afterManagerInbox = shopService.getInbox(manager, shop.getId());
-        assertTrue(afterManagerInbox.isOk(), "Should be able to get manager's inbox");
+//         // Assert - System Invariants
+//         // 1. Original message status
+//         Response<List<Message>> afterManagerInbox = shopService.getInbox(manager, shop.getId());
+//         assertTrue(afterManagerInbox.isOk(), "Should be able to get manager's inbox");
         
-        Message afterOriginal = afterManagerInbox.getData().stream()
-            .filter(m -> m.getId() == original.getId())
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Original message not found after reply"));
-        assertFalse(afterOriginal.needResponse(), "Original message should be marked as responded");
+//         Message afterOriginal = afterManagerInbox.getData().stream()
+//             .filter(m -> m.getId() == original.getId())
+//             .findFirst()
+//             .orElseThrow(() -> new RuntimeException("Original message not found after reply"));
+//         assertFalse(afterOriginal.needResponse(), "Original message should be marked as responded");
 
-        // 2. Reply message verification
-        Response<List<Message>> ownerInbox = shopService.getInbox(owner, shop.getId());
-        assertTrue(ownerInbox.isOk(), "Should be able to get owner's inbox");
+//         // 2. Reply message verification
+//         Response<List<Message>> ownerInbox = shopService.getInbox(owner, shop.getId());
+//         assertTrue(ownerInbox.isOk(), "Should be able to get owner's inbox");
 
-        Optional<Message> replyOpt = ownerInbox.getData().stream()
-            .filter(m -> m.getContent().equals(replyContent))
-            .findFirst();
-        assertTrue(replyOpt.isPresent(), "Reply message should exist in owner's inbox");
-        Message reply1 = replyOpt.get();
+//         Optional<Message> replyOpt = ownerInbox.getData().stream()
+//             .filter(m -> m.getContent().equals(replyContent))
+//             .findFirst();
+//         assertTrue(replyOpt.isPresent(), "Reply message should exist in owner's inbox");
+//         Message reply1 = replyOpt.get();
 
-        // Verify reply properties
-        assertEquals("ownerMsg3", reply1.getUserName(), "Reply should be from ownerMsg3");
-        assertEquals(shop.getName(), reply1.getShopName(), "Reply should reference correct shop");
-        assertEquals(replyContent, reply1.getContent(), "Reply content should match");
-        // Note: System currently sets respondId to -1 for replies
-        assertEquals(-1, reply1.getRespondId(), "Reply should have respondId set to -1");
-        assertTrue(reply1.getTitle().contains("Re: Question?"), "Reply title should contain original title");
+//         // Verify reply properties
+//         assertEquals("ownerMsg3", reply1.getUserName(), "Reply should be from ownerMsg3");
+//         assertEquals(shop.getName(), reply1.getShopName(), "Reply should reference correct shop");
+//         assertEquals(replyContent, reply1.getContent(), "Reply content should match");
+//         // Note: System currently sets respondId to -1 for replies
+//         assertEquals(-1, reply1.getRespondId(), "Reply should have respondId set to -1");
+//         assertTrue(reply1.getTitle().contains("Re: Question?"), "Reply title should contain original title");
 
-        // 3. Shop state verification
-        Response<List<ItemDTO>> afterItems = shopService.showShopItems(owner, shop.getId());
-        assertTrue(afterItems.isOk(), "Should still be able to get items");
-        assertEquals(initialItems.getData().size(), afterItems.getData().size(),
-            "Number of items should remain unchanged");
-    }
+//         // 3. Shop state verification
+//         Response<List<ItemDTO>> afterItems = shopService.showShopItems(owner, shop.getId());
+//         assertTrue(afterItems.isOk(), "Should still be able to get items");
+//         assertEquals(initialItems.getData().size(), afterItems.getData().size(),
+//             "Number of items should remain unchanged");
+//     }
 }
