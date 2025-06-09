@@ -21,8 +21,7 @@ public class PriceCondition extends BaseCondition {
 
     public PriceCondition(int minPrice, int maxPrice) {
         super();
-        this.minPrice = minPrice;
-        this.maxPrice = maxPrice;
+        buildPriceRange(minPrice, maxPrice);
     }
 
     public PriceCondition(int itemID, Category category, int minPrice, int maxPrice) {
@@ -112,8 +111,10 @@ public class PriceCondition extends BaseCondition {
         return totalPrice >= minPrice && totalPrice <= maxPrice;
     }
 
+    @Override
     public String toString() {
-        return String.format("PriceCondition [minPrice=%.2f, maxPrice=%.2f]", minPrice, maxPrice);
+        return String.format("PriceCondition[minPrice=%d, maxPrice=%d]", 
+                              minPrice, maxPrice);
     }
 
 }

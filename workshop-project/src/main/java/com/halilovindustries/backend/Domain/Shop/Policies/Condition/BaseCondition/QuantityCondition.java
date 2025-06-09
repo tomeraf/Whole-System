@@ -132,6 +132,8 @@ public class QuantityCondition extends BaseCondition {
 
     @Override
     public String toString() {
-        return String.format("QuantityCondition [minQuantity=%d, maxQuantity=%d]", minQuantity, maxQuantity);
+        // no space before '['
+        return String.format("QuantityCondition[minQuantity=%d, maxQuantity=%d]", 
+                              minQuantity, maxQuantity);
     }
 }
