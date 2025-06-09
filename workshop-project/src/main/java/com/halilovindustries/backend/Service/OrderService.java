@@ -146,20 +146,22 @@ public class OrderService {
      * @param itemID
      */
     @Transactional
-    public Response<Void> removeItemFromCart(String sessionToken, int shopId,int itemID) {
-
+    public Response<Void> removeItemFromCart(String sessionToken, int shopId, int itemID) {
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
             int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Guest guest = userRepository.getUserById(cartID); // Get the guest user by I
-            if(guest.isSuspended()) {
+            if (guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            guest.getCart().deleteItem(shopId,itemID); // Remove items from the cart
-            
+            if (!guest.getCart().getShopIDs().contains(shopId) || !shop.getItems().containsKey(itemID)) {
+                logger.error(() -> "Item not in cart or shop does not exist");
+                throw new Exception("Item not in cart");
+            }
+            guest.getCart().deleteItem(shopId, itemID); // Remove items from the cart
             logger.info(() -> "Items removed from cart successfully");
             return Response.ok();
         } catch (Exception e) {

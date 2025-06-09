@@ -108,7 +108,7 @@ public class Item {
         for (double r : ratedIds.values()) {
             rating += r;
         }
-        return rating / ratedIds.size();
+        return (rating == 0) ? 0.0 : (rating / ratedIds.size());
     }
     public int getNumOfOrders(){
         return numOfOrders;
