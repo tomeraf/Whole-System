@@ -24,18 +24,18 @@ public class MemoryShopRepository implements IShopRepository {
         return shops.get(id);
     }
 
-    @Override
-    public void updateShop(Shop shop) {
-        shops.put(shop.getId(), shop);
-    }
+    // @Override
+    // public void updateShop(Shop shop) {
+    //     shops.put(shop.getId(), shop);
+    // }
 
-    @Override
-    public void deleteShop(int id) {
-        if (!shops.containsKey(id)) {
-            throw new IllegalArgumentException("Shop with ID " + id + " does not exist.");
-        }
-        shops.remove(id);
-    }
+    // @Override
+    // public void deleteShop(int id) {
+    //     if (!shops.containsKey(id)) {
+    //         throw new IllegalArgumentException("Shop with ID " + id + " does not exist.");
+    //     }
+    //     shops.remove(id);
+    // }
 
     @Override
     public HashMap<Integer, Shop> getAllShops() {

@@ -20,38 +20,38 @@ public class MemoryOrderRepository implements IOrderRepository {
         orders.put(order.getId(), order);
     }
 
-    @Override
-    public void removeOrder(int orderId) {
-        if(!orders.containsKey(orderId)) {
-            throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
-        }
-        orders.remove(orderId);
-    }
+    // @Override
+    // public void removeOrder(int orderId) {
+    //     if(!orders.containsKey(orderId)) {
+    //         throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
+    //     }
+    //     orders.remove(orderId);
+    // }
 
-    @Override
-    public Order getOrder(int orderId) {
-        if(!orders.containsKey(orderId)) {
-            throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
-        }
-        return orders.get(orderId);
-    }
+    // @Override
+    // public Order getOrder(int orderId) {
+    //     if(!orders.containsKey(orderId)) {
+    //         throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
+    //     }
+    //     return orders.get(orderId);
+    // }
 
-    @Override
-    public List<Order> getAllOrders() {
-        return orders.values().stream().toList();
-    }
+    // @Override
+    // public List<Order> getAllOrders() {
+    //     return orders.values().stream().toList();
+    // }
 
-    @Override
-    public List<ItemDTO> getOrdersByShopId(int shopId) {
-        List<ItemDTO> orderList = new ArrayList<>();
-        for (Order order : orders.values()) {
-            List<ItemDTO> items = order.getShopItems(shopId);
-            if (items != null) {
-                orderList.addAll(items);
-            }
-        }
-        return orderList;
-    }
+    // @Override
+    // public List<ItemDTO> getOrdersByShopId(int shopId) {
+    //     List<ItemDTO> orderList = new ArrayList<>();
+    //     for (Order order : orders.values()) {
+    //         List<ItemDTO> items = order.getShopItems(shopId);
+    //         if (items != null) {
+    //             orderList.addAll(items);
+    //         }
+    //     }
+    //     return orderList;
+    // }
     public List<Order> getOrdersByCustomerId(int userID) {
         List<Order> orderList = new ArrayList<>();
         for (Order order : orders.values()) {

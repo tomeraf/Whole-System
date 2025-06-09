@@ -1,45 +1,41 @@
 package Tests.AcceptanceTests;
 
+import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
-import com.halilovindustries.backend.Domain.DTOs.BidDTO;
+import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
+import com.halilovindustries.backend.Domain.DTOs.Order;
+
 
 import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.BaseCondition.PriceCondition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.BaseCondition.QuantityCondition;
+import com.halilovindustries.backend.Domain.Shop.Policies.Condition.CompositeCondition.AndCondition;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
-import com.halilovindustries.backend.Domain.DTOs.NotificationDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-import com.halilovindustries.backend.Domain.User.Permission;
-import com.halilovindustries.backend.Domain.Shop.*;
-import com.halilovindustries.backend.Domain.Response;
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
-import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
-import com.halilovindustries.backend.Domain.Message;
 
 public class ShoppingTests extends BaseAcceptanceTests {
     @Test
@@ -204,36 +200,93 @@ public class ShoppingTests extends BaseAcceptanceTests {
     @Test
     public void addItemToBasketTest() {
         //  1) Owner setup 
-        // Owner enters as guest
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
         
         //  2) Buyer setup 
-        // Buyer enters as guest
         Response<String> buyerGuestResp = userService.enterToSystem();
         assertTrue(buyerGuestResp.isOk(), "Buyer enterToSystem should succeed");
         String buyerGuestToken = buyerGuestResp.getData();
         assertNotNull(buyerGuestToken, "Buyer guest token must not be null");
 
         //  3) Buyer shopping & checkout 
-        // Buyer views the shop's items
         Response<List<ItemDTO>> viewResp = shopService.showShopItems(ownerToken,shop.getId());
         assertTrue(viewResp.isOk(), "showShopItems should succeed");
         List<ItemDTO> shopItems = viewResp.getData();
         assertNotNull(shopItems, "shopItems list must not be null");
-        assertEquals(3, shopItems.size(), "Shop should contain exactly one item");
-
+        assertEquals(3, shopItems.size(), "Shop should contain exactly 3 items");
+        
+        // Capture item details before adding to cart
+        ItemDTO itemToAdd = shopItems.get(0);
+        int initialQuantity = itemToAdd.getQuantity();
+        
         // Buyer adds that item to cart
         Response<Void> addToCart = orderService.addItemToCart(
             buyerGuestToken,
             shop.getId(),
-            shopItems.get(0).getItemID(),
+            itemToAdd.getItemID(),
             1
         );
-        assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
+        assertTrue(addToCart.isOk(), "addItemToCart should succeed");
 
-        List<ItemDTO> cartItems = orderService.checkCartContent(buyerGuestToken).getData();
+        // Verify cart content
+        Response<List<ItemDTO>> cartResponse = orderService.checkCartContent(buyerGuestToken);
+        assertTrue(cartResponse.isOk(), "checkCartContent should succeed");
+        List<ItemDTO> cartItems = cartResponse.getData();
         assertEquals(1, cartItems.size(), "Cart should contain exactly one item");
+        
+        // Verify the item in cart matches what was added
+        ItemDTO cartItem = cartItems.get(0);
+        assertEquals(itemToAdd.getItemID(), cartItem.getItemID(), "Item ID in cart should match added item");
+        assertEquals(itemToAdd.getName(), cartItem.getName(), "Item name in cart should match added item");
+        assertEquals(itemToAdd.getPrice(), cartItem.getPrice(), "Item price in cart should match added item");
+        assertEquals(1, cartItem.getQuantity(), "Item quantity in cart should be 1");
+        
+        // Verify shop inventory is unchanged
+        Response<ShopDTO> shopAfterResp = shopService.getShopInfo(ownerToken, shop.getId());
+        assertTrue(shopAfterResp.isOk(), "getShopInfo should succeed after adding to cart");
+        ShopDTO shopAfter = shopAfterResp.getData();
+        int quantityAfter = shopAfter.getItems().get(itemToAdd.getItemID()).getQuantity();
+        assertEquals(initialQuantity, quantityAfter, "Shop inventory should not change when adding to cart");
+        
+        // Add more quantity of the same item
+        Response<Void> addMoreQty = orderService.addItemToCart(
+            buyerGuestToken,
+            shop.getId(),
+            itemToAdd.getItemID(),
+            2
+        );
+        assertTrue(addMoreQty.isOk(), "Adding more quantity should succeed");
+        
+        // Verify quantity was updated, not duplicated
+        Response<List<ItemDTO>> updatedCartResp = orderService.checkCartContent(buyerGuestToken);
+        List<ItemDTO> updatedCart = updatedCartResp.getData();
+        assertEquals(1, updatedCart.size(), "Cart should still contain only one item type");
+        assertEquals(3, updatedCart.get(0).getQuantity(), "Item quantity should now be 3");
+        
+        // Try to add a different item
+        ItemDTO secondItem = shopItems.get(1);
+        Response<Void> addSecondItem = orderService.addItemToCart(
+            buyerGuestToken,
+            shop.getId(),
+            secondItem.getItemID(),
+            1
+        );
+        assertTrue(addSecondItem.isOk(), "Adding second item should succeed");
+        
+        // Verify cart now has two different items
+        Response<List<ItemDTO>> finalCartResp = orderService.checkCartContent(buyerGuestToken);
+        List<ItemDTO> finalCart = finalCartResp.getData();
+        assertEquals(2, finalCart.size(), "Cart should now contain two different items");
+        
+        // Try adding with invalid quantity (assuming zero or negative should fail)
+        Response<Void> invalidAdd = orderService.addItemToCart(
+            buyerGuestToken,
+            shop.getId(),
+            shopItems.get(2).getItemID(),
+            0
+        );
+        assertFalse(invalidAdd.isOk(), "Adding zero quantity should fail");
     }
 
     @Test
@@ -261,8 +314,24 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
 
         // verify cart contents
-        List<ItemDTO> cartItems = orderService.checkCartContent(buyerGuestToken).getData();
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerGuestToken);
+        assertTrue(cartResp.isOk(), "checkCartContent should succeed");
+        List<ItemDTO> cartItems = cartResp.getData();
         assertEquals(1, cartItems.size(), "Cart should contain exactly one item");
+        
+        // Verify the correct item is in cart with correct details
+        ItemDTO cartItem = cartItems.get(0);
+        assertEquals(items.get(0).getItemID(), cartItem.getItemID(), "Item ID should match");
+        assertEquals(items.get(0).getName(), cartItem.getName(), "Item name should match");
+        assertEquals(items.get(0).getPrice(), cartItem.getPrice(), "Item price should match");
+        assertEquals(1, cartItem.getQuantity(), "Quantity should be 1");
+        
+        // Check empty cart for a different user
+        Response<String> anotherUserResp = userService.enterToSystem();
+        String anotherUserToken = anotherUserResp.getData();
+        Response<List<ItemDTO>> emptyCartResp = orderService.checkCartContent(anotherUserToken);
+        assertTrue(emptyCartResp.isOk(), "Empty cart check should succeed");
+        assertTrue(emptyCartResp.getData().isEmpty(), "New user's cart should be empty");
     }
 
     @Test
@@ -270,7 +339,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
             "1234567890123456", "Some Name", "1", "123", "12", "25"
         );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "noder.neder@gmail.com", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
         fixtures.mockPositivePayment(p);
         fixtures.mockPositiveShipment(s);
@@ -294,16 +363,46 @@ public class ShoppingTests extends BaseAcceptanceTests {
         );
         assertTrue(addResp.isOk(), "addItemsToCart should succeed");
 
+        assertTrue(p.fullDetails(), "Payment details must be complete");
+        assertTrue(s.fullShipmentDetails(), "Shipment details must be complete");
+
         // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
         Order created = fixtures.successfulBuyCartContent(buyerToken, p, s);
+        assertEquals(created.getPaymentId(), 12345);
+        assertEquals(created.getShipmentId(), 67890);
 
         // verify stock was decremented by 1
         Response<ShopDTO> updatedShopResp = shopService.getShopInfo(ownerToken, shop.getId());
         assertTrue(updatedShopResp.isOk(), "getShopInfo should succeed after cart operation");
         ShopDTO updatedShop = updatedShopResp.getData();
-        int originalQty = shop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
-        int newQty      = updatedShop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
-        assertEquals(originalQty - 1, newQty, "Stock should decrease by 1 when added to cart");
+        
+        // Find the item in the updated shop inventory
+        Optional<ItemDTO> updatedItem = updatedShop.getItems().values().stream()
+            .filter(i -> i.getItemID() == toBuy.getItemID())
+            .findFirst();
+        
+        assertTrue(updatedItem.isPresent(), "Item should still exist in shop");
+        assertEquals(toBuy.getQuantity() - 1, updatedItem.get().getQuantity(), 
+            "Item quantity should be decremented by 1");
+            
+        // Verify buyer's cart is now empty
+        Response<List<ItemDTO>> cartAfterPurchase = orderService.checkCartContent(buyerToken);
+        assertTrue(cartAfterPurchase.isOk(), "Cart check after purchase should succeed");
+        assertTrue(cartAfterPurchase.getData().isEmpty(), "Cart should be empty after purchase");
+        
+        // Verify order is in buyer's order history
+        Response<List<Order>> orderHistoryResp = orderService.viewPersonalOrderHistory(buyerToken);
+        assertTrue(orderHistoryResp.isOk(), "Getting order history should succeed");
+        List<Order> orderHistory = orderHistoryResp.getData();
+        assertFalse(orderHistory.isEmpty(), "Order history should not be empty");
+        
+        // Find the order we just created
+        Optional<Order> foundOrder = orderHistory.stream()
+            .filter(o -> o.getId() == created.getId())
+            .findFirst();
+        
+        assertTrue(foundOrder.isPresent(), "Our order should be in history");
+        assertEquals(created.getId(), foundOrder.get().getId(), "Order IDs should match");
 
         // 5) Verify via service (no direct repo access)
         Response<List<Order>> historyResp = orderService.viewPersonalOrderHistory(buyerToken);
@@ -1272,4 +1371,280 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(historyResp.getData().isEmpty(), "Order history should remain empty after failed checkout");
     }
     
+    @Test
+    public void testCartPersistenceAcrossSessions() {
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO item = shopItems.get(0);
+        
+        // 2) Buyer setup - register a user (not just guest)
+        Response<String> guestResp = userService.enterToSystem();
+        String guestToken = guestResp.getData();
+        userService.registerUser(guestToken, "persistence", "pass123", LocalDate.now().minusYears(25));
+        Response<String> loginResp = userService.loginUser(guestToken, "persistence", "pass123");
+        String buyerToken = loginResp.getData();
+        
+        // 3) Add item to cart
+        Response<Void> addResp = orderService.addItemToCart(
+            buyerToken,
+            shop.getId(),
+            item.getItemID(),
+            2
+        );
+        assertTrue(addResp.isOk(), "Adding item to cart should succeed");
+        
+        // Verify cart has the item
+        Response<List<ItemDTO>> cartBeforeLogout = orderService.checkCartContent(buyerToken);
+        assertEquals(1, cartBeforeLogout.getData().size(), "Cart should have one item before logout");
+        
+        // 4) Logout
+        Response<String> logoutResp = userService.logoutRegistered(buyerToken);
+        assertTrue(logoutResp.isOk(), "Logout should succeed");
+        
+        // 5) Login again with fresh token
+        Response<String> newGuestResp = userService.enterToSystem();
+        String newGuestToken = newGuestResp.getData();
+        Response<String> reloginResp = userService.loginUser(newGuestToken, "persistence", "pass123");
+        String newBuyerToken = reloginResp.getData();
+        
+        // 6) Verify cart contents persisted
+        Response<List<ItemDTO>> cartAfterLogin = orderService.checkCartContent(newBuyerToken);
+        assertTrue(cartAfterLogin.isOk(), "Cart check after re-login should succeed");
+        
+        List<ItemDTO> persistedCart = cartAfterLogin.getData();
+        assertEquals(1, persistedCart.size(), "Cart should still have one item after re-login");
+        assertEquals(item.getItemID(), persistedCart.get(0).getItemID(), "Item ID should be preserved");
+        assertEquals(2, persistedCart.get(0).getQuantity(), "Item quantity should be preserved");
+    }
+
+    @Test
+    public void testPriceCalculationVerification() {
+        // 1) Owner setup
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        
+        // 2) Buyer setup
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
+        
+        // 3) Add multiple items with different quantities
+        ItemDTO item1 = shopItems.get(0);
+        ItemDTO item2 = shopItems.get(1);
+
+        // Ensure sufficient quantity exists for each item
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), item1.getItemID(), 5);  
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), item2.getItemID(), 5);
+        
+        Response<Void> add1 = orderService.addItemToCart(buyerToken, shop.getId(), item1.getItemID(), 2);
+        Response<Void> add2 = orderService.addItemToCart(buyerToken, shop.getId(), item2.getItemID(), 3);
+        assertTrue(add1.isOk() && add2.isOk(), "Adding items to cart should succeed");
+        
+        // 4) Calculate expected total
+        double expectedTotal = (item1.getPrice() * 2) + (item2.getPrice() * 3);
+        
+        // 5) Get cart for verification
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        List<ItemDTO> cart = cartResp.getData();
+        
+        // Calculate actual total from cart
+        double actualTotal = cart.stream()
+            .mapToDouble(item -> item.getPrice() * item.getQuantity())
+            .sum();
+        
+        // Verify calculations match
+        assertEquals(expectedTotal, actualTotal, 0.001, "Cart total calculation should be accurate");
+        
+        // 6) Complete purchase and verify order total
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345"
+        );
+        
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+        
+        Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
+        assertTrue(orderResp.isOk(), "Purchase should succeed");
+        Order order = orderResp.getData();
+        
+        // Verify order total matches expected total
+        assertEquals(expectedTotal, order.getTotalPrice(), 0.001, "Order total should match calculated total");
+        
+        // Verify payment was processed with correct amount
+        verify(payment).processPayment(expectedTotal, p);
+    }
+
+    @Test
+    public void testMultiShopOrderHandling() {
+        // 1) Create two different shops with items
+        String owner1Token = fixtures.generateRegisteredUserSession("Owner1", "Pwd1");
+        ShopDTO shop1 = fixtures.generateShopAndItems(owner1Token, "Shop1");
+        
+        String owner2Token = fixtures.generateRegisteredUserSession("Owner2", "Pwd2");
+        ShopDTO shop2 = fixtures.generateShopAndItems(owner2Token, "Shop2");
+        
+        // Get items from both shops
+        List<ItemDTO> shop1Items = shopService.showShopItems(owner1Token, shop1.getId()).getData();
+        List<ItemDTO> shop2Items = shopService.showShopItems(owner2Token, shop2.getId()).getData();
+        
+        // 2) Buyer setup
+        String buyerToken = fixtures.generateRegisteredUserSession("multiShopBuyer", "Pwd0");
+        
+        // 3) Add items from both shops to cart
+        Response<Void> add1 = orderService.addItemToCart(
+            buyerToken, shop1.getId(), shop1Items.get(0).getItemID(), 1
+        );
+        Response<Void> add2 = orderService.addItemToCart(
+            buyerToken, shop2.getId(), shop2Items.get(0).getItemID(), 1
+        );
+        
+        assertTrue(add1.isOk() && add2.isOk(), "Adding items from multiple shops should succeed");
+        
+        // 4) Verify cart has items from both shops
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        List<ItemDTO> cartItems = cartResp.getData();
+        assertEquals(2, cartItems.size(), "Cart should have items from both shops");
+        
+        // 5) Complete purchase
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345"
+        );
+        
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+        
+        Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
+        assertTrue(orderResp.isOk(), "Multi-shop purchase should succeed");
+        Order order = orderResp.getData();
+        
+        // 6) Verify order contains items from both shops
+        assertEquals(2, order.getItems().size(), "Order should contain items from both shops");
+        
+        // 7) Verify inventory updated in both shops
+        Response<ShopDTO> shop1AfterResp = shopService.getShopInfo(owner1Token, shop1.getId());
+        Response<ShopDTO> shop2AfterResp = shopService.getShopInfo(owner2Token, shop2.getId());
+        
+        ShopDTO shop1After = shop1AfterResp.getData();
+        ShopDTO shop2After = shop2AfterResp.getData();
+        
+        // Find the items and verify quantity decreased
+        ItemDTO shop1ItemAfter = shop1After.getItems().values().stream()
+            .filter(i -> i.getItemID() == shop1Items.get(0).getItemID())
+            .findFirst()
+            .orElseThrow();
+            
+        ItemDTO shop2ItemAfter = shop2After.getItems().values().stream()
+            .filter(i -> i.getItemID() == shop2Items.get(0).getItemID())
+            .findFirst()
+            .orElseThrow();
+            
+        assertEquals(shop1Items.get(0).getQuantity() - 1, shop1ItemAfter.getQuantity(), 
+            "Shop1 item quantity should be decremented");
+        assertEquals(shop2Items.get(0).getQuantity() - 1, shop2ItemAfter.getQuantity(), 
+            "Shop2 item quantity should be decremented");
+    }
+
+    @Test
+    public void testCartPersistenceFromGuestToRegistered() {
+        // 1) Owner setup and shop creation
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerPersist", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "PersistShop");
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
+        
+        // 2) Guest enters the system
+        Response<String> guestResp = userService.enterToSystem();
+        assertTrue(guestResp.isOk(), "Guest should enter system successfully");
+        String guestToken = guestResp.getData();
+        
+        // 3) Guest adds items to cart
+        ItemDTO item1 = shopItems.get(0);
+        ItemDTO item2 = shopItems.get(1);
+        
+        Response<Void> add1 = orderService.addItemToCart(guestToken, shop.getId(), item1.getItemID(), 2);
+        Response<Void> add2 = orderService.addItemToCart(guestToken, shop.getId(), item2.getItemID(), 1);
+        assertTrue(add1.isOk() && add2.isOk(), "Adding items to guest cart should succeed");
+        
+        // 4) Verify items are in guest's cart
+        Response<List<ItemDTO>> guestCartResp = orderService.checkCartContent(guestToken);
+        assertTrue(guestCartResp.isOk(), "Checking guest cart should succeed");
+        List<ItemDTO> guestCartItems = guestCartResp.getData();
+        assertEquals(2, guestCartItems.size(), "Guest cart should contain 2 items");
+        
+        // 5) Test both registration and login scenarios
+        
+        // 5a) REGISTRATION SCENARIO - register the guest as a new user
+        userService.registerUser(guestToken, "cartPersistUser", "Pass123", LocalDate.now().minusYears(25));
+        
+        // Verify cart persists after registration
+        Response<List<ItemDTO>> registeredCartResp = orderService.checkCartContent(guestToken);
+        assertTrue(registeredCartResp.isOk(), "Checking registered user cart should succeed");
+        List<ItemDTO> registeredCartItems = registeredCartResp.getData();
+        assertEquals(2, registeredCartItems.size(), "Registered user cart should still contain 2 items");
+        
+        // Verify item details are preserved
+        boolean foundItem1 = false;
+        boolean foundItem2 = false;
+        
+        for (ItemDTO cartItem : registeredCartItems) {
+            if (cartItem.getItemID() == item1.getItemID()) {
+                foundItem1 = true;
+                assertEquals(2, cartItem.getQuantity(), "Item1 quantity should be preserved");
+            } else if (cartItem.getItemID() == item2.getItemID()) {
+                foundItem2 = true;
+                assertEquals(1, cartItem.getQuantity(), "Item2 quantity should be preserved");
+            }
+        }
+        assertTrue(foundItem1 && foundItem2, "Both items should be found in the registered user's cart");
+        
+        // 5b) LOGIN SCENARIO - Create a separate guest, add items, then login as existing user
+        Response<String> guest2Resp = userService.enterToSystem();
+        String guest2Token = guest2Resp.getData();
+        
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), shopItems.get(2).getItemID(), 5);
+        
+        // Guest2 adds an item to cart
+        Response<Void> guest2Add = orderService.addItemToCart(guest2Token, shop.getId(), shopItems.get(2).getItemID(), 3);
+        assertTrue(guest2Add.isOk(), "Adding item to second guest cart should succeed");
+        
+        // Verify guest2's cart
+        Response<List<ItemDTO>> guest2CartResp = orderService.checkCartContent(guest2Token);
+        assertEquals(1, guest2CartResp.getData().size(), "Guest2 cart should contain 1 item");
+        
+        // Login as the previously registered user
+        Response<String> loginResp = userService.loginUser(guest2Token, "cartPersistUser", "Pass123");
+        assertTrue(loginResp.isOk(), "Login should succeed");
+        String loggedInToken = loginResp.getData();
+        
+        // Verify cart contents after login (should now have the registered user's cart, not guest2's cart)
+        Response<List<ItemDTO>> loggedInCartResp = orderService.checkCartContent(loggedInToken);
+        assertTrue(loggedInCartResp.isOk(), "Checking logged in cart should succeed");
+        List<ItemDTO> loggedInCartItems = loggedInCartResp.getData();
+        
+        // Should have the registered user's items (2 items), not guest2's items (1 item)
+        assertEquals(2, loggedInCartItems.size(), "After login, cart should contain the registered user's 2 items");
+        
+        // Verify same items as before are still in the cart
+        foundItem1 = false;
+        foundItem2 = false;
+        
+        for (ItemDTO cartItem : loggedInCartItems) {
+            if (cartItem.getItemID() == item1.getItemID()) {
+                foundItem1 = true;
+                assertEquals(2, cartItem.getQuantity(), "Item1 quantity should be preserved after login");
+            } else if (cartItem.getItemID() == item2.getItemID()) {
+                foundItem2 = true;
+                assertEquals(1, cartItem.getQuantity(), "Item2 quantity should be preserved after login");
+            }
+        }
+        assertTrue(foundItem1 && foundItem2, "Both original items should be found after login");
+    }
+
+
 }
