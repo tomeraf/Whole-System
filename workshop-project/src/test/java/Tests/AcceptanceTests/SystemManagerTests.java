@@ -53,7 +53,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         // Arrange: register a normal user
         fixtures.generateRegisteredUserSession("tim", "pass");
         // Build a valid start/end (start = now, end = tomorrow)
-        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.now().plusSeconds(1); // Start in 1 second to ensure it's in the future
         LocalDateTime end   = LocalDateTime.now().plusDays(1);
 
         // Act: suspend “tim” for that window
@@ -73,7 +73,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         // Note: Skipping time-forward check since no time-travel helper is available.
         try{
             // Simulate waiting until the start time
-            Thread.sleep(1000);
+            Thread.sleep(1500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
