@@ -21,7 +21,6 @@ public class BidPurchase {
     private int itemId;
     private int buyerId;
     private int submitterId;
-    private List<Integer> AcceptingMembers;
     private int rejecterId=-1;
     private int isAccepted = 0; // 0 = not accepted , 1 = accepted , -1 = rejected 
     private int CounterBidID=-1;
@@ -45,7 +44,6 @@ public class BidPurchase {
         this.itemId = itemId;
         this.buyerId = buyerID;
         this.submitterId = submitterID;
-        this.AcceptingMembers = new ArrayList<>();
     }
 
     public int getId() {
@@ -100,7 +98,7 @@ public class BidPurchase {
         else {
             throw new IllegalArgumentException("Member " + memberId + " has already accepted the bid.");
         }
-        if(AcceptingMembers.containsAll(members)){
+        if(acceptingMembers.containsAll(members)){
             isAccepted = 1;
         }
     }

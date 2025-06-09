@@ -262,7 +262,7 @@ public class Shop {
     public double purchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //will need to be synchronized later on
         HashMap<Item,Integer> allItems = new HashMap<>(); //<Item,quantity>
         for(Integer itemId: itemsToPurchase.keySet()){
-            allItems.put(getItem(id), itemsToPurchase.get(itemId)); 
+            allItems.put(getItem(itemId), itemsToPurchase.get(itemId)); 
         }
         double totalPrice =0;
         for(Item item: allItems.keySet()){
