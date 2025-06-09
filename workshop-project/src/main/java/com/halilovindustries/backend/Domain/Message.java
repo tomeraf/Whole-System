@@ -32,6 +32,9 @@ public class Message {
         this.respondId = -1; // default value for respondId
         this.FromUser = FromUser;
     }
+    public Message() {
+        // Default constructor for JPA
+    }
     public int getId() {
         return id;
     }
