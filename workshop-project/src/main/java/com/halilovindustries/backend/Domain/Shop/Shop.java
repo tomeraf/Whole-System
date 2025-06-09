@@ -384,7 +384,9 @@ public class Shop {
                 if(!getItem(bidPurchase.getItemId()).quantityCheck(1)){
                     throw new IllegalArgumentException("Item is out of stock.");
                 }
-                return bidPurchase.purchaseBidItem(userID);
+                Pair<Integer,Double> p=bidPurchase.purchaseBidItem(userID);
+                items.get(bidPurchase.getItemId()).buyItem(1); // Buy the item from the shop
+                return p; // Return the item ID and bid amount as a pair
             }
              catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());

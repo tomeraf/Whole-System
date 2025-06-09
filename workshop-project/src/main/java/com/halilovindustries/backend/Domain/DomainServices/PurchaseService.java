@@ -77,8 +77,7 @@ public class PurchaseService {
             throw new IllegalArgumentException("Error: shipment processing failed.");
         }
         cart.clearCart();
-
-        Order order = new Order(orderID, user.getUserID(), total, itemsToShip, paymentId, shipmentId);
+        Order order = new Order(orderID, user.getUserID(), total, itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
         return order;
     }
 
@@ -140,7 +139,7 @@ public class PurchaseService {
         if (shipmentId == null) {
             throw new IllegalArgumentException("Error: shipment processing failed.");
         }
-        Order order= new Order(orderID, guest.getUserID(), offer.getValue(), itemsToShip, paymentId, shipmentId);
+        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
         return order;
     }
 
@@ -166,7 +165,7 @@ public class PurchaseService {
         itemsToShip.put(shop.getId(), itemsList);
         Integer paymentId = payment.processPayment(offer.getValue(), paymentDetails);
         Integer shipmentId = shipment.processShipment(shipmentDetails);
-        Order order= new Order(offer.getKey(), user.getUserID(), offer.getValue(), itemsToShip, paymentId, shipmentId);
+        Order order= new Order(orderID, user.getUserID(), offer.getValue(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
         return order;
     }
 

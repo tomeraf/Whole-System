@@ -11,8 +11,6 @@ import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-//TODO: @Primary
-@Primary
 @Repository
 public class MemoryOrderRepository implements IOrderRepository {
     private HashMap<Integer, Order> orders = new HashMap<>();
@@ -39,8 +37,8 @@ public class MemoryOrderRepository implements IOrderRepository {
     }
 
     @Override
-    public HashMap<Integer, Order> getAllOrders() {
-        return orders;
+    public List<Order> getAllOrders() {
+        return orders.values().stream().toList();
     }
 
     @Override
@@ -62,6 +60,10 @@ public class MemoryOrderRepository implements IOrderRepository {
             }
         }
         return orderList;
+    }
+    @Override
+    public int getNextId() {
+        return orders.size();
     }
 
 

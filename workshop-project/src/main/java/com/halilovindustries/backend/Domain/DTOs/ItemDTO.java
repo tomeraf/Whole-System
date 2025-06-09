@@ -2,16 +2,29 @@ package com.halilovindustries.backend.Domain.DTOs;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "Order_items")
 public class ItemDTO {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private int itemId;
+    private int shopId;
+
     private String name;
     private Category category;
     private String description;
     
     // for single item
     private double price;
-    
-    private int shopId;
-    private int itemID;
+
     
     // quantity in the basket
     private int quantity;
@@ -23,12 +36,13 @@ public class ItemDTO {
         this.category = category;
         this.price = price;
         this.shopId = shopId;
-        this.itemID = itemID;
+        this.itemId = itemID;
         this.quantity = quantity;
         this.rating = rating;
         this.description = description;
         this.numOfOrders = numOfOrders;
     }
+    public ItemDTO() {}
     public String getName() {
         return name;
     }
@@ -42,7 +56,7 @@ public class ItemDTO {
         return shopId;
     }
     public int getItemID() {
-        return itemID;
+        return itemId;
     }
     public int getQuantity() {
         return quantity;
