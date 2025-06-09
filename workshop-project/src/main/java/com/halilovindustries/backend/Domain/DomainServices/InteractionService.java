@@ -47,7 +47,6 @@ public class InteractionService {
         Message response = new Message(message.getUserName(),shop.getName(),LocalDateTime.now(),"(Re: " + message.getTitle() + "), " + title ,content, false);
         message.setRespondId(response.getId());
         shop.addMessage(response);
-        message.setRespondId(response.getId());
         return response;
     }
 

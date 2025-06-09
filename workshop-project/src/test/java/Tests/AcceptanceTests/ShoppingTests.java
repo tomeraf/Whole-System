@@ -770,7 +770,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         // Buyer setup
         String buyerToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd1");
-        int auctionId = 1;
+        int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
 
         // Submit offer (should succeed)
         assertTrue(
@@ -851,7 +851,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
         }
         // Buyer setup and attempt to submit offer before auction starts
         String buyerToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd1");
-        int auctionId = 1;
+        int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
         Response<Void> offerResp = orderService.submitAuctionOffer(buyerToken, shopId, auctionId, 7.0);
         assertTrue(offerResp.isOk(), "Submitting auction offer after start should succeed");
         
@@ -882,7 +882,7 @@ public class ShoppingTests extends BaseAcceptanceTests {
 
         String bidder1 = fixtures.generateRegisteredUserSession("Alice", "PwdA");
         String bidder2 = fixtures.generateRegisteredUserSession("Bob", "PwdB");
-        int auctionId = 1;
+        int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
         assertTrue(orderService.submitAuctionOffer(bidder2, shopId, auctionId, 8.0).isOk(), "First bid should succeed");
         assertTrue(orderService.submitAuctionOffer(bidder1, shopId, auctionId, 10.0).isOk(), "First bid should succeed");
         
@@ -1040,13 +1040,13 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(bid1.isOk(), "First bid (8.0) should succeed");
         Response<Void> bid2 = orderService.submitBidOffer(bidder2, shopId, itemId, 12.0);
         assertTrue(bid2.isOk(), "Second bid (12.0) should succeed");
+        // We assume bid IDs are assigned sequentially: bid1 → ID=1, bid2 → ID=2
+        int bidId1 = shopRepository.getShopById(shopId).getBids().get(0).getId(); // bidder1's bid
+        int bidId2 = shopRepository.getShopById(shopId).getBids().get(1).getId(); // bidder2's bid
 
-        Response<Void> answer = shopService.answerBid(ownerToken, shopId, 2, true);
+        Response<Void> answer = shopService.answerBid(ownerToken, shopId, bidId2, true);
         assertTrue(answer.isOk(), "Owner acceptance of bid2 should succeed");
 
-        // We assume bid IDs are assigned sequentially: bid1 → ID=1, bid2 → ID=2
-        int bidId1 = 1;
-        int bidId2 = 2;
 
         // 4) Mock positive payment and shipment
         PaymentDetailsDTO p = new PaymentDetailsDTO(
@@ -1080,8 +1080,10 @@ public class ShoppingTests extends BaseAcceptanceTests {
         Response<Void> initialBid = orderService.submitBidOffer(buyer, shopId, itemId, 8.0);
         assertTrue(initialBid.isOk(), "Initial bid (8.0) should succeed");
 
-        // We assume the first bid’s ID is 1
-        int bidId = 1;
+        int bidId = shopRepository
+            .getShopById(shopId)
+            .getBids()
+            .get(0).getId(); // Assuming the first bid is the one we just submitted
 
         // 3) Owner counters that bid (accept = false)
         Response<Void> ownerCounter = shopService.submitCounterBid(ownerToken, shopId, bidId, 10.0);

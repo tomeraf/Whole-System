@@ -267,7 +267,7 @@ public class Shop {
         double totalPrice =0;
         for(Item item: allItems.keySet()){
             item.buyItem(allItems.get(item));
-            totalPrice = totalPrice + item.getPrice() * itemsToPurchase.get(item.getId()); 
+            totalPrice = totalPrice + item.getPrice() * allItems.get(item); 
         }
         double discount = discountPolicy.calculateDiscount(allItems);
         totalPrice = totalPrice - discount;
@@ -487,9 +487,6 @@ public class Shop {
     public void addMessage(Message message) {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null.");
-        }
-        if (inbox.stream().anyMatch(m -> m.getId() == message.getId())) {
-            throw new IllegalArgumentException("Message ID already exists in the inbox.");
         }
         inbox.add(message);
     }

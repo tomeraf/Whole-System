@@ -68,15 +68,19 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         // Immediately after calling, user.isSuspended() may be false, because start is in the future.
         Registered user = userRepository.getUserByName("tim");
         // Depending on your implementation, if “now < start” you may consider them not yet suspended:
-        assertTrue(user.isSuspended(), "User should not be suspended until start time");
+        assertTrue(!user.isSuspended(), "User should not be suspended until start time");
 
         // Note: Skipping time-forward check since no time-travel helper is available.
-
+        try{
+            // Simulate waiting until the start time
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         // And check watchSuspensions shows the date range
         Response<String> infoResp = userService.watchSuspensions(managerToken);
         assertTrue(infoResp.isOk());
         String info = infoResp.getData();
-        System.out.println("Suspension info: " + info);
         assertTrue(info.contains("tim"), "Suspension info must contain username");
         assertTrue(info.contains(start.toLocalDate().toString()), "Should list start date");
         assertTrue(info.contains(end.toLocalDate().toString()), "Should list end date");
