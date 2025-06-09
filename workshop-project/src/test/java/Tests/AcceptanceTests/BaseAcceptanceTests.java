@@ -12,6 +12,10 @@ import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
@@ -23,6 +27,14 @@ import com.halilovindustries.backend.Domain.Repositories.INotificationRepository
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
+import com.halilovindustries.backend.Infrastructure.DBOrderRepository;
+import com.halilovindustries.backend.Infrastructure.DBUserRepository;
+import com.halilovindustries.backend.Infrastructure.DbNotificationRepository;
+import com.halilovindustries.backend.Infrastructure.DbShopRepository;
+import com.halilovindustries.backend.Infrastructure.JpaNotificationRepository;
+import com.halilovindustries.backend.Infrastructure.JpaOrderRepository;
+import com.halilovindustries.backend.Infrastructure.JpaShopRepository;
+import com.halilovindustries.backend.Infrastructure.JpaUserAdapter;
 import com.halilovindustries.backend.Infrastructure.MemoryNotificationRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
@@ -34,22 +46,51 @@ import com.halilovindustries.backend.Service.UserService;
 import com.halilovindustries.websocket.INotifier;
 import com.halilovindustries.websocket.VaadinNotifier;
 
+@SpringBootTest(classes = com.halilovindustries.Application.class)
+@TestPropertySource(locations = "classpath:application.properties")
+@Transactional
 public abstract class BaseAcceptanceTests {
+    @Autowired
     protected IShopRepository shopRepository;
+    
+    @Autowired
     protected IUserRepository userRepository;
+    
+    @Autowired
     protected IOrderRepository orderRepository;
+    
+    @Autowired
     protected INotificationRepository notificationRepository;
+    
+    @Autowired
+    protected UserService userService;
+    
+    @Autowired
+    protected ShopService shopService;
+    
+    @Autowired
+    protected OrderService orderService;
+
+
     protected IAuthentication jwtAdapter;
     protected IShipment shipment;
     protected IPayment payment;
     protected IExternalSystems externalSystems;
     protected INotifier notifier;
-    protected UserService userService;
-    protected ShopService shopService;
-    protected OrderService orderService;
+
+    
     protected ConcurrencyHandler concurrencyHandler;
     protected NotificationHandler notificationHandler;
     protected AcceptanceTestFixtures fixtures;
+
+    @Autowired
+    private JpaShopRepository JpaShopRepository;
+    @Autowired
+    private JpaUserAdapter JpaUserRepository;
+    @Autowired
+    private JpaOrderRepository JpaOrderRepository;
+    @Autowired
+    private JpaNotificationRepository JpaNotificationRepository;
 
 
     static {
@@ -88,31 +129,22 @@ public abstract class BaseAcceptanceTests {
 
     @BeforeEach
     public void setUp() {
-        shopRepository   = new MemoryShopRepository();
-        userRepository   = new MemoryUserRepository();
-        orderRepository  = new MemoryOrderRepository();
-        notificationRepository= new MemoryNotificationRepository();
+        // Only mock what can't be autowired
+        externalSystems = mock(IExternalSystems.class);
+        payment = mock(IPayment.class); 
+        shipment = mock(IShipment.class);
+        notifier = mock(INotifier.class);
         
-        JWTAdapter adapter = new JWTAdapter();
-
-        // mimic what Spring would inject and call
-        String base64Key = Base64.getEncoder().encodeToString("TDNkeEc4qPSBelk6gSaCcc629o5XdyrX0ZmmWh/3LoQ=".getBytes());
-        adapter.setSecret(base64Key); // ← add setter if needed
-        adapter.initKey();
-
-        jwtAdapter = adapter;
+        // Initialize the JWT adapter with a secret key
+        jwtAdapter = new JWTAdapter(); 
+        ((JWTAdapter)jwtAdapter).setSecret("TDNkeEc4qPSBelk6gSaCcc629o5XdyrX0ZmmWh/3LoQ=");
+        
+        // Initialize other handlers
         concurrencyHandler = new ConcurrencyHandler();
-        shipment         = mock(IShipment.class);
-        payment          = mock(IPayment.class);
-        externalSystems  = mock(IExternalSystems.class);
-        notifier         =new VaadinNotifier();
-        notificationHandler = new NotificationHandler(notificationRepository,notifier);
-
-
-
-        userService  = new UserService(userRepository, jwtAdapter, concurrencyHandler, notificationHandler);
-        shopService  = new ShopService(userRepository, shopRepository, orderRepository, jwtAdapter, concurrencyHandler,notificationHandler);
-        orderService = new OrderService(userRepository, shopRepository, orderRepository,jwtAdapter, payment, shipment, concurrencyHandler, notificationHandler, externalSystems);
-        fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, payment, shipment, externalSystems);
+        notificationHandler = new NotificationHandler(notificationRepository, notifier);
+        
+        // Initialize fixtures
+        fixtures = new AcceptanceTestFixtures(userService, shopService, orderService, 
+                                            payment, shipment, externalSystems);
     }
 }

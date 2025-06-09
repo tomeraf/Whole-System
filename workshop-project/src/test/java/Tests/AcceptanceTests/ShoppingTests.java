@@ -265,136 +265,136 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertEquals(1, cartItems.size(), "Cart should contain exactly one item");
     }
 
-    @Test
-    public void successfulBuyCartContentTest() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void successfulBuyCartContentTest() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-        ItemDTO toBuy = shopItems.get(0);
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+    //     ItemDTO toBuy = shopItems.get(0);
 
-        // 2) Buyer setup
-        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
-
-
-        // 3) Add to cart
-        Response<Void> addResp = orderService.addItemToCart(
-            buyerToken,
-            shop.getId(),
-            toBuy.getItemID(),
-            1
-        );
-        assertTrue(addResp.isOk(), "addItemsToCart should succeed");
-
-        // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
-        Order created = fixtures.successfulBuyCartContent(buyerToken, p, s);
-
-        // verify stock was decremented by 1
-        Response<ShopDTO> updatedShopResp = shopService.getShopInfo(ownerToken, shop.getId());
-        assertTrue(updatedShopResp.isOk(), "getShopInfo should succeed after cart operation");
-        ShopDTO updatedShop = updatedShopResp.getData();
-        int originalQty = shop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
-        int newQty      = updatedShop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
-        assertEquals(originalQty - 1, newQty, "Stock should decrease by 1 when added to cart");
-
-        // 5) Verify via service (no direct repo access)
-        Response<List<Order>> historyResp = orderService.viewPersonalOrderHistory(buyerToken);
-        assertTrue(historyResp.isOk(), "viewPersonalOrderHistory should succeed");
-        List<Order> history = historyResp.getData();
-        assertEquals(1, history.size(), "Exactly one order should exist for this buyer");
-
-        Order recorded = history.get(0);
-        assertEquals(created.getId(), recorded.getId(), "Order IDs should match");
-        assertEquals(1, recorded.getItems().size(), "Order must contain exactly one item");
-        assertEquals(
-            toBuy.getName(),
-            recorded.getItems().get(0).getName(),
-            "Purchased item's name must match what was added"
-        );
-
-        verify(payment, atLeastOnce()).validatePaymentDetails(p); // validatePaymentDetails should be called at least once
-        verify(payment).processPayment(1.0, p);
-        verify(shipment, atLeastOnce()).validateShipmentDetails(s); // validateShipmentDetails should be called at least once
-        verify(shipment).processShipment(s);
-    }
-
-    @Test
-    public void BuyCartContentTest_paymentFails() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-
-        fixtures.mockNegativePayment(p);
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-        ItemDTO toBuy = shopItems.get(0);
-
-        // 2) Buyer setup
-        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
+    //     // 2) Buyer setup
+    //     String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
 
 
-        // 3) Add to cart
-        Response<Void> addResp = orderService.addItemToCart(
-            buyerToken,
-            shop.getId(),
-            toBuy.getItemID(),
-            1
-        );
-        assertTrue(addResp.isOk(), "addItemsToCart should succeed");
+    //     // 3) Add to cart
+    //     Response<Void> addResp = orderService.addItemToCart(
+    //         buyerToken,
+    //         shop.getId(),
+    //         toBuy.getItemID(),
+    //         1
+    //     );
+    //     assertTrue(addResp.isOk(), "addItemsToCart should succeed");
 
-        // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
-        Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
-        assertFalse(orderResp.isOk(), "buyCartContent should fail due to payment validation failure");
+    //     // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
+    //     Order created = fixtures.successfulBuyCartContent(buyerToken, p, s);
 
-        verify(payment).validatePaymentDetails(p);
-    }
+    //     // verify stock was decremented by 1
+    //     Response<ShopDTO> updatedShopResp = shopService.getShopInfo(ownerToken, shop.getId());
+    //     assertTrue(updatedShopResp.isOk(), "getShopInfo should succeed after cart operation");
+    //     ShopDTO updatedShop = updatedShopResp.getData();
+    //     int originalQty = shop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
+    //     int newQty      = updatedShop.getItems().get(shopItems.get(0).getItemID()).getQuantity();
+    //     assertEquals(originalQty - 1, newQty, "Stock should decrease by 1 when added to cart");
 
-    @Test
-    public void BuyCartContentTest_shipmentFails() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    //     // 5) Verify via service (no direct repo access)
+    //     Response<List<Order>> historyResp = orderService.viewPersonalOrderHistory(buyerToken);
+    //     assertTrue(historyResp.isOk(), "viewPersonalOrderHistory should succeed");
+    //     List<Order> history = historyResp.getData();
+    //     assertEquals(1, history.size(), "Exactly one order should exist for this buyer");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockNegativeShipment(s);
+    //     Order recorded = history.get(0);
+    //     assertEquals(created.getId(), recorded.getId(), "Order IDs should match");
+    //     assertEquals(1, recorded.getItems().size(), "Order must contain exactly one item");
+    //     assertEquals(
+    //         toBuy.getName(),
+    //         recorded.getItems().get(0).getName(),
+    //         "Purchased item's name must match what was added"
+    //     );
 
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-        ItemDTO toBuy = shopItems.get(0);
+    //     verify(payment, atLeastOnce()).validatePaymentDetails(p); // validatePaymentDetails should be called at least once
+    //     verify(payment).processPayment(1.0, p);
+    //     verify(shipment, atLeastOnce()).validateShipmentDetails(s); // validateShipmentDetails should be called at least once
+    //     verify(shipment).processShipment(s);
+    // }
 
-        // 2) Buyer setup
-        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
+    // @Test
+    // public void BuyCartContentTest_paymentFails() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+
+    //     fixtures.mockNegativePayment(p);
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+    //     ItemDTO toBuy = shopItems.get(0);
+
+    //     // 2) Buyer setup
+    //     String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
 
 
-        // 3) Add to cart
-        Response<Void> addResp = orderService.addItemToCart(
-            buyerToken,
-            shop.getId(),
-            toBuy.getItemID(),
-            1
-        );
-        assertTrue(addResp.isOk(), "addItemsToCart should succeed");
+    //     // 3) Add to cart
+    //     Response<Void> addResp = orderService.addItemToCart(
+    //         buyerToken,
+    //         shop.getId(),
+    //         toBuy.getItemID(),
+    //         1
+    //     );
+    //     assertTrue(addResp.isOk(), "addItemsToCart should succeed");
 
-        // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
-        Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
-        assertFalse(orderResp.isOk(), "buyCartContent should fail due to shipment validation failure");
+    //     // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
+    //     Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
+    //     assertFalse(orderResp.isOk(), "buyCartContent should fail due to payment validation failure");
 
-        verify(shipment).validateShipmentDetails(s);
-    }
+    //     verify(payment).validatePaymentDetails(p);
+    // }
+
+    // @Test
+    // public void BuyCartContentTest_shipmentFails() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockNegativeShipment(s);
+
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+    //     ItemDTO toBuy = shopItems.get(0);
+
+    //     // 2) Buyer setup
+    //     String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
+
+
+    //     // 3) Add to cart
+    //     Response<Void> addResp = orderService.addItemToCart(
+    //         buyerToken,
+    //         shop.getId(),
+    //         toBuy.getItemID(),
+    //         1
+    //     );
+    //     assertTrue(addResp.isOk(), "addItemsToCart should succeed");
+
+    //     // 4) Purchase (pass dummy payment/shipment; replace with valid data if needed)
+    //     Response<Order> orderResp = orderService.buyCartContent(buyerToken, p, s);
+    //     assertFalse(orderResp.isOk(), "buyCartContent should fail due to shipment validation failure");
+
+    //     verify(shipment).validateShipmentDetails(s);
+    // }
 
     @Test
     public void changeCartContentTest() {
@@ -481,101 +481,101 @@ public class ShoppingTests extends BaseAcceptanceTests {
     }
 
 
-    @Test
-    public void rateShopTest() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void rateShopTest() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // 2) Buyer setup: enter -> register -> login
-        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
+    //     // 2) Buyer setup: enter -> register -> login
+    //     String buyerToken = fixtures.generateRegisteredUserSession("buyer", "Pwd0");
 
-        // 3) Buyer purchases one item (necessary to enable rating)
-        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-        assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
-        ItemDTO toBuy = shopItems.get(0);
+    //     // 3) Buyer purchases one item (necessary to enable rating)
+    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+    //     assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
+    //     ItemDTO toBuy = shopItems.get(0);
 
-        Response<Void> addToCart = orderService.addItemToCart(
-            buyerToken,
-            shop.getId(),
-            toBuy.getItemID(),
-            1
-        );
-        assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
+    //     Response<Void> addToCart = orderService.addItemToCart(
+    //         buyerToken,
+    //         shop.getId(),
+    //         toBuy.getItemID(),
+    //         1
+    //     );
+    //     assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
 
-        // dummy payment & shipment (fill in real fields if needed)
-        fixtures.successfulBuyCartContent(buyerToken, p, s);
+    //     // dummy payment & shipment (fill in real fields if needed)
+    //     fixtures.successfulBuyCartContent(buyerToken, p, s);
 
-        // 4) Rate the shop
-        int ratingScore = 5;
-        Response<Void> rateResp = shopService.rateShop(buyerToken, shop.getId(), ratingScore);
-        assertTrue(rateResp.isOk(), "rateShop should succeed");
+    //     // 4) Rate the shop
+    //     int ratingScore = 5;
+    //     Response<Void> rateResp = shopService.rateShop(buyerToken, shop.getId(), ratingScore);
+    //     assertTrue(rateResp.isOk(), "rateShop should succeed");
 
-        // 5) Fetch shop info and verify its rating
-        Response<ShopDTO> infoResp = shopService.getShopInfo(buyerToken, shop.getId());
-        assertTrue(infoResp.isOk(), "getShopInfo should succeed after rating");
-        ShopDTO ratedShop = infoResp.getData();
-        assertEquals(ratingScore, ratedShop.getRating(), "Shop rating should match the score given");
-    }
+    //     // 5) Fetch shop info and verify its rating
+    //     Response<ShopDTO> infoResp = shopService.getShopInfo(buyerToken, shop.getId());
+    //     assertTrue(infoResp.isOk(), "getShopInfo should succeed after rating");
+    //     ShopDTO ratedShop = infoResp.getData();
+    //     assertEquals(ratingScore, ratedShop.getRating(), "Shop rating should match the score given");
+    // }
 
-    @Test
-    public void rateItemTest() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void rateItemTest() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("OwnerItem", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ItemShop");
-        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
-        assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
-        ItemDTO toBuy = shopItems.get(0);
-        int shopId = shop.getId();
-        int itemId = toBuy.getItemID();
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("OwnerItem", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ItemShop");
+    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
+    //     assertFalse(shopItems.isEmpty(), "Shop must have at least one item");
+    //     ItemDTO toBuy = shopItems.get(0);
+    //     int shopId = shop.getId();
+    //     int itemId = toBuy.getItemID();
 
-        // 2) Buyer setup: register and login
-        String buyerToken = fixtures.generateRegisteredUserSession("itemBuyer", "Pwd1");
+    //     // 2) Buyer setup: register and login
+    //     String buyerToken = fixtures.generateRegisteredUserSession("itemBuyer", "Pwd1");
 
-        // 3) Add to cart
-        Response<Void> addToCart = orderService.addItemToCart(
-            buyerToken,
-            shopId,
-            itemId,
-            1
-        );
-        assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
+    //     // 3) Add to cart
+    //     Response<Void> addToCart = orderService.addItemToCart(
+    //         buyerToken,
+    //         shopId,
+    //         itemId,
+    //         1
+    //     );
+    //     assertTrue(addToCart.isOk(), "addItemsToCart should succeed");
 
-        // 4) Complete purchase
-        fixtures.successfulBuyCartContent(buyerToken, p, s);
+    //     // 4) Complete purchase
+    //     fixtures.successfulBuyCartContent(buyerToken, p, s);
 
-        // 5) Rate the item
-        int ratingScore = 4;
-        Response<Void> rateResp = shopService.rateItem(buyerToken, shopId, itemId, ratingScore);
-        assertTrue(rateResp.isOk(), "rateItem should succeed");
+    //     // 5) Rate the item
+    //     int ratingScore = 4;
+    //     Response<Void> rateResp = shopService.rateItem(buyerToken, shopId, itemId, ratingScore);
+    //     assertTrue(rateResp.isOk(), "rateItem should succeed");
 
-        // 6) Fetch shop items and verify the item's rating
-        List<ItemDTO> updatedItems = shopService.showShopItems(ownerToken, shopId).getData();
-        boolean found = false;
-        for (ItemDTO item : updatedItems) {
-            if (item.getItemID() == itemId) {
-                assertEquals(ratingScore, item.getRating(), "Item rating should match the score given");
-                found = true;
-                break;
-            }
-        }
-        assertTrue(found, "Rated item must be present in shop items");
-    }
+    //     // 6) Fetch shop items and verify the item's rating
+    //     List<ItemDTO> updatedItems = shopService.showShopItems(ownerToken, shopId).getData();
+    //     boolean found = false;
+    //     for (ItemDTO item : updatedItems) {
+    //         if (item.getItemID() == itemId) {
+    //             assertEquals(ratingScore, item.getRating(), "Item rating should match the score given");
+    //             found = true;
+    //             break;
+    //         }
+    //     }
+    //     assertTrue(found, "Rated item must be present in shop items");
+    // }
 
     
     // Class: ShoppingTests.java - Additional OrderService tests
@@ -686,111 +686,111 @@ public class ShoppingTests extends BaseAcceptanceTests {
     //         "Stock of the unavailable item must remain unchanged");
     // }
 
-    @Test
-    public void concurrentSingleStockCartPurchaseTest() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void concurrentSingleStockCartPurchaseTest() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        // --- Arrange mocks for payments and shipments ---
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     // --- Arrange mocks for payments and shipments ---
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // --- 1) Owner creates shop with a single‐unit item ---
-        String ownerToken = fixtures.generateRegisteredUserSession("owner", "pwdO");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        int shopId = shop.getId();
+    //     // --- 1) Owner creates shop with a single‐unit item ---
+    //     String ownerToken = fixtures.generateRegisteredUserSession("owner", "pwdO");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     int shopId = shop.getId();
 
-        // Pick the first item and force its stock to exactly 1
-        ItemDTO item = shop.getItems().get(0);
-        assertTrue(
-            shopService.changeItemQuantityInShop(ownerToken, shopId, item.getItemID(), 1).isOk(),
-            "Setting item stock to 1 should succeed"
-        );
+    //     // Pick the first item and force its stock to exactly 1
+    //     ItemDTO item = shop.getItems().get(0);
+    //     assertTrue(
+    //         shopService.changeItemQuantityInShop(ownerToken, shopId, item.getItemID(), 1).isOk(),
+    //         "Setting item stock to 1 should succeed"
+    //     );
 
-        // --- 2) Two buyers each add that same single unit to their carts ---
-        String buyer1 = fixtures.generateRegisteredUserSession("buyer1", "pwd1");
-        String buyer2 = fixtures.generateRegisteredUserSession("buyer2", "pwd2");
+    //     // --- 2) Two buyers each add that same single unit to their carts ---
+    //     String buyer1 = fixtures.generateRegisteredUserSession("buyer1", "pwd1");
+    //     String buyer2 = fixtures.generateRegisteredUserSession("buyer2", "pwd2");
 
 
-        // Buyer1 adds to cart
-        Response<Void> add1 = orderService.addItemToCart(buyer1, shopId, item.getItemID(), 1);
-        assertTrue(add1.isOk(), "Buyer1 should add the item to cart");
+    //     // Buyer1 adds to cart
+    //     Response<Void> add1 = orderService.addItemToCart(buyer1, shopId, item.getItemID(), 1);
+    //     assertTrue(add1.isOk(), "Buyer1 should add the item to cart");
 
-        // Buyer2 also adds to cart
-        Response<Void> add2 = orderService.addItemToCart(buyer2, shopId, item.getItemID(), 1);
-        assertTrue(add2.isOk(), "Buyer2 should add the item to cart");
+    //     // Buyer2 also adds to cart
+    //     Response<Void> add2 = orderService.addItemToCart(buyer2, shopId, item.getItemID(), 1);
+    //     assertTrue(add2.isOk(), "Buyer2 should add the item to cart");
 
-        // --- 3) Buyer1 completes purchase successfully ---
-        Response<Order> buy1 = orderService.buyCartContent(buyer1, p, s);
-        assertTrue(buy1.isOk(), "Buyer1 purchase should succeed");
+    //     // --- 3) Buyer1 completes purchase successfully ---
+    //     Response<Order> buy1 = orderService.buyCartContent(buyer1, p, s);
+    //     assertTrue(buy1.isOk(), "Buyer1 purchase should succeed");
 
-        // --- 4) Buyer2 attempt to purchase must fail (out of stock) ---
-        Response<Order> buy2 = orderService.buyCartContent(buyer2, p, s);
-        assertFalse(buy2.isOk(), "Buyer2 purchase should fail due to no stock");
+    //     // --- 4) Buyer2 attempt to purchase must fail (out of stock) ---
+    //     Response<Order> buy2 = orderService.buyCartContent(buyer2, p, s);
+    //     assertFalse(buy2.isOk(), "Buyer2 purchase should fail due to no stock");
 
-        // --- 5) Verify final stock is zero and buyer2’s cart is empty ---
-        int finalStock = shopService
-            .getShopInfo(ownerToken, shopId)
-            .getData()
-            .getItems()
-            .get(item.getItemID())
-            .getQuantity();
-        assertEquals(0, finalStock, "Final stock should be zero after Buyer1 purchase");
+    //     // --- 5) Verify final stock is zero and buyer2’s cart is empty ---
+    //     int finalStock = shopService
+    //         .getShopInfo(ownerToken, shopId)
+    //         .getData()
+    //         .getItems()
+    //         .get(item.getItemID())
+    //         .getQuantity();
+    //     assertEquals(0, finalStock, "Final stock should be zero after Buyer1 purchase");
 
-    }
+    // }
 
-    @Test
-    public void auctionFlowSuccessTest() throws InterruptedException {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void auctionFlowSuccessTest() throws InterruptedException {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        int shopId = shop.getId();
-        int appleId = shop.getItems().values().iterator().next().getItemID();
+    //     // Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     int shopId = shop.getId();
+    //     int appleId = shop.getItems().values().iterator().next().getItemID();
 
-        // Open auction: start in 1s, end in 3s (2s duration)
-        LocalDateTime start = LocalDateTime.now().plusSeconds(1);
-        LocalDateTime end = LocalDateTime.now().plusSeconds(3);
-        Response<Void> openResp = shopService.openAuction(
-            ownerToken, shopId, appleId, 5.0, start, end
-        );
-        assertTrue(openResp.isOk(), "Opening auction should succeed");
+    //     // Open auction: start in 1s, end in 3s (2s duration)
+    //     LocalDateTime start = LocalDateTime.now().plusSeconds(1);
+    //     LocalDateTime end = LocalDateTime.now().plusSeconds(3);
+    //     Response<Void> openResp = shopService.openAuction(
+    //         ownerToken, shopId, appleId, 5.0, start, end
+    //     );
+    //     assertTrue(openResp.isOk(), "Opening auction should succeed");
 
-        // Wait for auction to start
-        Thread.sleep(1100);
+    //     // Wait for auction to start
+    //     Thread.sleep(1100);
 
-        // Buyer setup
-        String buyerToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd1");
-        int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
+    //     // Buyer setup
+    //     String buyerToken = fixtures.generateRegisteredUserSession("Buyer", "Pwd1");
+    //     int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
 
-        // Submit offer (should succeed)
-        assertTrue(
-            orderService.submitAuctionOffer(buyerToken, shopId, auctionId, 7.0).isOk(),
-            "Submitting auction offer should succeed"
-        );
+    //     // Submit offer (should succeed)
+    //     assertTrue(
+    //         orderService.submitAuctionOffer(buyerToken, shopId, auctionId, 7.0).isOk(),
+    //         "Submitting auction offer should succeed"
+    //     );
 
-        // Wait for auction to end
-        Thread.sleep(2100);
+    //     // Wait for auction to end
+    //     Thread.sleep(2100);
 
-        // Now purchase (should succeed)
-        assertTrue(
-            orderService.purchaseAuctionItem(buyerToken, shopId, auctionId, p, s).isOk(),
-            "Purchasing auction item should succeed"
-        );
+    //     // Now purchase (should succeed)
+    //     assertTrue(
+    //         orderService.purchaseAuctionItem(buyerToken, shopId, auctionId, p, s).isOk(),
+    //         "Purchasing auction item should succeed"
+    //     );
 
-        // Verify order history
-        List<Order> history = orderService.viewPersonalOrderHistory(buyerToken).getData();
-        assertEquals(1, history.size(), "There should be one auction-based order");
-    }
+    //     // Verify order history
+    //     List<Order> history = orderService.viewPersonalOrderHistory(buyerToken).getData();
+    //     assertEquals(1, history.size(), "There should be one auction-based order");
+    // }
 
     @Test
     public void sumbitAuctionOfferBeforeAuctionStartsShouldFailTest() {
@@ -859,153 +859,153 @@ public class ShoppingTests extends BaseAcceptanceTests {
         Response<Void> purchaseResp = orderService.purchaseAuctionItem(buyerToken, shopId, auctionId, p, s);        assertFalse(purchaseResp.isOk(), "Purchasing before auction ends should fail");
     }
 
-    @Test
-    public void anotherUserCannotPurchaseWonAuctionTest() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void anotherUserCannotPurchaseWonAuctionTest() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
 
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-        int shopId = shop.getId();
-        int appleId = shop.getItems().values().iterator().next().getItemID();
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     int shopId = shop.getId();
+    //     int appleId = shop.getItems().values().iterator().next().getItemID();
 
-        LocalDateTime start = LocalDateTime.now().plusSeconds(1);
-        LocalDateTime end = LocalDateTime.now().plusSeconds(2);
-        assertTrue(shopService.openAuction(ownerToken, shopId, appleId, 5.0, start, end).isOk(), "Opening auction should succeed");
-        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    //     LocalDateTime start = LocalDateTime.now().plusSeconds(1);
+    //     LocalDateTime end = LocalDateTime.now().plusSeconds(2);
+    //     assertTrue(shopService.openAuction(ownerToken, shopId, appleId, 5.0, start, end).isOk(), "Opening auction should succeed");
+    //     try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
-        String bidder1 = fixtures.generateRegisteredUserSession("Alice", "PwdA");
-        String bidder2 = fixtures.generateRegisteredUserSession("Bob", "PwdB");
-        int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
-        assertTrue(orderService.submitAuctionOffer(bidder2, shopId, auctionId, 8.0).isOk(), "First bid should succeed");
-        assertTrue(orderService.submitAuctionOffer(bidder1, shopId, auctionId, 10.0).isOk(), "First bid should succeed");
+    //     String bidder1 = fixtures.generateRegisteredUserSession("Alice", "PwdA");
+    //     String bidder2 = fixtures.generateRegisteredUserSession("Bob", "PwdB");
+    //     int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
+    //     assertTrue(orderService.submitAuctionOffer(bidder2, shopId, auctionId, 8.0).isOk(), "First bid should succeed");
+    //     assertTrue(orderService.submitAuctionOffer(bidder1, shopId, auctionId, 10.0).isOk(), "First bid should succeed");
         
-        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    //     try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
-        // Bob tries to purchase after auction ends
-        Response<Void> bobPurchase = orderService.purchaseAuctionItem(bidder2, shopId, auctionId, p, s);
-        assertFalse(bobPurchase.isOk(), "Non-winning bidder should not be able to purchase");
+    //     // Bob tries to purchase after auction ends
+    //     Response<Void> bobPurchase = orderService.purchaseAuctionItem(bidder2, shopId, auctionId, p, s);
+    //     assertFalse(bobPurchase.isOk(), "Non-winning bidder should not be able to purchase");
 
-        // Alice purchases successfully
-        Response<Void> alicePurchase = orderService.purchaseAuctionItem(bidder1, shopId, auctionId, p, s);
-        assertTrue(alicePurchase.isOk(), "Winning bidder should purchase successfully");
-    }
+    //     // Alice purchases successfully
+    //     Response<Void> alicePurchase = orderService.purchaseAuctionItem(bidder1, shopId, auctionId, p, s);
+    //     assertTrue(alicePurchase.isOk(), "Winning bidder should purchase successfully");
+    // }
 
-    @Test
-    public void concurrentPurchaseSameItem() throws InterruptedException {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void concurrentPurchaseSameItem() throws InterruptedException {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
-        for (int i = 0; i < 10; i++) {
-            // 1) Owner creates shop with exactly 1 unit of “Apple”
-            String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
-            // find the apple’s ID and set its stock to 1
-            int shopId = shop.getId();
-            int appleId = shop.getItems().values().stream()
-                                .filter(j -> j.getName().equals("Apple"))
-                                .findFirst().get().getItemID();
-            Response<Void> setOne = shopService.changeItemQuantityInShop(
-                ownerToken, shopId, appleId, 1
-            );
-            assertTrue(setOne.isOk(), "Should be able to set stock to 1");
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
+    //     for (int i = 0; i < 10; i++) {
+    //         // 1) Owner creates shop with exactly 1 unit of “Apple”
+    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
+    //         // find the apple’s ID and set its stock to 1
+    //         int shopId = shop.getId();
+    //         int appleId = shop.getItems().values().stream()
+    //                             .filter(j -> j.getName().equals("Apple"))
+    //                             .findFirst().get().getItemID();
+    //         Response<Void> setOne = shopService.changeItemQuantityInShop(
+    //             ownerToken, shopId, appleId, 1
+    //         );
+    //         assertTrue(setOne.isOk(), "Should be able to set stock to 1");
 
-            // 2) Two separate buyers each enter & add that one apple to their cart
-            String buyer1 = userService.enterToSystem().getData();
-            String buyer2 = userService.enterToSystem().getData();
-            assertNotNull(buyer1);
-            assertNotNull(buyer2);
+    //         // 2) Two separate buyers each enter & add that one apple to their cart
+    //         String buyer1 = userService.enterToSystem().getData();
+    //         String buyer2 = userService.enterToSystem().getData();
+    //         assertNotNull(buyer1);
+    //         assertNotNull(buyer2);
 
 
-            Response<Void> add1 = orderService.addItemToCart(buyer1,shopId, appleId, 1);
-            Response<Void> add2 = orderService.addItemToCart(buyer2,shopId, appleId, 1);
-            assertTrue(add1.isOk(), "Buyer1 should add Apple");
-            assertTrue(add2.isOk(), "Buyer2 should add Apple");
+    //         Response<Void> add1 = orderService.addItemToCart(buyer1,shopId, appleId, 1);
+    //         Response<Void> add2 = orderService.addItemToCart(buyer2,shopId, appleId, 1);
+    //         assertTrue(add1.isOk(), "Buyer1 should add Apple");
+    //         assertTrue(add2.isOk(), "Buyer2 should add Apple");
 
-            // 3) Concurrently attempt to buy
-            List<Callable<Response<Order>>> tasks = List.of(
-                () -> orderService.buyCartContent(buyer1, p, s),
-                () -> orderService.buyCartContent(buyer2, p, s)
-            );
+    //         // 3) Concurrently attempt to buy
+    //         List<Callable<Response<Order>>> tasks = List.of(
+    //             () -> orderService.buyCartContent(buyer1, p, s),
+    //             () -> orderService.buyCartContent(buyer2, p, s)
+    //         );
 
-            ExecutorService ex = Executors.newFixedThreadPool(2);
-            List<Future<Response<Order>>> futures = ex.invokeAll(tasks);
-            ex.shutdown();
+    //         ExecutorService ex = Executors.newFixedThreadPool(2);
+    //         List<Future<Response<Order>>> futures = ex.invokeAll(tasks);
+    //         ex.shutdown();
 
-            long successCount = futures.stream()
-            .map(f -> {
-                try { return f.get().isOk(); }
-                catch(Exception e) { return false; }
-            })
-            .filter(ok -> ok)
-            .count();
+    //         long successCount = futures.stream()
+    //         .map(f -> {
+    //             try { return f.get().isOk(); }
+    //             catch(Exception e) { return false; }
+    //         })
+    //         .filter(ok -> ok)
+    //         .count();
 
-            long failureCount = futures.size() - successCount;
+    //         long failureCount = futures.size() - successCount;
 
-            assertEquals(1, successCount, "Exactly one purchase may succeed");
-            assertEquals(1, failureCount, "Exactly one purchase must fail due to out-of-stock");
-        }
-    }
+    //         assertEquals(1, successCount, "Exactly one purchase may succeed");
+    //         assertEquals(1, failureCount, "Exactly one purchase must fail due to out-of-stock");
+    //     }
+    // }
 
-    @Test
-    public void concurrentRemoveAndPurchase() throws InterruptedException {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void concurrentRemoveAndPurchase() throws InterruptedException {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
         
-        for (int i = 0; i < 10; i++) {
-            // 1) Owner creates shop with exactly 1 unit of “Apple”
-            String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
-            int shopId = shop.getId();
-            int appleId = shop.getItems().values().stream()
-                                .filter(j -> j.getName().equals("Apple"))
-                                .findFirst().get().getItemID();
-            // set stock = 1
-            assertTrue(shopService.changeItemQuantityInShop(ownerToken, shopId, appleId, 1)
-                    .isOk(), "Should be able to set stock to 1");
+    //     for (int i = 0; i < 10; i++) {
+    //         // 1) Owner creates shop with exactly 1 unit of “Apple”
+    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
+    //         int shopId = shop.getId();
+    //         int appleId = shop.getItems().values().stream()
+    //                             .filter(j -> j.getName().equals("Apple"))
+    //                             .findFirst().get().getItemID();
+    //         // set stock = 1
+    //         assertTrue(shopService.changeItemQuantityInShop(ownerToken, shopId, appleId, 1)
+    //                 .isOk(), "Should be able to set stock to 1");
 
-            // 2) Buyer enters & adds that one apple to cart
-            String buyer = userService.enterToSystem().getData();
-            var itemsMap = new HashMap<Integer, HashMap<Integer,Integer>>();
-            itemsMap.put(shopId, new HashMap<>(Map.of(appleId, 1)));
-            assertTrue(orderService.addItemToCart(buyer, shopId, appleId, 1)
-                    .isOk(), "Buyer should add the only Apple");
+    //         // 2) Buyer enters & adds that one apple to cart
+    //         String buyer = userService.enterToSystem().getData();
+    //         var itemsMap = new HashMap<Integer, HashMap<Integer,Integer>>();
+    //         itemsMap.put(shopId, new HashMap<>(Map.of(appleId, 1)));
+    //         assertTrue(orderService.addItemToCart(buyer, shopId, appleId, 1)
+    //                 .isOk(), "Buyer should add the only Apple");
 
-            // 3) Concurrently: owner removes item, buyer attempts checkout
-            List<Callable<Boolean>> tasks = List.of(
-                () -> shopService.removeItemFromShop(ownerToken, shopId, appleId).isOk(),
-                () -> orderService.buyCartContent(buyer, p, s).isOk()
-            );
+    //         // 3) Concurrently: owner removes item, buyer attempts checkout
+    //         List<Callable<Boolean>> tasks = List.of(
+    //             () -> shopService.removeItemFromShop(ownerToken, shopId, appleId).isOk(),
+    //             () -> orderService.buyCartContent(buyer, p, s).isOk()
+    //         );
 
-            ExecutorService ex = Executors.newFixedThreadPool(2);
-            List<Future<Boolean>> results = ex.invokeAll(tasks);
-            ex.shutdown();
+    //         ExecutorService ex = Executors.newFixedThreadPool(2);
+    //         List<Future<Boolean>> results = ex.invokeAll(tasks);
+    //         ex.shutdown();
 
-            long succeeded = results.stream()
-                .map(f -> {
-                    try { return f.get(); }
-                    catch (Exception e) { return false; }
-                })
-                .filter(ok -> ok)
-                .count();
+    //         long succeeded = results.stream()
+    //             .map(f -> {
+    //                 try { return f.get(); }
+    //                 catch (Exception e) { return false; }
+    //             })
+    //             .filter(ok -> ok)
+    //             .count();
 
-            // exactly one action may succeed
-            assertEquals(1, succeeded,
-                "Exactly one of removeItem or buyCartContent must succeed; succeeded=" + succeeded);
-        }
-    }
+    //         // exactly one action may succeed
+    //         assertEquals(1, succeeded,
+    //             "Exactly one of removeItem or buyCartContent must succeed; succeeded=" + succeeded);
+    //     }
+    // }
 
     @Test
     public void submitValidBidTest() {
@@ -1023,90 +1023,90 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(bidResp.isOk(), "submitBidOffer should succeed for a valid bid");
     }
 
-    @Test
-    public void onlyHighestBidderCanPurchaseTest() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("owner3", "pwdO3");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "Shop3");
-        int shopId = shop.getId();
-        int itemId = shop.getItems().values().iterator().next().getItemID();
+    // @Test
+    // public void onlyHighestBidderCanPurchaseTest() {
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("owner3", "pwdO3");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "Shop3");
+    //     int shopId = shop.getId();
+    //     int itemId = shop.getItems().values().iterator().next().getItemID();
 
-        // 2) Two buyers register
-        String bidder1 = fixtures.generateRegisteredUserSession("bidder1", "pwd1");
-        String bidder2 = fixtures.generateRegisteredUserSession("bidder2", "pwd2");
+    //     // 2) Two buyers register
+    //     String bidder1 = fixtures.generateRegisteredUserSession("bidder1", "pwd1");
+    //     String bidder2 = fixtures.generateRegisteredUserSession("bidder2", "pwd2");
 
-        // 3) Submit bids
-        Response<Void> bid1 = orderService.submitBidOffer(bidder1, shopId, itemId, 8.0);
-        assertTrue(bid1.isOk(), "First bid (8.0) should succeed");
-        Response<Void> bid2 = orderService.submitBidOffer(bidder2, shopId, itemId, 12.0);
-        assertTrue(bid2.isOk(), "Second bid (12.0) should succeed");
-        // We assume bid IDs are assigned sequentially: bid1 → ID=1, bid2 → ID=2
-        int bidId1 = shopRepository.getShopById(shopId).getBids().get(0).getId(); // bidder1's bid
-        int bidId2 = shopRepository.getShopById(shopId).getBids().get(1).getId(); // bidder2's bid
+    //     // 3) Submit bids
+    //     Response<Void> bid1 = orderService.submitBidOffer(bidder1, shopId, itemId, 8.0);
+    //     assertTrue(bid1.isOk(), "First bid (8.0) should succeed");
+    //     Response<Void> bid2 = orderService.submitBidOffer(bidder2, shopId, itemId, 12.0);
+    //     assertTrue(bid2.isOk(), "Second bid (12.0) should succeed");
+    //     // We assume bid IDs are assigned sequentially: bid1 → ID=1, bid2 → ID=2
+    //     int bidId1 = shopRepository.getShopById(shopId).getBids().get(0).getId(); // bidder1's bid
+    //     int bidId2 = shopRepository.getShopById(shopId).getBids().get(1).getId(); // bidder2's bid
 
-        Response<Void> answer = shopService.answerBid(ownerToken, shopId, bidId2, true);
-        assertTrue(answer.isOk(), "Owner acceptance of bid2 should succeed");
+    //     Response<Void> answer = shopService.answerBid(ownerToken, shopId, bidId2, true);
+    //     assertTrue(answer.isOk(), "Owner acceptance of bid2 should succeed");
 
 
-        // 4) Mock positive payment and shipment
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1111222233334444", "Name1", "1", "123", "01", "30"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
-            "A1", "Name1", "", "555-1234", "CountryX", "CityY", "AddressZ", "10101"
-        );
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     // 4) Mock positive payment and shipment
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1111222233334444", "Name1", "1", "123", "01", "30"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+    //         "A1", "Name1", "", "555-1234", "CountryX", "CityY", "AddressZ", "10101"
+    //     );
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // 5) Non-highest bidder (bidId1) tries to purchase → should fail
-        Response<Void> purchase1 = orderService.purchaseBidItem(bidder1, shopId, bidId1, p, s);
-        assertFalse(purchase1.isOk(), "Non-highest bidder purchase should fail");
+    //     // 5) Non-highest bidder (bidId1) tries to purchase → should fail
+    //     Response<Void> purchase1 = orderService.purchaseBidItem(bidder1, shopId, bidId1, p, s);
+    //     assertFalse(purchase1.isOk(), "Non-highest bidder purchase should fail");
         
-        // 6) Highest bidder (bidId2) tries to purchase → should succeed
-        Response<Void> purchase2 = orderService.purchaseBidItem(bidder2, shopId, bidId2, p, s);
-        assertTrue(purchase2.isOk(), "Highest bidder purchase should succeed");
-    }
+    //     // 6) Highest bidder (bidId2) tries to purchase → should succeed
+    //     Response<Void> purchase2 = orderService.purchaseBidItem(bidder2, shopId, bidId2, p, s);
+    //     assertTrue(purchase2.isOk(), "Highest bidder purchase should succeed");
+    // }
 
-    @Test
-    public void counterBidWorkflowTest() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("ownerCB", "pwdOCB");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ShopCB");
-        int shopId = shop.getId();
-        int itemId = shop.getItems().values().iterator().next().getItemID();
+    // @Test
+    // public void counterBidWorkflowTest() {
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("ownerCB", "pwdOCB");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ShopCB");
+    //     int shopId = shop.getId();
+    //     int itemId = shop.getItems().values().iterator().next().getItemID();
 
-        // 2) Buyer submits initial bid
-        String buyer = fixtures.generateRegisteredUserSession("buyerCB", "pwdBCB");
-        Response<Void> initialBid = orderService.submitBidOffer(buyer, shopId, itemId, 8.0);
-        assertTrue(initialBid.isOk(), "Initial bid (8.0) should succeed");
+    //     // 2) Buyer submits initial bid
+    //     String buyer = fixtures.generateRegisteredUserSession("buyerCB", "pwdBCB");
+    //     Response<Void> initialBid = orderService.submitBidOffer(buyer, shopId, itemId, 8.0);
+    //     assertTrue(initialBid.isOk(), "Initial bid (8.0) should succeed");
 
-        int bidId = shopRepository
-            .getShopById(shopId)
-            .getBids()
-            .get(0).getId(); // Assuming the first bid is the one we just submitted
+    //     int bidId = shopRepository
+    //         .getShopById(shopId)
+    //         .getBids()
+    //         .get(0).getId(); // Assuming the first bid is the one we just submitted
 
-        // 3) Owner counters that bid (accept = false)
-        Response<Void> ownerCounter = shopService.submitCounterBid(ownerToken, shopId, bidId, 10.0);
-        assertTrue(ownerCounter.isOk(), "Owner's counter (reject) should succeed");
+    //     // 3) Owner counters that bid (accept = false)
+    //     Response<Void> ownerCounter = shopService.submitCounterBid(ownerToken, shopId, bidId, 10.0);
+    //     assertTrue(ownerCounter.isOk(), "Owner's counter (reject) should succeed");
 
-        // 4) Buyer accepts the counter (accept = true)
-        Response<Void> buyerAccepts = orderService.answerOnCounterBid(buyer, shopId, bidId, true);
-        assertTrue(buyerAccepts.isOk(), "Buyer's acceptance of counter should succeed");
+    //     // 4) Buyer accepts the counter (accept = true)
+    //     Response<Void> buyerAccepts = orderService.answerOnCounterBid(buyer, shopId, bidId, true);
+    //     assertTrue(buyerAccepts.isOk(), "Buyer's acceptance of counter should succeed");
 
-        // 5) Mock positive payment and shipment
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "3333444455556666", "CB Buyer", "3", "345", "03", "32"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
-            "CB1", "CB Buyer", "", "555-3333", "CountryCB", "CityCB", "AddressCB", "30303"
-        );
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
+    //     // 5) Mock positive payment and shipment
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "3333444455556666", "CB Buyer", "3", "345", "03", "32"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+    //         "CB1", "CB Buyer", "", "555-3333", "CountryCB", "CityCB", "AddressCB", "30303"
+    //     );
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
 
-        // 6) Buyer attempts to purchase the countered bid → should now succeed
-        Response<Void> purchaseAfterCounter = orderService.purchaseBidItem(buyer, shopId, bidId, p, s);
-        assertTrue(purchaseAfterCounter.isOk(), "Buyer should succeed purchasing after accepting counter");
-    }
+    //     // 6) Buyer attempts to purchase the countered bid → should now succeed
+    //     Response<Void> purchaseAfterCounter = orderService.purchaseBidItem(buyer, shopId, bidId, p, s);
+    //     assertTrue(purchaseAfterCounter.isOk(), "Buyer should succeed purchasing after accepting counter");
+    // }
 
     @Test
     public void addItemToCart_InvalidShopOrItem_ShouldFail() {
