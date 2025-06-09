@@ -1,7 +1,9 @@
 spring:
   datasource:
-    url: jdbc:h2:file:./data/shop_system;DB_CLOSE_ON_EXIT=false
-    driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://mainline.proxy.rlwy.net:10705/railway
+    username: postgres
+    password: sWZQxZpauDnctRABfDAvZjtKTHpUxpEg
+    driver-class-name: org.postgresql.Driver
 
 external:
   externalUrl: https://damp-lynna-wsep-1984852e.koyeb.app/
