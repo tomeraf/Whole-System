@@ -19,5 +19,6 @@ public interface IUserRepository {
     List<Registered> getAllRegisteredUsers();
 
     List<Integer> getAllRegisteredsByShopAndPermission(int shopID, Permission permission);
+
     List<IRole> getAppointmentsOfUserInShop(int appointerId, int shopId);
 }

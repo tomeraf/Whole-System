@@ -27,6 +27,13 @@ Thumbs.db
 # === Test output ===
 surefire-reports/
 
+# === H2 Database files ===
+*.mv.db
+*.trace.db
+*.lock.db
+*.db
+/data/
+
 node_modules/
 
 .vaadin/

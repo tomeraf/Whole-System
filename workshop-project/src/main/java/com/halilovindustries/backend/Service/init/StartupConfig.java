@@ -7,11 +7,41 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "startup")
 public class StartupConfig {
     private String initFile;
+    private DefaultSystemManager defaultSystemManager;
 
     public String getInitFile() {
         return initFile;
     }
     public void setInitFile(String initFile) {
         this.initFile = initFile;
+    }
+
+    public DefaultSystemManager getDefaultSystemManager() {
+        return defaultSystemManager;
+    }
+
+    public void setDefaultSystemManager(DefaultSystemManager defaultSystemManager) {
+        this.defaultSystemManager = defaultSystemManager;
+    }
+
+    public static class DefaultSystemManager {
+        private String name;
+        private String password;
+        
+        public String getName() {
+            return name;
+        }
+        
+        public void setName(String name) {
+            this.name = name;
+        }
+        
+        public String getPassword() {
+            return password;
+        }
+        
+        public void setPassword(String password) {
+            this.password = password;
+        }
     }
 }

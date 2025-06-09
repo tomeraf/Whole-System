@@ -15,5 +15,4 @@ public class ExternalConfig {
     public void setExternalUrl(String externalUrl) {
         this.externalUrl = externalUrl;
     }
-
 }
