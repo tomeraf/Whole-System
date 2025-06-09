@@ -8,9 +8,10 @@ public class AuctionDTO {
     private String auctionStartTime; 
     private String auctionEndTime; 
     private boolean done;
+    private boolean notified;
 
     
-    public AuctionDTO(int id,double startingBid, int itemId, double highestBid, String auctionStartTime, String auctionEndTime, boolean done) {
+    public AuctionDTO(int id,double startingBid, int itemId, double highestBid, String auctionStartTime, String auctionEndTime, boolean done, boolean notified) {
         this.id = id;
         this.startingBid = startingBid;
         this.itemId = itemId;
@@ -18,11 +19,14 @@ public class AuctionDTO {
         this.auctionStartTime = auctionStartTime;
         this.auctionEndTime = auctionEndTime;
         this.done = done;
+        this.notified = notified;
     }
     public int getId() {
         return id;
     }
-
+    public boolean isNotified() {
+        return notified;
+    }
     public double getStartingBid() {
         return startingBid;
     }
