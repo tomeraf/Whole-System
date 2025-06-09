@@ -27,8 +27,9 @@ public class AuctionPurchase {
     private LocalDateTime auctionEndTime;
 
     private boolean done = false;
+    private boolean notified=false;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<Integer> bidders = new ArrayList<>();
 
     public AuctionPurchase() {
@@ -104,6 +105,12 @@ public class AuctionPurchase {
 
     public double getHighestBid() {
         return highestBid;
+    }
+    public boolean isNotified() {
+        return notified;
+    }
+    public void setNotified(boolean notified) {
+        this.notified = notified;
     }
 
     public LocalDateTime getAuctionStartTime() {

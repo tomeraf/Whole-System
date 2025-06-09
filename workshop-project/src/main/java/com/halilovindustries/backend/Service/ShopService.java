@@ -41,6 +41,7 @@ import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -1349,4 +1350,16 @@ public class ShopService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+    @Scheduled(fixedRate = 30000) // Runs every 60 seconds
+    public void checkAndNotifyAuctions() {
+    List<Shop> shops = shopRepository.getAllShops().values().stream().toList();
+    for (Shop shop : shops) {
+        HashMap<Integer,String> notifications = shop.auctionMessages();
+        for (Map.Entry<Integer, String> entry : notifications.entrySet()) {
+            int userId = entry.getKey();
+            String message = entry.getValue();
+            notificationHandler.notifyUser(String.valueOf(userId), message);
+        }
+    }
+}
 }
