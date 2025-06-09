@@ -49,10 +49,10 @@ public class Shop {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Item> items = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
     private List<BidPurchase> bidPurchaseItems = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
     private List<AuctionPurchase> auctionPurchaseItems = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -514,7 +514,7 @@ public class Shop {
         List<AuctionDTO> activeAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems) {
             if (auction.isAuctionActive()) {
-                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                activeAuctions.add(new AuctionDTO(auction.getId(),auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone(), auction.isNotified()));
             }
         }
         return activeAuctions;
@@ -524,10 +524,39 @@ public class Shop {
         List<AuctionDTO> auctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems) {
             if(auction.getAuctionStartTime().isAfter(LocalDateTime.now())) {
-                auctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                auctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone(), auction.isNotified()));
             }
         }
         return auctions;
+    }
+    public HashMap<Integer,String> auctionMessages(){
+        HashMap<Integer,String> messages = new HashMap<>();//<UserID, Message>
+        List<AuctionPurchase> pastAuctions = getPastAuctions();
+        for (AuctionPurchase auction : pastAuctions) {
+            if (!auction.isNotified()) {
+                messages.put(auction.getBuyerId(), "You have won the auction for item: " + getItem(auction.getItemId()) + " with a bid of: " + auction.getHighestBid());
+                for(int bidderId : auction.getBidders()) {
+                    if (bidderId != auction.getBuyerId()) {
+                        messages.put(bidderId, "You have lost the auction for item: " + getItem(auction.getItemId()) + ". The winning bid was: " + auction.getHighestBid());
+                    }
+                }
+                for(int ownerId: getOwnerIDs()) {
+                    messages.put(ownerId, "The auction for item: " + getItem(auction.getItemId()) + " has ended. The winning bid was: " + auction.getHighestBid());
+                }
+                auction.setNotified(true);
+            }
+        }
+
+        return messages;
+    }
+    private List<AuctionPurchase> getPastAuctions() {
+        List<AuctionPurchase> pastAuctions = new ArrayList<>();
+        for (AuctionPurchase auction : auctionPurchaseItems) {
+            if (auction.isAuctionEnded() && !auction.isDone()) {
+                pastAuctions.add(auction);
+            }
+        }
+        return pastAuctions;
     }
 
     public List<BidDTO> getBids() {
@@ -542,7 +571,7 @@ public class Shop {
         List<AuctionDTO> wonAuctions = new ArrayList<>();
         for (AuctionPurchase auction : auctionPurchaseItems) {
             if (auction.isAuctionEnded() && auction.getBuyerId() == userId && !auction.isDone()) {
-                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone()));
+                wonAuctions.add(new AuctionDTO(auction.getId(), auction.getStartingBid(), auction.getItemId(), auction.getHighestBid(), auction.getAuctionStartTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.getAuctionEndTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), auction.isDone(), auction.isNotified()));
             }
         }
         return wonAuctions;
