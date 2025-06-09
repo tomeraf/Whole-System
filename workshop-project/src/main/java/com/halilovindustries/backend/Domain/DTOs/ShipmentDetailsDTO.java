@@ -23,10 +23,10 @@ public class ShipmentDetailsDTO {
         this.zipcode = zipcode;
     }
 
-    public String getID() { return ID; }
+    // public String getID() { return ID; }
     public String getName() { return name; }
-    public String getEmail() { return email; }
-    public String getPhone() { return phone; }
+    // public String getEmail() { return email; }
+    // public String getPhone() { return phone; }
     public String getCountry() { return country; }
     public String getCity() { return city; }
     public String getAddress() { return address; }

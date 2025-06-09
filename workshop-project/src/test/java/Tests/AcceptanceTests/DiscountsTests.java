@@ -376,4 +376,39 @@ public class DiscountsTests extends BaseAcceptanceTests {
         assertFalse(purchaseResp.isOk(), "Purchase should be blocked by the condition");
     }
 
+    @Test
+    public void testAddDiscountAndCondition_CompositeConditionalDiscount() {
+        // Arrange
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        // Create a condition - minimum quantity of 2
+        ConditionDTO condition = new ConditionDTO(-1, Category.ELECTRONICS, ConditionLimits.QUANTITY, 0, -1, -1, 2);
+        
+        // Create a conditional discount - 15% off electronics if quantity >= 2
+        DiscountDTO discount = new DiscountDTO(
+            DiscountKind.BASE, 
+            -1, 
+            Category.ELECTRONICS, 
+            15, 
+            condition, 
+            DiscountType.CONDITIONAL
+        );
+
+        // Act
+        Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
+        
+        // Assert
+        assertTrue(response.isOk(), "Owner should be able to add a conditional discount");
+        
+        // Verify discount was added correctly
+        Response<List<DiscountDTO>> discountsResp = shopService.getDiscounts(ownerToken, shop.getId());
+        assertTrue(discountsResp.isOk(), "Should be able to retrieve discounts");
+        List<DiscountDTO> discounts = discountsResp.getData();
+
+        assertEquals(1, discounts.size(), "Should have exactly one discount");
+        assertEquals(DiscountType.CONDITIONAL, discounts.get(0).getDiscountType(), "Should be a conditional discount");
+        assertEquals(15, discounts.get(0).getPercentage(), "Discount percentage should be 15%");
+        assertFalse(discounts.get(0).getId().isEmpty(), "Discount ID should be assigned");
+    }
+
 }

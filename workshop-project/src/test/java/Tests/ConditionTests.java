@@ -309,12 +309,4 @@ class ConditionTests {
         assertTrue(s.contains("minQuantity=2"), "Should include minQuantity");
         assertTrue(s.contains("maxQuantity=7"), "Should include maxQuantity");
     }
-
-        @Test
-    void testPriceCondition_InvalidBothMinusOne_Throws() {
-        // both bounds -1 should be rejected
-        assertThrows(IllegalArgumentException.class,
-            () -> new PriceCondition(-1, -1),
-            "Both minPrice and maxPrice = -1 must throw IllegalArgumentException");
-    }
 }

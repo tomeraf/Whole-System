@@ -24,34 +24,34 @@ public class DBOrderRepository implements IOrderRepository{
         jpaOrderRepository.save(order);
     }
     
-    @Override
-    public void removeOrder(int orderId) {
-        jpaOrderRepository.deleteById(orderId);
-    }
-    @Override
-    public Order getOrder(int orderId) {
-        return jpaOrderRepository.findById(orderId).orElse(null);
-    }
-    @Override
-    public List<Order> getAllOrders(){
-        return jpaOrderRepository.findAll();
-    }
+    // @Override
+    // public void removeOrder(int orderId) {
+    //     jpaOrderRepository.deleteById(orderId);
+    // }
+    // @Override
+    // public Order getOrder(int orderId) {
+    //     return jpaOrderRepository.findById(orderId).orElse(null);
+    // }
+    // @Override
+    // public List<Order> getAllOrders(){
+    //     return jpaOrderRepository.findAll();
+    // }
     @Override
     public List<Order> getOrdersByCustomerId(int userID){
         return jpaOrderRepository.findByUserId(userID);
     }
-    @Override
-    public List<ItemDTO> getOrdersByShopId(int shopId) {
-        List<Order> orders = jpaOrderRepository.findAll();
-        HashMap<Integer, List<ItemDTO>> itemsMap = new HashMap<>();
-        for (Order order : orders) {
-            List<ItemDTO> items = order.getShopItems(shopId);
-            if (items != null && !items.isEmpty()) {
-                itemsMap.put(order.getId(), items);
-            }
-        }
-        return itemsMap.getOrDefault(shopId, List.of());
-    }
+    // @Override
+    // public List<ItemDTO> getOrdersByShopId(int shopId) {
+    //     List<Order> orders = jpaOrderRepository.findAll();
+    //     HashMap<Integer, List<ItemDTO>> itemsMap = new HashMap<>();
+    //     for (Order order : orders) {
+    //         List<ItemDTO> items = order.getShopItems(shopId);
+    //         if (items != null && !items.isEmpty()) {
+    //             itemsMap.put(order.getId(), items);
+    //         }
+    //     }
+    //     return itemsMap.getOrDefault(shopId, List.of());
+    // }
     @Override
     public int getNextId(){
         return jpaOrderRepository.getNextId()+1;
