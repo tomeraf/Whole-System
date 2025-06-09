@@ -43,7 +43,12 @@ public class Initializer {
     @PostConstruct
     public void init() {
         System.out.println("Initializing application data...");
-            readAndApply();
+        
+        // First check if a system manager exists and create one if not
+        ensureSystemManagerExists();
+        
+        // Then proceed with other initialization
+        readAndApply();
     }
 
     private void readAndApply() {
@@ -425,5 +430,42 @@ public class Initializer {
         }
     }
 
+    private void ensureSystemManagerExists() {
+        System.out.println("Checking for system manager existence...");
+        if (!userService.hasSystemManager()) {
+            System.out.println("No system manager found. Creating default system manager...");
+            createDefaultSystemManager();
+        } else {
+            System.out.println("System manager already exists.");
+        }
+    }
 
+    private void createDefaultSystemManager() {
+        try {
+            // Default credentials - consider loading from a secure configuration or environment variables
+            String defaultUsername = "admin";
+            String defaultPassword = "Admin123!";
+            LocalDate defaultDob = LocalDate.of(1990, 1, 1);
+            
+            // Register the user
+            String guestToken = userService.enterToSystem().getData();
+            Response<Void> registerResponse = userService.registerUser(guestToken, defaultUsername, defaultPassword, defaultDob);
+            
+            if (registerResponse.isOk()) {
+                // Make the user a system manager
+                Response<Void> makeManagerResponse = userService.makeSystemManager(defaultUsername);
+                if (makeManagerResponse.isOk()) {
+                    System.out.println("Default system manager created successfully: " + defaultUsername);
+                } else {
+                     System.err.println("Failed to promote user to system manager: " + 
+                        (makeManagerResponse.getError() != null ? makeManagerResponse.getError() : "Unknown error"));
+                }
+            } else {
+                System.err.println("Failed to register default system manager: " + 
+                    (registerResponse.getError() != null ? registerResponse.getError() : "Unknown error"));
+            }
+        } catch (Exception e) {
+            System.err.println("Error creating default system manager: " + e.getMessage());
+        }
+    }
 }
