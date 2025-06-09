@@ -17,8 +17,8 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @BeforeEach
     public void setUp(){
         super.setUp();
-        managerToken=fixtures.generateSystemManagerSession("manager","system");
-        Registered systemManger=userRepository.getUserByName("manager");
+        managerToken = fixtures.generateSystemManagerSession("manager","system");
+        Registered systemManger = userRepository.getUserByName("manager");
         systemManger.setSystemManager(true);
     }
 
@@ -26,7 +26,6 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     @Test
     public void testSuspendUser_AsSystemManager_ShouldSucceed() {
         fixtures.generateRegisteredUserSession("user", "password");
-
         Response<Void> response = userService.suspendUser(managerToken, "user", Optional.empty(), Optional.empty());
         assertTrue(response.isOk(), "System Manager should be able to suspend a user");
         Registered user = userRepository.getUserByName("user");
@@ -48,6 +47,113 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         Registered user = userRepository.getUserByName("user");
         assertTrue(!user.isSuspended(), "User should not be suspended");
     }
+
+    @Test
+    public void testSuspendUser_WithValidDateRange_ShouldSucceed() {
+        // Arrange: register a normal user
+        fixtures.generateRegisteredUserSession("tim", "pass");
+        // Build a valid start/end (start = now, end = tomorrow)
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime end   = LocalDateTime.now().plusDays(1);
+
+        // Act: suspend “tim” for that window
+        Response<Void> response = userService.suspendUser(
+            managerToken,
+            "tim",
+            Optional.of(start),
+            Optional.of(end)
+        );
+        assertTrue(response.isOk(), "Suspension with valid dates should succeed");
+
+        // Immediately after calling, user.isSuspended() may be false, because start is in the future.
+        Registered user = userRepository.getUserByName("tim");
+        // Depending on your implementation, if “now < start” you may consider them not yet suspended:
+        assertTrue(user.isSuspended(), "User should not be suspended until start time");
+
+        // Note: Skipping time-forward check since no time-travel helper is available.
+
+        // And check watchSuspensions shows the date range
+        Response<String> infoResp = userService.watchSuspensions(managerToken);
+        assertTrue(infoResp.isOk());
+        String info = infoResp.getData();
+        System.out.println("Suspension info: " + info);
+        assertTrue(info.contains("tim"), "Suspension info must contain username");
+        assertTrue(info.contains(start.toLocalDate().toString()), "Should list start date");
+        assertTrue(info.contains(end.toLocalDate().toString()), "Should list end date");
+    }
+
+    @Test
+    public void testSuspendUser_WithFutureStart_ShouldNotSuspendImmediately() {
+        // Arrange: register a normal user
+        fixtures.generateRegisteredUserSession("futureUser", "pass");
+        // Build a future start (1 hour from now) and end (2 days from now)
+        LocalDateTime start = LocalDateTime.now().plusHours(1);
+        LocalDateTime end   = LocalDateTime.now().plusDays(2);
+
+        // Act: suspend "futureUser" for the future window
+        Response<Void> response = userService.suspendUser(
+            managerToken,
+            "futureUser",
+            Optional.of(start),
+            Optional.of(end)
+        );
+        assertTrue(response.isOk(), "Suspension with future start should succeed");
+
+        // Immediately after calling, user.isSuspended() should be false (start is in future)
+        Registered user = userRepository.getUserByName("futureUser");
+        assertFalse(user.isSuspended(), "User should not be suspended until the future start time");
+
+        // And check watchSuspensions shows the date range for this future suspension
+        Response<String> infoResp = userService.watchSuspensions(managerToken);
+        assertTrue(infoResp.isOk());
+        String info = infoResp.getData();
+        assertFalse(info.contains("futureUser"), "Suspension info is missing since it is in the future");
+        assertFalse(info.contains(start.toLocalDate().toString()), "Should not list future start date");
+        assertFalse(info.contains(end.toLocalDate().toString()), "Should not list future end date");
+    }
+
+    @Test
+    public void testSuspendUser_AlreadySuspended_ShouldFail() {
+        // Arrange: register a normal user
+        fixtures.generateRegisteredUserSession("double", "pass");
+
+        // Act: first suspension should succeed
+        Response<Void> first = userService.suspendUser(
+            managerToken,
+            "double",
+            Optional.empty(),
+            Optional.empty()
+        );
+        assertTrue(first.isOk(), "First suspension should succeed");
+
+        // Act: second suspension should fail
+        Response<Void> second = userService.suspendUser(
+            managerToken,
+            "double",
+            Optional.empty(),
+            Optional.empty()
+        );
+        assertFalse(second.isOk(), "Suspending an already suspended user should fail");
+
+        // Confirm user remains suspended
+        Registered user = userRepository.getUserByName("double");
+        assertTrue(user.isSuspended(), "User should remain suspended after failed second attempt");
+    }
+
+    @Test
+    public void testSuspendUser_NonExistingUser_ShouldFail() {
+        // Attempt to suspend “ghost” (never registered)
+        Response<Void> response = userService.suspendUser(
+            managerToken,
+            "ghost",
+            Optional.empty(),
+            Optional.empty()
+        );
+        assertFalse(response.isOk(), "Suspending a non‐existent user should fail");
+    }
+
+
+    
 
     // unsuspend user tests
     @Test
@@ -76,6 +182,16 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         assertTrue(!response.isOk(), "System Manager should not be able to unsuspend a user that is not suspended");
         Registered user = userRepository.getUserByName("user");
         assertFalse(user.isSuspended(), "User should not be suspended");
+    }
+
+    @Test
+    public void testUnsuspendUser_NonExistingUser_ShouldFail() {
+        // Attempt to unsuspend “ghost” (never registered)
+        Response<Void> response = userService.unsuspendUser(
+            managerToken,
+            "ghost"
+        );
+        assertFalse(response.isOk(), "Unsuspending a non‐existent user should fail");
     }
 
     //watch suspension tests
@@ -137,6 +253,22 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         assertTrue(!closeResp.isOk(), "closeShopBySystemManager should fail");
     }
 
+    @Test
+    public void testCloseShop_AlreadyClosed_ShouldFail() {
+        // 1) Owner and shop setup
+        String ownerToken = fixtures.generateRegisteredUserSession("closeTwiceOwner", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "CloseTwiceShop");
+        int shopId = shop.getId();
+
+        // 2) First close should succeed
+        Response<Void> first = shopService.closeShop(managerToken, shopId);
+        assertTrue(first.isOk(), "First closeShop should succeed");
+
+        // 3) Second close on the same shop should fail
+        Response<Void> second = shopService.closeShop(managerToken, shopId);
+        assertFalse(second.isOk(), "Closing an already closed shop should fail");
+    }
+
     //try to to do an action while suspended
     @Test
     public void testActionWhileSuspended_ShouldFail() {
@@ -145,4 +277,10 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         Response<ShopDTO> response = shopService.createShop(token, "MyShop", "A shop for tests");
         assertTrue(!response.isOk(), "ודקר should not be able to create a shop while suspended");
     }
+
+
+    
+
+
+    
 }

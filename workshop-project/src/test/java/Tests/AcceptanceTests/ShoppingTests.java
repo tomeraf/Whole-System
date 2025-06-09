@@ -21,6 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
+
 import org.junit.jupiter.api.Test;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
@@ -574,133 +577,37 @@ public class ShoppingTests extends BaseAcceptanceTests {
         assertTrue(found, "Rated item must be present in shop items");
     }
 
+    
+    // Class: ShoppingTests.java - Additional OrderService tests
+
     @Test
-    public void removeShopManagerPermissionTest() {
-        // 1) Owner setup: register and create a shop
-        String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
+    public void testPurchaseAuctionItem_ExpiredAuction_ShouldFail() throws InterruptedException {
+        // Arrange
+        String owner = fixtures.generateRegisteredUserSession("ownerEXP", "pwdE");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "ExpShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().get(0).getItemID();
+        LocalDateTime start = LocalDateTime.now().minusSeconds(5);
+        LocalDateTime end   = LocalDateTime.now().minusSeconds(1);
+        shopService.openAuction(owner, shopId, itemId, 5.0, start, end);
 
-        // 2) Manager setup: register a second user to become manager
-        String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
-        String managerUsername = "ShopManager";
+        String bidder = fixtures.generateRegisteredUserSession("expBidder", "pwdX");
+        PaymentDetailsDTO p = new PaymentDetailsDTO("4444333322221111","N","1","123","01","30");
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("S","N","","000","C","City","Addr","00000");
 
-        // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
-        Response<Void> assignResp = shopService.addShopManager(
-            ownerToken,
-            shop.getId(),
-            managerUsername,
-            Set.of(Permission.UPDATE_SUPPLY)
-        );
-        assertTrue(assignResp.isOk(), "assignShopManager should succeed");
-
-        // 4) Verify manager can perform a manager-only action (e.g., add an item)
-        Response<ItemDTO> addItemResp = shopService.addItemToShop(
-            managerToken,
-            shop.getId(),
-            "ManagerItem",
-            Category.ELECTRONICS,
-            10.00,
-            "Item added by manager"
-        );
-        assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
-
-        // 5) Owner removes manager permission
-        Response<Void> removeResp = shopService.removeAppointment(
-            ownerToken,
-            shop.getId(),
-            managerUsername
-        );
-        assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
-
-        // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
-        Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
-            managerToken,
-            shop.getId(),
-            "ShouldFailItem",
-            Category.FOOD,
-            5.00,
-            "This should not be added"
-        );
-        assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
+        // Act
+        Response<Void> resp = orderService.purchaseAuctionItem(bidder, shopId, 1, p, s);
+        assertFalse(resp.isOk(), "Cannot purchase from an expired auction");
     }
 
     @Test
-    public void respondToMessageTest() {
-        // 1) Owner setup: register and create a shop
-        String ownerToken = fixtures.generateRegisteredUserSession("OwnerMsg", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MsgShop");
-        int shopId = shop.getId();
-
-        // 2) Customer setup: register/login a user who will send the question
-        String customerToken = fixtures.generateRegisteredUserSession("CustomerA", "CustPwd");
-
-        // 3) Customer sends a message to the shop
-        String title = "Question about an item";
-        String message = "Do you have refunds?";
-        Response<Void> sendResp = shopService.sendMessage(
-            customerToken,
-            shopId,
-            title,
-            message
-        );
-        assertTrue(sendResp.isOk(), "sendMessageToShop should succeed");
-
-        // 4) Fetch messages for the shop so we can grab the new message ID.
-        //    (Assumes you have a method like viewShopMessages or getAllMessagesInShop.)
-        //    If your API returns List<MessageDTO>, find the one whose content is `questionText`.
-        Response<List<Message>> inboxResp = shopService.getInbox(ownerToken, shopId);
-        assertTrue(inboxResp.isOk(), "viewShopMessages should succeed for owner/manager");
-        List<Message> inbox = inboxResp.getData();
-        assertFalse(inbox.isEmpty(), "There must be at least one message");
-        // Find the message just inserted
-        Message incoming = inbox.stream()
-            .filter(m -> m.getContent().equals(message))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Could not find the question message"));
-
-        int messageId = incoming.getId();
-
-        
-
-        // 5) Manager setup: register a second user and assign them as manager with ANSWER_MESSAGE permission
-        String managerToken = fixtures.generateRegisteredUserSession("ShopMgr", "MgrPwd");
-        String managerUsername = "ShopMgr";
-
-        // Give the manager the ANSWER_MESSAGE permission so they can respond:
-        Response<Void> addMgrResp = shopService.addShopManager(
-            ownerToken,
-            shopId,
-            managerUsername,
-            Set.of(Permission.ANSWER_MESSAGE)
-        );
-        assertTrue(addMgrResp.isOk(), "addShopManager(with ANSWER_MESSAGE) should succeed");
-
-        // 6) Manager calls respondToMessage
-        String title_2 = "Response to your question";
-        String responseText = "Yes—this item is in stock!";
-        Response<Void> replyResp = shopService.respondToMessage(
-            managerToken,
-            shopId,
-            messageId,
-            title_2,
-            responseText
-        );
-        assertTrue(replyResp.isOk(), "respondToMessage should succeed when user has ANSWER_MESSAGE permission");
-
-        // 7) Verify that the reply was saved in the message thread.
-        //    For example, view the entire thread again and check that the “inReplyTo” field points to messageId:
-        Response<List<Message>> threadResp = shopService.getInbox(ownerToken, shopId);
-        assertTrue(threadResp.isOk(), "viewShopMessages should still succeed after reply");
-        List<Message> updatedInbox = threadResp.getData();
-
-        // Find the newly inserted reply
-        Message replyMsg = updatedInbox.stream()
-            .filter(m -> m.getContent().equals(message))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("Reply message was not found"));
-        assertEquals(responseText, replyMsg.getContent(), "The reply content must match what the manager sent");
-        assertEquals(managerUsername, replyMsg.getUserName(), "Reply sender should be the shop manager");
-        assertEquals(messageId, replyMsg.getRespondId(), "Reply should reference the original message ID");
+    public void testViewPersonalOrderHistory_Empty_ShouldReturnEmptyList() {
+        // Arrange
+        String buyer = fixtures.generateRegisteredUserSession("histEmpty", "pwdH");
+        // Act
+        Response<List<Order>> resp = orderService.viewPersonalOrderHistory(buyer);
+        assertTrue(resp.isOk());
+        assertTrue(resp.getData().isEmpty(), "New user should have empty order history");
     }
 
     // @Test
@@ -1198,4 +1105,169 @@ public class ShoppingTests extends BaseAcceptanceTests {
         Response<Void> purchaseAfterCounter = orderService.purchaseBidItem(buyer, shopId, bidId, p, s);
         assertTrue(purchaseAfterCounter.isOk(), "Buyer should succeed purchasing after accepting counter");
     }
+
+    @Test
+    public void addItemToCart_InvalidShopOrItem_ShouldFail() {
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerX", "PwdX");
+        // a) Non-existent shop:
+        assertFalse(
+            orderService.addItemToCart(buyerToken, 9999, 1, 1).isOk(),
+            "Adding to cart in a missing shop should fail"
+        );
+        // b) Real shop but invalid item ID:
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerX", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "TestShopX");
+        int shopId = shop.getId();
+        assertFalse(
+            orderService.addItemToCart(buyerToken, shopId, 9999, 1).isOk(),
+            "Adding a non-existent item to cart should fail"
+        );
+        // Verify cart is still empty after failed attempts
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        assertTrue(cartResp.isOk(), "checkCartContent should still succeed");
+        assertTrue(cartResp.getData().isEmpty(), "Cart should be empty after failed add attempts");
+    }
+
+    @Test
+    public void buyCartContent_EmptyCart_ShouldFail() {
+        PaymentDetailsDTO p = new PaymentDetailsDTO("1111222211112222","Name","1","123","01","30");
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1","Name","","000","C","City","Addr","00000");
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        String buyerToken = fixtures.generateRegisteredUserSession("emptyBuyer", "PwdE");
+        // Buyer’s cart is empty, so this should fail:
+        Response<Order> resp = orderService.buyCartContent(buyerToken, p, s);
+        assertFalse(resp.isOk(), "Cannot buy when cart is empty");
+        // Verify order history is still empty after failed purchase
+        Response<List<Order>> historyResp = orderService.viewPersonalOrderHistory(buyerToken);
+        assertTrue(historyResp.isOk(), "viewPersonalOrderHistory should succeed");
+        assertTrue(historyResp.getData().isEmpty(), "Order history should be empty after failed purchase");
+    }
+
+    @Test
+    public void rateShop_BeforePurchase_ShouldFail() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerY", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "RatingShopY");
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerY", "PwdY");
+        // Buyer never purchased anything, so rating should be rejected:
+        Response<Void> resp = shopService.rateShop(buyerToken, shop.getId(), 3);
+        assertFalse(resp.isOk(), "Should not be able to rate shop before buying");
+        // Verify the shop's rating is still default (e.g., zero)
+        Response<ShopDTO> shopInfoAfter = shopService.getShopInfo(buyerToken, shop.getId());
+        assertTrue(shopInfoAfter.isOk(), "getShopInfo should succeed after failed rating");
+        ShopDTO unchangedShop = shopInfoAfter.getData();
+        assertEquals(0, unchangedShop.getRating(), "Shop rating should remain unchanged after failed attempt");
+    }
+
+    @Test
+    public void rateItem_BeforePurchase_ShouldFail() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerZ", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "RatingShopZ");
+        List<ItemDTO> items = shopService.showShopItems(ownerToken, shop.getId()).getData();
+        int itemId = items.get(0).getItemID();
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerZ", "PwdZ");
+        // Buyer never purchased item; rating should be rejected:
+        Response<Void> resp = shopService.rateItem(buyerToken, shop.getId(), itemId, 4);
+        assertFalse(resp.isOk(), "Should not be able to rate item before buying");
+        // Verify the item's rating is still default (e.g., zero)
+        Response<List<ItemDTO>> itemsAfter = shopService.showShopItems(ownerToken, shop.getId());
+        assertTrue(itemsAfter.isOk(), "showShopItems should succeed after failed rating");
+        List<ItemDTO> itemsList = itemsAfter.getData();
+        ItemDTO unchanged = itemsList.stream()
+            .filter(i -> i.getItemID() == itemId)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Item not found after failed rating"));
+        assertEquals(0, unchanged.getRating(), "Item rating should remain unchanged after failed attempt");
+    }
+
+    @Test
+    public void removeItemFromCart_InvalidShopOrItem_ShouldFail() {
+        // Arrange: create a shop and a buyer
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerR", "PwdR");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "RemovalShopR");
+        int shopId = shop.getId();
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerR", "PwdR");
+
+        // Act & Assert: attempt to remove from a non-existent shop
+        Response<Void> removeInvalidShop = orderService.removeItemFromCart(buyerToken, 9999, 1);
+        assertFalse(removeInvalidShop.isOk(), "Removing from an invalid shop should fail");
+
+        // Act & Assert: attempt to remove an invalid item from a valid shop
+        Response<Void> removeInvalidItem = orderService.removeItemFromCart(buyerToken, shopId, 18);
+        assertFalse(removeInvalidItem.isOk(), "Removing a non-existent item should fail");
+
+        // Verify cart is still empty
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        assertTrue(cartResp.isOk(), "checkCartContent should succeed after failed removal");
+        assertTrue(cartResp.getData().isEmpty(), "Cart should remain empty after failed removal attempts");
+    }
+
+    @Test
+    public void removeItemFromCart_BeforeAddingAny_ShouldFail() {
+        // Arrange: create a shop and a buyer, but do not add anything to cart
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerEmptyR", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "EmptyRemovalShop");
+        int shopId = shop.getId();
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerEmptyR", "Pwd1");
+
+        // Act: attempt to remove an item before adding any
+        Response<Void> removeResp = orderService.removeItemFromCart(buyerToken, shopId,
+            shop.getItems().values().iterator().next().getItemID());
+        assertFalse(removeResp.isOk(), "Removing an item from an empty cart should fail");
+
+        // Verify cart remains empty
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        assertTrue(cartResp.isOk(), "checkCartContent should succeed");
+        assertTrue(cartResp.getData().isEmpty(), "Cart should still be empty");
+    }
+
+    @Test
+    public void filterItemsAllShops_InvalidRatingFilter_ShouldFail() {
+        // Arrange: create a shop and items
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerF", "PwdF");
+        fixtures.generateShopAndItems(ownerToken, "FilterShopF");
+
+        // Act: create invalid rating filter
+        HashMap<String,String> badFilters = new HashMap<>();
+        badFilters.put("minRating", "notANumber");
+        Response<List<ItemDTO>> resp = shopService.filterItemsAllShops(ownerToken, badFilters);
+
+        // Assert: should fail
+        assertFalse(resp.isOk(), "filterItemsAllShops should fail with invalid rating filter");
+    }
+
+    @Test
+    public void checkoutWithInsufficientPaymentBalance_ShouldFailAndLeaveCartIntact() {
+        // Arrange: mock payment failure, valid shipment, and create shop/item
+        PaymentDetailsDTO p = new PaymentDetailsDTO("1111222211112222","Name","1","123","01","30");
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1","Name","","000","C","City","Addr","00000");
+        fixtures.mockNegativePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerPay", "PwdPay");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "PayShop");
+        int shopId = shop.getId();
+        ItemDTO toBuy = shopService.showShopItems(ownerToken, shopId).getData().get(0);
+
+        String buyerToken = fixtures.generateRegisteredUserSession("buyerPay", "PwdPay");
+        // Add item to cart
+        assertTrue(orderService.addItemToCart(buyerToken, shopId, toBuy.getItemID(), 1).isOk(),
+                   "addItemToCart should succeed");
+
+        // Act: attempt checkout
+        Response<Order> checkoutResp = orderService.buyCartContent(buyerToken, p, s);
+        assertFalse(checkoutResp.isOk(), "buyCartContent should fail due to payment failure");
+
+        // Assert: cart still contains the item
+        Response<List<ItemDTO>> cartResp = orderService.checkCartContent(buyerToken);
+        assertTrue(cartResp.isOk(), "checkCartContent should succeed after failed checkout");
+        assertEquals(1, cartResp.getData().size(), "Cart should still have the item after failed checkout");
+
+        // Assert: order history remains empty
+        Response<List<Order>> historyResp = orderService.viewPersonalOrderHistory(buyerToken);
+        assertTrue(historyResp.isOk(), "viewPersonalOrderHistory should succeed");
+        assertTrue(historyResp.getData().isEmpty(), "Order history should remain empty after failed checkout");
+    }
+    
 }

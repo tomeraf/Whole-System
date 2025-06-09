@@ -2,22 +2,34 @@ package Tests.AcceptanceTests;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
+import com.halilovindustries.backend.Domain.Message;
+import java.util.List;
+import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-
-
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.DTOs.UserDTO;
+import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BidDTO;
+import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
+import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
+
+import java.util.Set;
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -864,4 +876,436 @@ public class ShopManagementTests extends BaseAcceptanceTests {
                 "Exactly one of the two concurrent addShopManager calls should succeed, but got " + successCount);
         }
     }
+
+    @Test
+    public void removeShopManagerPermissionTest() {
+        // 1) Owner setup: register and create a shop
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
+
+        // 2) Manager setup: register a second user to become manager
+        String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
+        String managerUsername = "ShopManager";
+
+        // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
+        Response<Void> assignResp = shopService.addShopManager(
+            ownerToken,
+            shop.getId(),
+            managerUsername,
+            Set.of(Permission.UPDATE_SUPPLY)
+        );
+        assertTrue(assignResp.isOk(), "assignShopManager should succeed");
+
+        // 4) Verify manager can perform a manager-only action (e.g., add an item)
+        Response<ItemDTO> addItemResp = shopService.addItemToShop(
+            managerToken,
+            shop.getId(),
+            "ManagerItem",
+            Category.ELECTRONICS,
+            10.00,
+            "Item added by manager"
+        );
+        assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
+
+        // 5) Owner removes manager permission
+        Response<Void> removeResp = shopService.removeAppointment(
+            ownerToken,
+            shop.getId(),
+            managerUsername
+        );
+        assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
+
+        // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
+        Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
+            managerToken,
+            shop.getId(),
+            "ShouldFailItem",
+            Category.FOOD,
+            5.00,
+            "This should not be added"
+        );
+        assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
+    }
+
+
+    @Test
+    public void testCreateShop_AsOwner_ShouldSucceed() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerX", "pwdX");
+        Response<ShopDTO> resp = shopService.createShop(ownerToken, "XShop", "desc");
+        assertTrue(resp.isOk(), "Owner should be able to create a shop");
+        assertEquals("XShop", resp.getData().getName(), "Shop name should match");
+        assertEquals("desc", resp.getData().getDescription(), "Shop description should match");
+    }
+
+    @Test
+    public void testCloseShop_AsNonOwner_ShouldFail() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerClose", "pwdO");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "CloseShop");
+        String user = fixtures.generateRegisteredUserSession("userClose", "pwdU");
+        Response<Void> resp = shopService.closeShop(user, shop.getId());
+        assertFalse(resp.isOk(), "Non-owner should not be able to close the shop");
+    }
+
+    @Test
+    public void testOpenAuction_AsNonOwner_ShouldFail() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerAuction", "pwdO");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "AuctionShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+        String userToken = fixtures.generateRegisteredUserSession("otherAuction", "pwdU");
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime end   = LocalDateTime.now().plusSeconds(10);
+        Response<Void> resp = shopService.openAuction(userToken, shopId, itemId, 5.0, start, end);
+        assertFalse(resp.isOk(), "Non-owner should not be able to open auction");
+    }
+
+    @Test
+    public void testChangeItemName_AsOwner_ShouldSucceed() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerCN", "pwdCN");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "NameShop");
+        int shopId = shop.getId();
+        ItemDTO first = shop.getItems().get(0);
+        int itemId = first.getItemID();
+        String originalName = first.getName();
+
+        Response<Void> changeResp = shopService.changeItemName(ownerToken, shopId, itemId, "NewName");
+        assertTrue(changeResp.isOk(), "changeItemName should succeed for owner");
+
+        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(ownerToken, shopId);
+        assertTrue(itemsResp.isOk(), "showShopItems should succeed after change");
+        assertTrue(itemsResp.getData().stream()
+            .anyMatch(i -> i.getItemID() == itemId && "NewName".equals(i.getName())),
+            "Item name should be updated to NewName");
+    }
+
+    @Test
+    public void testChangeItemName_AsNonOwner_ShouldFailAndKeepOriginal() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerCN2", "pwdCN2");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "NameShop2");
+        int shopId = shop.getId();
+        ItemDTO first = shop.getItems().get(0);
+        int itemId = first.getItemID();
+        String originalName = first.getName();
+        String otherToken = fixtures.generateRegisteredUserSession("userCN", "pwdU");
+
+        Response<Void> changeResp = shopService.changeItemName(otherToken, shopId, itemId, "ShouldNot");
+        assertFalse(changeResp.isOk(), "changeItemName should fail for non-owner");
+
+        Response<List<ItemDTO>> itemsResp = shopService.showShopItems(ownerToken, shopId);
+        assertTrue(itemsResp.isOk(), "showShopItems should still succeed");
+        assertTrue(itemsResp.getData().stream()
+            .anyMatch(i -> i.getItemID() == itemId && originalName.equals(i.getName())),
+            "Original item name should remain unchanged");
+    }
+
+    @Test
+    public void testRemoveShopManagerPermission_AsOwner_ShouldRemovePermission() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerRP", "pwdRP");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "PermShop");
+        String guest = userService.enterToSystem().getData();
+        userService.registerUser(guest, "mgrPerm", "pwdM", LocalDate.now().minusYears(25));
+        String managerToken = userService.loginUser(guest, "mgrPerm", "pwdM").getData();
+        Set<Permission> perms = new HashSet<>(Set.of(Permission.VIEW, Permission.UPDATE_ITEM_PRICE));
+        shopService.addShopManager(ownerToken, shop.getId(), "mgrPerm", perms);
+        Response<List<Permission>> before = shopService.getMemberPermissions(ownerToken, shop.getId(), "mgrPerm");
+        assertTrue(before.isOk());
+        assertTrue(before.getData().contains(Permission.UPDATE_ITEM_PRICE));
+
+        Response<Void> removePermResp = shopService.removeShopManagerPermission(ownerToken, shop.getId(), "mgrPerm", Permission.UPDATE_ITEM_PRICE);
+        assertTrue(removePermResp.isOk(), "removeShopManagerPermission should succeed for owner");
+
+        Response<List<Permission>> after = shopService.getMemberPermissions(ownerToken, shop.getId(), "mgrPerm");
+        assertTrue(after.isOk());
+        assertFalse(after.getData().contains(Permission.UPDATE_ITEM_PRICE), "Permission should be removed");
+        assertTrue(after.getData().contains(Permission.VIEW), "Other permissions should remain");
+    }
+
+    @Test
+    public void testRemoveShopManagerPermission_AsNonOwner_ShouldFailAndKeepPermissions() {
+        String ownerToken = fixtures.generateRegisteredUserSession("ownerRP2", "pwdRP2");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "PermShop2");
+        String guest = userService.enterToSystem().getData();
+        userService.registerUser(guest, "mgrPerm2", "pwdM2", LocalDate.now().minusYears(25));
+        String managerToken = userService.loginUser(guest, "mgrPerm2", "pwdM2").getData();
+        Set<Permission> perms = new HashSet<>(Set.of(Permission.VIEW, Permission.UPDATE_ITEM_PRICE));
+        shopService.addShopManager(ownerToken, shop.getId(), "mgrPerm2", perms);
+        Response<List<Permission>> before = shopService.getMemberPermissions(ownerToken, shop.getId(), "mgrPerm2");
+        assertTrue(before.isOk());
+        assertTrue(before.getData().contains(Permission.UPDATE_ITEM_PRICE));
+
+        String otherToken = fixtures.generateRegisteredUserSession("userRP", "pwdRP");
+        Response<Void> removePermResp = shopService.removeShopManagerPermission(otherToken, shop.getId(), "mgrPerm2", Permission.UPDATE_ITEM_PRICE);
+        assertFalse(removePermResp.isOk(), "removeShopManagerPermission should fail for non-owner");
+
+        Response<List<Permission>> after = shopService.getMemberPermissions(ownerToken, shop.getId(), "mgrPerm2");
+        assertTrue(after.isOk());
+        assertTrue(after.getData().contains(Permission.UPDATE_ITEM_PRICE), "Permissions should remain unchanged");
+    }
+
+    // — addShopOwner happy & sad paths —
+    @Test
+    public void testAddShopOwner_AsOwner_ShouldSucceedAndPersistInvariant() {
+        String founder = fixtures.generateRegisteredUserSession("founderA","pwdA");
+        ShopDTO shop = fixtures.generateShopAndItems(founder,"OwnerShop");
+        // register a co‐founder
+        String guest = userService.enterToSystem().getData();
+        userService.registerUser(guest,"cofounder","pwdC",LocalDate.now().minusYears(30));
+        String coToken = userService.loginUser(guest,"cofounder","pwdC").getData();
+
+        Response<Void> r = shopService.addShopOwner(founder, shop.getId(), "cofounder");
+        assertTrue(r.isOk(), "Owner should be able to appoint another owner");
+
+        // Invariant: showUserShops for cofounder includes this shop
+        Response<List<ShopDTO>> list = shopService.showUserShops(coToken);
+        assertTrue(list.isOk());
+        assertTrue(list.getData().stream().anyMatch(s -> s.getId()==shop.getId()));
+    }
+
+    @Test
+    public void testAddShopOwner_AsNonOwner_ShouldFailAndKeepInvariant() {
+        String founder = fixtures.generateRegisteredUserSession("founderB","pwdB");
+        ShopDTO shop = fixtures.generateShopAndItems(founder,"OwnerShop2");
+        String intruder = fixtures.generateRegisteredUserSession("intruder","pwdI");
+        Response<Void> r = shopService.addShopOwner(intruder, shop.getId(), "someone");
+        assertFalse(r.isOk(), "Non-owner must not appoint new owners");
+
+        // Invariant: showUserShops for “someone” yields empty
+        Response<List<ShopDTO>> list = shopService.showUserShops(intruder);
+        assertTrue(list.isOk());
+        assertTrue(list.getData().isEmpty());
+    }
+
+    @Test
+    public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
+        String owner = fixtures.generateRegisteredUserSession("ownerFA","pwdFA");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"FutureShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+        // schedule auction tomorrow
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end   = LocalDateTime.now().plusDays(1).plusSeconds(2);
+        assertTrue(shopService.openAuction(owner, shopId, itemId, 5.0, start, end).isOk());
+
+        Response<List<AuctionDTO>> fut = shopService.getFutureAuctions(owner, shopId);
+        assertTrue(fut.isOk());
+        assertTrue(fut.getData().stream().anyMatch(a -> a.getItemId()==itemId));
+    }
+
+    // — getPurchaseConditions & getPurchaseTypes —
+    @Test
+    public void testGetPurchaseConditions_ShouldReturnDefaultConditions() {
+        String owner = fixtures.generateRegisteredUserSession("ownerPC","pwdPC");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"CondShop");
+        Response<List<ConditionDTO>> resp = shopService.getPurchaseConditions(owner, shop.getId());
+        assertTrue(resp.isOk(), "Should fetch purchase conditions");
+        assertTrue(resp.getData().isEmpty(), "There should be 0 conditions by default");
+    }
+
+    // — getWonAuctions & getUserBids —
+    @Test
+    public void testGetUserBids_ShouldIncludeMyBid() {
+        String owner = fixtures.generateRegisteredUserSession("ownerUB","pwdUB");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"BidShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+
+        String bidder = fixtures.generateRegisteredUserSession("bidderUB","pwdB");
+        orderService.submitBidOffer(bidder, shopId, itemId, 7.0);
+
+        Response<List<BidDTO>> bids = shopService.getUserBids(bidder, shopId);
+        assertTrue(bids.isOk());
+        assertTrue(bids.getData().stream().anyMatch(b -> b.getItemId()==itemId && b.getAmount()==7.0));
+    }
+
+    @Test
+    public void testGetWonAuctions_ShouldBeEmptyBeforeEnd() {
+        String owner = fixtures.generateRegisteredUserSession("ownerWA","pwdWA");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"WinShop");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().values().iterator().next().getItemID();
+
+        String bidder = fixtures.generateRegisteredUserSession("bidderWA","pwdW");
+        orderService.submitBidOffer(bidder, shopId, itemId, 8.0);
+
+        // auction still open—no wins yet
+        Response<List<AuctionDTO>> won = shopService.getWonAuctions(bidder, shopId);
+        assertTrue(won.isOk());
+        assertTrue(won.getData().isEmpty(), "Should have no won auctions before close");
+    }
+    // — getPurchaseTypes —
+    @Test
+    public void testGetPurchaseTypes_ShouldReturnAllTypes() {
+        String owner = fixtures.generateRegisteredUserSession("ownerPT","pwdPT");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"TypeShop");
+        Response<List<PurchaseType>> resp = shopService.getPurchaseTypes(owner, shop.getId());
+        assertTrue(resp.isOk(), "Should fetch purchase types");
+        List<PurchaseType> types = resp.getData();
+        assertTrue(types.contains(PurchaseType.IMMEDIATE), "IMMEDIATE type must be present");
+        assertTrue(types.contains(PurchaseType.BID),     "BID type must be present");
+    }
+
+    // // — getActiveAuctions —
+    // @Test
+    // public void testGetActiveAuctions_ShouldListRunningAuctions() throws InterruptedException {
+    //     String owner = fixtures.generateRegisteredUserSession("ownerAA","pwdAA");
+    //     ShopDTO shop = fixtures.generateShopAndItems(owner,"AucShop");
+    //     int shopId = shop.getId();
+    //     int itemId = shop.getItems().values().iterator().next().getItemID();
+    //     LocalDateTime start = LocalDateTime.now();
+    //     LocalDateTime end   = LocalDateTime.now().plusSeconds(2);
+    //     assertTrue(shopService.openAuction(owner, shopId, itemId, 5.0, start, end).isOk());
+
+    //     // fetch active auctions immediately
+    //     Response<List<AuctionDTO>> resp = shopService.getActiveAuctions(owner, shop.getId());
+    //     assertTrue(resp.isOk(), "getActiveAuctions should succeed");
+    //     assertTrue(resp.getData().stream().anyMatch(a -> a.getItemId() == itemId),
+    //                "Running auction should appear in active list");
+    // }
+
+    // — getDiscounts & getDiscountTypes —
+    @Test
+    public void testGetDiscounts_ShouldReturnDefaultDiscounts() {
+        String owner = fixtures.generateRegisteredUserSession("ownerDisc","pwdDisc");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"DiscShop");
+        Response<List<ConditionDTO>> conditions = shopService.getPurchaseConditions(owner, shop.getId()); // ensure domain ready
+        Response<List<DiscountDTO>> resp = shopService.getDiscounts(owner, shop.getId());
+        assertTrue(resp.isOk(), "Should fetch discount rules");
+        // By default no discounts applied
+        assertTrue(resp.getData().isEmpty(), "Default discount list should be empty");
+    }
+
+    @Test
+    public void testGetDiscountTypes_ShouldReturnAllTypes() {
+        String owner = fixtures.generateRegisteredUserSession("ownerDT","pwdDT");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"DTShop");
+        Response<List<DiscountType>> resp = shopService.getDiscountTypes(owner, shop.getId());
+        assertTrue(resp.isOk(), "Should fetch discount types");
+        List<DiscountType> types = resp.getData();
+        assertTrue(types.contains(DiscountType.BASE), "PERCENTAGE type must be present");
+        assertTrue(types.contains(DiscountType.CONDITIONAL),      "FIXED type must be present");
+    }
+
+    // — showUserShops —
+    @Test
+    public void testShowUserShops_AsOwner_ShouldReturnOwnShop() {
+        String owner = fixtures.generateRegisteredUserSession("ownerSU","pwdSU");
+        ShopDTO shop = fixtures.generateShopAndItems(owner,"UserShop");
+        Response<List<ShopDTO>> resp = shopService.showUserShops(owner);
+        assertTrue(resp.isOk(), "showUserShops should succeed for owner");
+        assertTrue(resp.getData().stream().anyMatch(s -> s.getId() == shop.getId()),
+                   "Owner's shop must appear in their shop list");
+    }
+
+    // — getShopId —
+    @Test
+    public void testGetShopId_ShouldReturnCorrectId() {
+        String owner = fixtures.generateRegisteredUserSession("ownerG", "pwdG");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "IdShop");
+
+        Response<Integer> resp = shopService.getShopId(owner, "IdShop");
+        assertTrue(resp.isOk(), "getShopId should succeed for existing shop");
+        assertEquals(shop.getId(), resp.getData(),
+                        "Returned ID should match created shop ID");
+    }
+
+    @Test
+    public void testGetShopId_InvalidName_ShouldFail() {
+        String owner = fixtures.generateRegisteredUserSession("ownerG2", "pwdG2");
+        fixtures.generateShopAndItems(owner, "IdShop2");
+
+        Response<Integer> resp = shopService.getShopId(owner, "UnknownShop");
+        assertFalse(resp.isOk(), "getShopId should fail for non-existent shop name");
+    }
+    
+    // — getBids —
+    @Test
+    public void testGetBids_NoBids_ShouldReturnEmptyList() {
+        String owner = fixtures.generateRegisteredUserSession("ownerNoBids", "pwdNB");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "BidShopNB");
+        int shopId = shop.getId();
+
+        Response<List<BidDTO>> resp = shopService.getBids(owner, shopId);
+        assertTrue(resp.isOk(), "getBids should succeed when no bids placed");
+        assertTrue(resp.getData().isEmpty(), "Bid list should be empty initially");
+    }
+
+    @Test
+    public void testGetBids_AfterSubmittingBid_ShouldIncludeBid() {
+        String owner = fixtures.generateRegisteredUserSession("ownerBids", "pwdOB");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "BidShopB");
+        int shopId = shop.getId();
+        int itemId = shop.getItems().get(0).getItemID();
+
+        String bidder = fixtures.generateRegisteredUserSession("bidderB", "pwdBB");
+        assertTrue(orderService.submitBidOffer(bidder, shopId, itemId, 9.5).isOk(),
+                    "submitBidOffer should succeed");
+
+        Response<List<BidDTO>> resp = shopService.getBids(owner, shopId);
+        assertTrue(resp.isOk(), "getBids should succeed after bid");
+        assertTrue(resp.getData().stream()
+            .anyMatch(b -> b.getItemId() == itemId && b.getAmount() == 9.5),
+            "Bid list should contain the submitted bid");
+    }
+
+    // — messaging tests —
+    @Test
+    public void testGetInbox_EmptyAtStart_ShouldReturnEmptyList() {
+        String owner = fixtures.generateRegisteredUserSession("ownerMsg", "pwdMsg");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop");
+        String user = fixtures.generateRegisteredUserSession("userMsg", "pwdU");
+
+        Response<List<Message>> inbox = shopService.getInbox(user, shop.getId());
+        assertTrue(inbox.isOk(), "getInbox should succeed");
+        assertTrue(inbox.getData().isEmpty(), "Inbox should be empty initially");
+    }
+
+    @Test
+    public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
+        String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
+        String guest = userService.enterToSystem().getData();
+        userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
+        String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
+
+        Response<Void> send = shopService.sendMessage(owner, shop.getId(), "Hello mgrMsg", "Hello there");
+        assertTrue(send.isOk(), "sendMessage should succeed");
+
+        Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
+        assertTrue(inbox.isOk(), "getInbox should succeed");
+        List<Message> msgs = inbox.getData();
+        assertEquals(1, msgs.size(), "Should receive one message");
+        assertEquals("Hello there", msgs.get(0).getContent());
+        assertEquals("ownerMsg2", msgs.get(0).getUserName());
+    }
+
+    // @Test
+    // public void testRespondToMessage_ShouldSendReply() {
+    //     String owner = fixtures.generateRegisteredUserSession("ownerMsg3", "pwd3");
+    //     ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop3");
+    //     String guest = userService.enterToSystem().getData();
+    //     userService.registerUser(guest, "mgrMsg2", "pwdM2", LocalDate.now().minusYears(25));
+    //     String manager = userService.loginUser(guest, "mgrMsg2", "pwdM2").getData();
+
+    //     // Owner sends a message to manager
+    //     Response<Void> send = shopService.sendMessage(owner, shop.getId(), "mgrMsg2", "Question?");
+    //     assertTrue(send.isOk(), "sendMessage should succeed");
+
+    //     // Manager retrieves inbox and grabs the message ID
+    //     Response<List<Message>> mgrInbox = shopService.getInbox(manager, shop.getId());
+    //     assertTrue(mgrInbox.isOk(), "getInbox should succeed for manager");
+    //     assertFalse(mgrInbox.getData().isEmpty(), "Manager inbox should contain the message");
+    //     Message original = mgrInbox.getData().get(0);
+    //     int msgId = original.getId(); // or getMessageID()
+
+    //     // Manager replies using msgId, title, and content
+    //     Response<Void> reply = shopService.respondToMessage(manager, shop.getId(), msgId, "Re:Question?", "Reply!");
+    //     assertTrue(reply.isOk(), "respondToMessage should succeed");
+
+    //     // Owner retrieves inbox and sees the reply
+    //     Response<List<Message>> ownerInbox = shopService.getInbox(owner, shop.getId());
+    //     assertTrue(ownerInbox.isOk(), "getInbox for owner should succeed");
+    //     assertTrue(ownerInbox.getData().stream()
+    //         .anyMatch(m -> "Reply!".equals(m.getContent()) && "mgrMsg2".equals(m.getUserName())),
+    //         "Owner should receive the reply message");
+    // }
 }

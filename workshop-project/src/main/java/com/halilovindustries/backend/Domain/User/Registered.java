@@ -179,10 +179,15 @@ public class Registered extends Guest {
     }
 
     public void addSuspension(Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
-        if (startDate.isPresent() && endDate.isPresent()) {
-            this.suspension.setSuspension(startDate.get(), endDate.get());
-        } else {
-            this.suspension.setSuspension();
+        if(!this.isSuspended()) {
+            if (startDate.isPresent() && endDate.isPresent()) {
+                this.suspension.setSuspension(startDate.get(), endDate.get());
+            } else {
+                this.suspension.setSuspension();
+            }
+        }
+        else {
+            throw new IllegalArgumentException("User is already suspended.");
         }
     }
 
