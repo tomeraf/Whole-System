@@ -1,6 +1,5 @@
-package com.halilovindustries.backend.Service;
+package com.halilovindustries.backend.Service.init;
 
-import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.Response;
@@ -8,6 +7,10 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Service.NotificationHandler;
+import com.halilovindustries.backend.Service.OrderService;
+import com.halilovindustries.backend.Service.ShopService;
+import com.halilovindustries.backend.Service.UserService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,16 +28,16 @@ public class Initializer {
     private final UserService userService;
     private final ShopService shopService;
     private final OrderService orderService;
-    private final NotificationHandler notificationHandler;
     private String initST;
+    private final StartupConfig initConfig;
 
     @Autowired
-    public Initializer(UserService userService, ShopService shopService, OrderService orderService, NotificationHandler notificationHandler) {
+    public Initializer( StartupConfig initConfig, UserService userService, ShopService shopService, OrderService orderService) {
         this.userService = userService;
         this.shopService = shopService;
         this.orderService = orderService;
-        this.notificationHandler = notificationHandler;
         initST = userService.enterToSystem().getData();
+        this.initConfig = initConfig;
     }
 
     @PostConstruct
@@ -45,7 +48,7 @@ public class Initializer {
 
     private void readAndApply() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("init.txt")), StandardCharsets.UTF_8))) {
+                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), StandardCharsets.UTF_8))) {
 
             String line;
             int lineNumber = 1;
