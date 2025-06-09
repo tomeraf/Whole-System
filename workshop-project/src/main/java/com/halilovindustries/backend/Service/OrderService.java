@@ -157,7 +157,7 @@ public class OrderService {
                 throw new Exception("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-            if (!guest.getCart().getShopIDs().contains(shopId) || !shop.getItems().containsKey(itemID)) {
+            if (!guest.getCart().getShopIDs().contains(shopId) || !shop.isItemInShop(itemID)) {
                 logger.error(() -> "Item not in cart or shop does not exist");
                 throw new Exception("Item not in cart");
             }

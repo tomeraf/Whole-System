@@ -5,7 +5,7 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 
 public class DiscountDTO {
-    private int id=-1;
+    private String id;
     private DiscountKind discount_kind;
     private DiscountType discountType;
     private int itemId;
@@ -77,10 +77,10 @@ public class DiscountDTO {
     public DiscountType getDiscountType2() {
         return discountType2;
     }
-    public int getId() {
+    public String getId() {
         return id;
     }
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 

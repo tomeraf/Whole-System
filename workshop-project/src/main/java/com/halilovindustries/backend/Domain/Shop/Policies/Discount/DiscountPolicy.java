@@ -9,13 +9,43 @@ import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount.CombinedDiscount;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+
 import com.halilovindustries.backend.Domain.Shop.Category;
 
+@Entity
 public class DiscountPolicy {
+    @Id
+    private int id;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "discount_types", joinColumns = @JoinColumn(name = "policy_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discount_type")
     private List<DiscountType> discountTypes;
+    @OneToOne(cascade= CascadeType.ALL, fetch = FetchType.EAGER)
     private CombinedDiscount discounts;
     
-    public DiscountPolicy(){
+    public DiscountPolicy() {// Default constructor for JPA
+        this.discountTypes = new ArrayList<>();
+        this.discountTypes.add(DiscountType.BASE);
+        this.discountTypes.add(DiscountType.CONDITIONAL);
+        this.discounts = new CombinedDiscount();
+    }
+    public DiscountPolicy(int id) {
+        this.id = id;
         this.discountTypes = new ArrayList<>();
         this.discountTypes.add(DiscountType.BASE);
         this.discountTypes.add(DiscountType.CONDITIONAL);
@@ -46,19 +76,19 @@ public class DiscountPolicy {
         }
         
     }
-    public void removeDiscount(int discountId) {
+    public void removeDiscount(String discountId) {
         discounts.removeDiscount(discountId);
     }
     public double calculateDiscount(HashMap<Item, Integer> allItems) {
         return discounts.calculateDiscount(allItems);
     }
-    public List<Integer> getDiscountIds() {
+    public List<String> getDiscountIds() {
         return discounts.getIds();
     }
     public List<DiscountDTO> getDiscounts() {
-        return discounts.getDiscountsList().stream().map(discount->{
+        return discounts.getDiscounts().stream().map(discount->{
         DiscountDTO dis=new DiscountDTO(discount.getDiscountKind(),discount.getItemId(),discount.getCategory(),discount.getPercentage(),discount.getCondition(),discount.getItemId2(),discount.getCategory2(),discount.getPercentage2(),discount.getCondition2(),discount.getDiscountType(),discount.getDiscountType2());
-        dis.setId(discount.getDiscountId());
+        dis.setId(discount.getId());
         return dis;
     }).toList();  
     }

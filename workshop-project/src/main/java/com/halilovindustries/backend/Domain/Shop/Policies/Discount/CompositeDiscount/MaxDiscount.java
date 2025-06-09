@@ -7,8 +7,16 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.BaseDiscount.BaseDiscount;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("MAX")
 public class MaxDiscount extends CompositeDiscount {
     
+    public MaxDiscount() {// Default constructor for JPA
+        super();
+    }
     public MaxDiscount(BaseDiscount discount1, BaseDiscount discount2) {
         super(discount1, discount2);
     }
@@ -17,7 +25,7 @@ public class MaxDiscount extends CompositeDiscount {
     @Override
     public double calculateDiscount(HashMap<Item, Integer> allItems) {
         double maxDiscount = 0;
-        for (Discount discount : getDiscounts().values()) {
+        for (Discount discount : getDiscounts()) {
             maxDiscount=Math.max(maxDiscount,discount.calculateDiscount(allItems));
         }
         return maxDiscount;
@@ -25,7 +33,7 @@ public class MaxDiscount extends CompositeDiscount {
     @Override
     public HashMap<Item, Double> getPercentagePerItem(HashMap<Item, Integer> allItems) {
         Discount maxDiscount = null;
-        for(Discount discount : getDiscounts().values()) {
+        for(Discount discount : getDiscounts()) {
             if (maxDiscount == null || discount.calculateDiscount(allItems) > maxDiscount.calculateDiscount(allItems)) {
                 maxDiscount = discount;
             }

@@ -53,7 +53,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         // Arrange: register a normal user
         fixtures.generateRegisteredUserSession("tim", "pass");
         // Build a valid start/end (start = now, end = tomorrow)
-        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.now().plusSeconds(1); // Start in 1 second to ensure it's in the future
         LocalDateTime end   = LocalDateTime.now().plusDays(1);
 
         // Act: suspend “tim” for that window
@@ -68,15 +68,19 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         // Immediately after calling, user.isSuspended() may be false, because start is in the future.
         Registered user = userRepository.getUserByName("tim");
         // Depending on your implementation, if “now < start” you may consider them not yet suspended:
-        assertTrue(user.isSuspended(), "User should not be suspended until start time");
+        assertTrue(!user.isSuspended(), "User should not be suspended until start time");
 
         // Note: Skipping time-forward check since no time-travel helper is available.
-
+        try{
+            // Simulate waiting until the start time
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         // And check watchSuspensions shows the date range
         Response<String> infoResp = userService.watchSuspensions(managerToken);
         assertTrue(infoResp.isOk());
         String info = infoResp.getData();
-        System.out.println("Suspension info: " + info);
         assertTrue(info.contains("tim"), "Suspension info must contain username");
         assertTrue(info.contains(start.toLocalDate().toString()), "Should list start date");
         assertTrue(info.contains(end.toLocalDate().toString()), "Should list end date");
