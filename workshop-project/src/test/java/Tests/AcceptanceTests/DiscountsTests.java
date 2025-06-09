@@ -330,7 +330,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Fetch current conditions and remove the one we just added
         List<ConditionDTO> conditions = shopService.getPurchaseConditions(ownerToken, shop.getId()).getData();
         assertFalse(conditions.isEmpty(), "There should be at least one condition");
-        int condId = conditions.get(0).getId();
+        String condId = conditions.get(0).getId();
 
         // Act: remove by actual condition ID
         Response<Void> removeRsp = shopService.removePurchaseCondition(ownerToken, shop.getId(), condId);

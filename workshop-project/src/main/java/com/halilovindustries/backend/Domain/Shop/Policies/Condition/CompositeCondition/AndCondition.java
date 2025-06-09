@@ -23,9 +23,12 @@ public class AndCondition extends CompositeCondition {
         return getCondition1().checkCondition(allItems) && getCondition2().checkCondition(allItems);
     }
 
+    @Override
     public String toString() {
-        return String.format("%s AND %s", getCondition1().toString(), getCondition2().toString());
+        // exactly “<left> AND <right>”
+        return getCondition1().toString() + " AND " + getCondition2().toString();
     }
+    
     @Override
     public ConditionType getConditionType() {
         return ConditionType.AND;

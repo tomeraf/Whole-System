@@ -15,7 +15,7 @@ public class BaseDiscountTests {
 
     // helper to build a simple item→quantity map
     private HashMap<Item, Integer> basket(int id, double price, int qty) {
-        Item i = new Item("natania", Category.AUTOMOTIVE, price, 42, id, "Test Item");
+        Item i = new Item(id, "natania", Category.AUTOMOTIVE, price, 42, "Test Item");
         HashMap<Item, Integer> items = new HashMap<>();
         items.put(i, qty);
         return items;
@@ -36,8 +36,8 @@ public class BaseDiscountTests {
     void itemLevelDiscount_AppliesOnlyToMatchingItem() {
         BaseDiscount d = new BaseDiscount(25, 1);
         HashMap<Item,Integer> items = new HashMap<>();
-        items.put(new Item("X", Category.ELECTRONICS, 80.0, 42, 1, "desc"), 1);
-        items.put(new Item("Y", Category.FURNITURE, 100.0, 42, 2, "desc"), 2);
+        items.put(new Item(1, "X", Category.ELECTRONICS, 80.0, 42, "desc"), 1);
+        items.put(new Item(2, "Y", Category.FURNITURE, 100.0, 42, "desc"), 2);
         // only item 1: 25% of 80 = 20
         assertEquals(20.0, d.calculateDiscount(items), 1e-6);
 
