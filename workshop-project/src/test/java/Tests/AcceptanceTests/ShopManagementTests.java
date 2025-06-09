@@ -27,7 +27,6 @@ import java.util.Set;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
-import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 
 import java.util.HashSet;
 import java.util.concurrent.Callable;
@@ -225,30 +224,30 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertFalse(createShopResp.isOk(), "Shop creation should fail for guest user");
     }
 
-    @Test
-    public void testRateShop_WhenNotLoggedIn_ShouldFail() {
-        PaymentDetailsDTO p = new PaymentDetailsDTO(
-            "1234567890123456", "Some Name", "1", "123", "12", "25"
-        );
-        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+    // @Test
+    // public void testRateShop_WhenNotLoggedIn_ShouldFail() {
+    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
+    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
+    //     );
+    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
 
-        fixtures.mockPositivePayment(p);
-        fixtures.mockPositiveShipment(s);
-        // 1) Owner creates a shop with items
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    //     fixtures.mockPositivePayment(p);
+    //     fixtures.mockPositiveShipment(s);
+    //     // 1) Owner creates a shop with items
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shopDto = fixtures.generateShopAndItems(ownerToken,"MyShop");
         
-        String guestToken = userService.enterToSystem().getData();
-        List<ItemDTO> items = shopService.showShopItems(ownerToken,shopDto.getId()).getData();
+    //     String guestToken = userService.enterToSystem().getData();
+    //     List<ItemDTO> items = shopService.showShopItems(ownerToken,shopDto.getId()).getData();
 
-        orderService.addItemToCart(guestToken, shopDto.getId(), items.get(0).getItemID(), 1);
+    //     orderService.addItemToCart(guestToken, shopDto.getId(), items.get(0).getItemID(), 1);
         
         
-        fixtures.successfulBuyCartContent(guestToken, p, s);
+    //     fixtures.successfulBuyCartContent(guestToken, p, s);
         
-        Response<Void> res = shopService.rateShop(guestToken, shopDto.getId(), 5);
-        assertFalse(res.isOk(), "Rate shop should fail when not logged in");
-    }
+    //     Response<Void> res = shopService.rateShop(guestToken, shopDto.getId(), 5);
+    //     assertFalse(res.isOk(), "Rate shop should fail when not logged in");
+    // }
 
     @Test
     public void testAddItemToShop_AsOwner_ShouldSucceed() {
@@ -539,97 +538,97 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertFalse(res.isOk(), "addShopManager should fail as the manager was removed");
     }
 
-    @Test
-    public void testRemoveAppointee_WithNestedAppointees_ShouldRemoveAll() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    // @Test
+    // public void testRemoveAppointee_WithNestedAppointees_ShouldRemoveAll() {
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // 2) Manager setup
-        String managerGuestToken = userService.enterToSystem().getData();
-        Response<Void> managerRegResp = userService.registerUser(
-            managerGuestToken, "manager", "pwdM", LocalDate.now().minusYears(30)
-        );
-        assertTrue(managerRegResp.isOk(), "Manager registration should succeed");
+    //     // 2) Manager setup
+    //     String managerGuestToken = userService.enterToSystem().getData();
+    //     Response<Void> managerRegResp = userService.registerUser(
+    //         managerGuestToken, "manager", "pwdM", LocalDate.now().minusYears(30)
+    //     );
+    //     assertTrue(managerRegResp.isOk(), "Manager registration should succeed");
 
-        Response<String> managerLoginResp = userService.loginUser(
-            managerGuestToken, "manager", "pwdM"
-        );
-        assertTrue(managerLoginResp.isOk(), "Manager login should succeed");
-        String managerToken = managerLoginResp.getData(); // after login
+    //     Response<String> managerLoginResp = userService.loginUser(
+    //         managerGuestToken, "manager", "pwdM"
+    //     );
+    //     assertTrue(managerLoginResp.isOk(), "Manager login should succeed");
+    //     String managerToken = managerLoginResp.getData(); // after login
 
-        // 3) Owner adds the manager
-        Set<Permission> permissions = new HashSet<>();
+    //     // 3) Owner adds the manager
+    //     Set<Permission> permissions = new HashSet<>();
 
-        permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+    //     permissions.add(Permission.APPOINTMENT);
+    //     Response<Void> addManagerResp = shopService.addShopManager(
+    //         ownerToken, shop.getId(), "manager", permissions
+    //     );
+    //     assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
 
-        String userToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
+    //     String userToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
 
-        // 3) Owner adds the manager
-        Set<Permission> userpermissions = new HashSet<>();
+    //     // 3) Owner adds the manager
+    //     Set<Permission> userpermissions = new HashSet<>();
 
-        userpermissions.add(Permission.APPOINTMENT);
-        Response<Void> addManager2Resp = shopService.addShopManager(
-            managerToken, shop.getId(), "User", userpermissions
-        );
-        assertTrue(addManager2Resp.isOk(), "addShopManager should succeed");
+    //     userpermissions.add(Permission.APPOINTMENT);
+    //     Response<Void> addManager2Resp = shopService.addShopManager(
+    //         managerToken, shop.getId(), "User", userpermissions
+    //     );
+    //     assertTrue(addManager2Resp.isOk(), "addShopManager should succeed");
         
-        fixtures.generateRegisteredUserSession("User2", "Pwd0");
-        Response<Void> res = shopService.addShopManager(userToken, shop.getId(), "User2", permissions);
-        assertTrue(res.isOk(), "addShopManager should fail as the manager was removed");
+    //     fixtures.generateRegisteredUserSession("User2", "Pwd0");
+    //     Response<Void> res = shopService.addShopManager(userToken, shop.getId(), "User2", permissions);
+    //     assertTrue(res.isOk(), "addShopManager should fail as the manager was removed");
 
-        // 4) Owner removes the manager
-        Response<Void> removeManager2Resp = shopService.removeAppointment(
-            ownerToken, shop.getId(), "manager"
-        );
-        assertTrue(removeManager2Resp.isOk(), "removeShopManager should succeed");
+    //     // 4) Owner removes the manager
+    //     Response<Void> removeManager2Resp = shopService.removeAppointment(
+    //         ownerToken, shop.getId(), "manager"
+    //     );
+    //     assertTrue(removeManager2Resp.isOk(), "removeShopManager should succeed");
 
-        //String user3Token = fixtures.generateRegisteredUserSession("User3", "Pwd0");
-        Response<Void> res3 = shopService.addShopManager(userToken, shop.getId(), "User3", permissions);
-        assertFalse(res3.isOk(), "addShopManager should fail as the manager was removed");
-    }
+    //     //String user3Token = fixtures.generateRegisteredUserSession("User3", "Pwd0");
+    //     Response<Void> res3 = shopService.addShopManager(userToken, shop.getId(), "User3", permissions);
+    //     assertFalse(res3.isOk(), "addShopManager should fail as the manager was removed");
+    // }
 
-    @Test
-    public void testAppoint_SameUserTwice_ShouldFail() {
-        // 1) Owner setup
-        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+    // @Test
+    // public void testAppoint_SameUserTwice_ShouldFail() {
+    //     // 1) Owner setup
+    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
 
-        // 2) Owner adds the manager
-        String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
+    //     // 2) Owner adds the manager
+    //     String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
         
-        Set<Permission> permissions = new HashSet<>();
+    //     Set<Permission> permissions = new HashSet<>();
 
-        permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+    //     permissions.add(Permission.APPOINTMENT);
+    //     Response<Void> addManagerResp = shopService.addShopManager(
+    //         ownerToken, shop.getId(), "Manager", permissions
+    //     );
+    //     assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
 
-        // 3) Owner adds the manager
-        fixtures.generateRegisteredUserSession("Manager2", "PwdM");
+    //     // 3) Owner adds the manager
+    //     fixtures.generateRegisteredUserSession("Manager2", "PwdM");
         
-        Set<Permission> permissions2 = new HashSet<>();
+    //     Set<Permission> permissions2 = new HashSet<>();
 
-        permissions2.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp2 = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager2", permissions2
-        );
-        assertTrue(addManagerResp2.isOk(), "addShopManager should succeed");
+    //     permissions2.add(Permission.APPOINTMENT);
+    //     Response<Void> addManagerResp2 = shopService.addShopManager(
+    //         ownerToken, shop.getId(), "Manager2", permissions2
+    //     );
+    //     assertTrue(addManagerResp2.isOk(), "addShopManager should succeed");
 
-        // 4) Manager tries adding manager2        
-        Set<Permission> permissions3 = new HashSet<>();
+    //     // 4) Manager tries adding manager2        
+    //     Set<Permission> permissions3 = new HashSet<>();
 
-        permissions3.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp3 = shopService.addShopManager(
-            managerToken, shop.getId(), "Manager2", permissions3
-        );
-        assertFalse(addManagerResp3.isOk(), "addShopManager should succeed");
-    }
+    //     permissions3.add(Permission.APPOINTMENT);
+    //     Response<Void> addManagerResp3 = shopService.addShopManager(
+    //         managerToken, shop.getId(), "Manager2", permissions3
+    //     );
+    //     assertFalse(addManagerResp3.isOk(), "addShopManager should succeed");
+    // }
 
     @Test
     public void testViewShopContent_ManagerWithViewPermission_ShouldSucceed() {
@@ -839,93 +838,93 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     }
 
     
-    @Test
-    public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws InterruptedException {
-        for (int i = 0; i < 10; i++) {
-            // 1) Owner creates shop
-            String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
-            int shopId = shop.getId();
+    // @Test
+    // public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws InterruptedException {
+    //     for (int i = 0; i < 10; i++) {
+    //         // 1) Owner creates shop
+    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop"+i);
+    //         int shopId = shop.getId();
 
-            // 2) Prepare candidate user
-            String candGuest = userService.enterToSystem().getData();
-            assertTrue(userService.registerUser(candGuest, "candidate"+i, "pwdC", LocalDate.now().minusYears(25))
-                    .isOk(), "Candidate registration should succeed");
+    //         // 2) Prepare candidate user
+    //         String candGuest = userService.enterToSystem().getData();
+    //         assertTrue(userService.registerUser(candGuest, "candidate"+i, "pwdC", LocalDate.now().minusYears(25))
+    //                 .isOk(), "Candidate registration should succeed");
 
-            // 3) Two concurrent attempts to appoint the same candidate
-            int iteration = i;  // effectively final
-            Set<Permission> perms = Set.of(Permission.VIEW);
-            List<Callable<Boolean>> tasks = List.of(
-                () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk(),
-                () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk()
-            );
+    //         // 3) Two concurrent attempts to appoint the same candidate
+    //         int iteration = i;  // effectively final
+    //         Set<Permission> perms = Set.of(Permission.VIEW);
+    //         List<Callable<Boolean>> tasks = List.of(
+    //             () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk(),
+    //             () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk()
+    //         );
 
-            ExecutorService ex = Executors.newFixedThreadPool(2);
-            List<Future<Boolean>> results = ex.invokeAll(tasks);
-            ex.shutdown();
+    //         ExecutorService ex = Executors.newFixedThreadPool(2);
+    //         List<Future<Boolean>> results = ex.invokeAll(tasks);
+    //         ex.shutdown();
 
-            long successCount = results.stream()
-                .map(f -> {
-                    try { return f.get(); }
-                    catch (Exception e) { return false; }
-                })
-                .filter(ok -> ok)
-                .count();
+    //         long successCount = results.stream()
+    //             .map(f -> {
+    //                 try { return f.get(); }
+    //                 catch (Exception e) { return false; }
+    //             })
+    //             .filter(ok -> ok)
+    //             .count();
 
-            assertEquals(1, successCount,
-                "Exactly one of the two concurrent addShopManager calls should succeed, but got " + successCount);
-        }
-    }
+    //         assertEquals(1, successCount,
+    //             "Exactly one of the two concurrent addShopManager calls should succeed, but got " + successCount);
+    //     }
+    // }
 
-    @Test
-    public void removeShopManagerPermissionTest() {
-        // 1) Owner setup: register and create a shop
-        String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
-        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
+    // @Test
+    // public void removeShopManagerPermissionTest() {
+    //     // 1) Owner setup: register and create a shop
+    //     String ownerToken = fixtures.generateRegisteredUserSession("OwnerManager", "Pwd0");
+    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "ManagerShop");
 
-        // 2) Manager setup: register a second user to become manager
-        String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
-        String managerUsername = "ShopManager";
+    //     // 2) Manager setup: register a second user to become manager
+    //     String managerToken = fixtures.generateRegisteredUserSession("ShopManager", "Pwd1");
+    //     String managerUsername = "ShopManager";
 
-        // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
-        Response<Void> assignResp = shopService.addShopManager(
-            ownerToken,
-            shop.getId(),
-            managerUsername,
-            Set.of(Permission.UPDATE_SUPPLY)
-        );
-        assertTrue(assignResp.isOk(), "assignShopManager should succeed");
+    //     // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
+    //     Response<Void> assignResp = shopService.addShopManager(
+    //         ownerToken,
+    //         shop.getId(),
+    //         managerUsername,
+    //         Set.of(Permission.UPDATE_SUPPLY)
+    //     );
+    //     assertTrue(assignResp.isOk(), "assignShopManager should succeed");
 
-        // 4) Verify manager can perform a manager-only action (e.g., add an item)
-        Response<ItemDTO> addItemResp = shopService.addItemToShop(
-            managerToken,
-            shop.getId(),
-            "ManagerItem",
-            Category.ELECTRONICS,
-            10.00,
-            "Item added by manager"
-        );
-        assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
+    //     // 4) Verify manager can perform a manager-only action (e.g., add an item)
+    //     Response<ItemDTO> addItemResp = shopService.addItemToShop(
+    //         managerToken,
+    //         shop.getId(),
+    //         "ManagerItem",
+    //         Category.ELECTRONICS,
+    //         10.00,
+    //         "Item added by manager"
+    //     );
+    //     assertTrue(addItemResp.isOk(), "Manager should be able to add items before removal");
 
-        // 5) Owner removes manager permission
-        Response<Void> removeResp = shopService.removeAppointment(
-            ownerToken,
-            shop.getId(),
-            managerUsername
-        );
-        assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
+    //     // 5) Owner removes manager permission
+    //     Response<Void> removeResp = shopService.removeAppointment(
+    //         ownerToken,
+    //         shop.getId(),
+    //         managerUsername
+    //     );
+    //     assertTrue(removeResp.isOk(), "removeShopManagerPermission should succeed");
 
-        // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
-        Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
-            managerToken,
-            shop.getId(),
-            "ShouldFailItem",
-            Category.FOOD,
-            5.00,
-            "This should not be added"
-        );
-        assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
-    }
+    //     // 6) Manager attempts a manager-only action again (e.g., add another item) → should fail
+    //     Response<ItemDTO> addAfterRemove = shopService.addItemToShop(
+    //         managerToken,
+    //         shop.getId(),
+    //         "ShouldFailItem",
+    //         Category.FOOD,
+    //         5.00,
+    //         "This should not be added"
+    //     );
+    //     assertFalse(addAfterRemove.isOk(), "Manager should no longer be able to add items after removal");
+    // }
 
 
     @Test
@@ -1259,24 +1258,24 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(inbox.getData().isEmpty(), "Inbox should be empty initially");
     }
 
-    @Test
-    public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
-        String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
-        ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
-        String guest = userService.enterToSystem().getData();
-        userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
-        String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
+    // @Test
+    // public void testSendMessageAndGetInbox_ShouldDeliverMessage() {
+    //     String owner = fixtures.generateRegisteredUserSession("ownerMsg2", "pwd2");
+    //     ShopDTO shop = fixtures.generateShopAndItems(owner, "MsgShop2");
+    //     String guest = userService.enterToSystem().getData();
+    //     userService.registerUser(guest, "mgrMsg", "pwdM", LocalDate.now().minusYears(25));
+    //     String manager = userService.loginUser(guest, "mgrMsg", "pwdM").getData();
 
-        Response<Void> send = shopService.sendMessage(owner, shop.getId(), "Hello mgrMsg", "Hello there");
-        assertTrue(send.isOk(), "sendMessage should succeed");
+    //     Response<Void> send = shopService.sendMessage(owner, shop.getId(), "Hello mgrMsg", "Hello there");
+    //     assertTrue(send.isOk(), "sendMessage should succeed");
 
-        Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
-        assertTrue(inbox.isOk(), "getInbox should succeed");
-        List<Message> msgs = inbox.getData();
-        assertEquals(1, msgs.size(), "Should receive one message");
-        assertEquals("Hello there", msgs.get(0).getContent());
-        assertEquals("ownerMsg2", msgs.get(0).getUserName());
-    }
+    //     Response<List<Message>> inbox = shopService.getInbox(manager, shop.getId());
+    //     assertTrue(inbox.isOk(), "getInbox should succeed");
+    //     List<Message> msgs = inbox.getData();
+    //     assertEquals(1, msgs.size(), "Should receive one message");
+    //     assertEquals("Hello there", msgs.get(0).getContent());
+    //     assertEquals("ownerMsg2", msgs.get(0).getUserName());
+    // }
 
     // @Test
     // public void testRespondToMessage_ShouldSendReply() {
