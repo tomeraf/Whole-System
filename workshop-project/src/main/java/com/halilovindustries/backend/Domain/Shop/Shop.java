@@ -450,7 +450,7 @@ public class Shop {
         purchasePolicy.removeCondition(conditionID);
     }
 
-    public void answerOnCounterBid(int bidId, boolean accept, int userID,List<Integer> members) {
+    public void answerOnCounterBid(int bidId, boolean accept, int userID) {
         BidPurchase bidPurchase=bidPurchaseItems.stream()
             .filter(bid -> bid.getId() == bidId)
             .findFirst()
