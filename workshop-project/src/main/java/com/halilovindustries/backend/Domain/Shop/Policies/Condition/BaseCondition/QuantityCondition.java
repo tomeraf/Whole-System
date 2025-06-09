@@ -7,10 +7,19 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("QUANTITY")
 public class QuantityCondition extends BaseCondition {
     private int minQuantity;
     private int maxQuantity;
 
+    // Default constructor for JPA
+    public QuantityCondition() {
+    }
     // Constructor with minQuantity and maxQuantity
     public QuantityCondition(int itemId, Category category, int minQuantity, int maxQuantity) {
         super(itemId, category);

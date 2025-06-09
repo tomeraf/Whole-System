@@ -13,5 +13,6 @@ public interface IShopRepository {
     void deleteShop(int id);
     HashMap<Integer,Shop> getAllShops();
     List<Shop> getUserShops(int userId);
+    int getNextId();
 
 }

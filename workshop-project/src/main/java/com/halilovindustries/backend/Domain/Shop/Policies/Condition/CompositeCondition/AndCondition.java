@@ -5,7 +5,15 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+@Entity
+@DiscriminatorValue("AND")
 public class AndCondition extends CompositeCondition {
+    // Default constructor for JPA
+    public AndCondition() {
+    }
     public AndCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
     }

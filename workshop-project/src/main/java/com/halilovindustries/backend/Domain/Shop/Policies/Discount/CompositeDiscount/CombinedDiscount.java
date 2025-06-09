@@ -7,6 +7,11 @@ import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("COMBINE")
 public class CombinedDiscount extends CompositeDiscount {
 
     public CombinedDiscount() {
@@ -30,7 +35,7 @@ public class CombinedDiscount extends CompositeDiscount {
     @Override
     public HashMap<Item, Double> getPercentagePerItem(HashMap<Item, Integer> allItems) {
         HashMap<Item, Double> totalDiscounts = new HashMap<>();
-        List<Discount> discounts = getDiscountsList();
+        List<Discount> discounts = getDiscounts();
         for (Discount discount : discounts){
             HashMap<Item, Double> currentDiscounts = discount.getPercentagePerItem(allItems);
             for (Item item : currentDiscounts.keySet()) {

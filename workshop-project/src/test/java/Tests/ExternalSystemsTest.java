@@ -1,5 +1,6 @@
 package Tests;
 
+import com.halilovindustries.Application;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ExternalSystems;
 import com.halilovindustries.backend.Infrastructure.RealPayment;
 import com.halilovindustries.backend.Infrastructure.RealShipment;
@@ -7,13 +8,20 @@ import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = Application.class)
 public class ExternalSystemsTest {
-    private final RealPayment payment = new RealPayment();
-    private final RealShipment shipment = new RealShipment();
-    private final ExternalSystems externalSystems = new ExternalSystems();
+
+    @Autowired
+    private RealPayment payment;
+    @Autowired
+    private RealShipment shipment;
+    @Autowired
+    private ExternalSystems externalSystems;
 
     @Test
     public void testHandshake() {

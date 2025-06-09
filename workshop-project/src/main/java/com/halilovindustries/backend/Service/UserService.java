@@ -151,10 +151,6 @@ public class UserService {
                 
                 if (userRepository.getUserByName(username) != null)
                     throw new Exception("Username already exists");
-                // if(username.equals("idanTheManager") && password.equals("halilovindustries")) {
-                //     // this is a special case for the system manager
-                //     registered.setSystemManager(true);
-                // }
                 userRepository.removeGuestById(userID); // Remove the guest from the repository
                 userRepository.saveUser(registered);
                 // should be actually inside guest.register..
@@ -362,6 +358,52 @@ public class UserService {
         } catch (Exception e) {
             logger.error(() -> e.getMessage());
             return Response.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Checks if at least one system manager exists in the system
+     * 
+     * @return true if at least one system manager exists, false otherwise
+     */
+    public boolean hasSystemManager() {
+        try {
+            List<Registered> users = userRepository.getAllRegisteredUsers();
+            for (Registered user : users) {
+                if (user.isSystemManager()) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error(() -> "Error checking system manager existence: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Promotes a registered user to system manager
+     * 
+     * @param username the username of the user to promote
+     * @return Response indicating success or failure
+     */
+    @Transactional
+    public Response<Void> makeSystemManager(String username) 
+    {
+        try {
+            Registered user = userRepository.getUserByName(username);
+            if (user == null) {
+                throw new Exception("User not found");
+            }
+            if (user.isSystemManager()) {
+                throw new Exception("User is already a system manager");
+            }
+            user.setSystemManager(true);
+            userRepository.saveUser(user);
+            return Response.ok();
+        } catch (Exception e) {
+            logger.error(() -> "Error making system manager: " + e.getMessage());
+            return Response.error("Error making system manager: " + e.getMessage());
         }
     }
 }

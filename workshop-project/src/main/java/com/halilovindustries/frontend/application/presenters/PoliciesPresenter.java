@@ -48,7 +48,7 @@ public class PoliciesPresenter extends AbstractPresenter {
         });
     }
 
-    public void removeDiscount(int shopID, int discountID, Consumer<Response<Void>> onFinish) {
+    public void removeDiscount(int shopID, String discountID, Consumer<Response<Void>> onFinish) {
         getSessionToken(token -> {
             if (token == null) {
                 UI.getCurrent().access(() -> onFinish.accept(Response.error("Invalid session")));
@@ -92,7 +92,7 @@ public class PoliciesPresenter extends AbstractPresenter {
         });
     }
 
-    public void removePurchaseCondition(int shopID, int conditionID, Consumer<Response<Void>> onFinish) {
+    public void removePurchaseCondition(int shopID, String conditionID, Consumer<Response<Void>> onFinish) {
         getSessionToken(token -> {
             if (token == null) {
                 UI.getCurrent().access(() -> onFinish.accept(Response.error("Invalid session")));
@@ -145,7 +145,12 @@ public class PoliciesPresenter extends AbstractPresenter {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(null);
             } else {
-                onFinish.accept(resp.getData());
+                ShopDTO shopInfo = resp.getData();
+                if (shopInfo == null) {
+                    Notification.show("No shop info found.", 2000, Position.MIDDLE);
+                } else {
+                    onFinish.accept(shopInfo);
+                }
             }
             });
         });        

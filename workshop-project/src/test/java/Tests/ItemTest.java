@@ -13,7 +13,7 @@ public class ItemTest {
 
     @BeforeEach
     public void setUp() {
-        item = new Item("Test Item",Category.FOOD, 10.0, 5,1, "desc"); // Create a new item with name, price, and quantity
+        item = new Item(0,"Test Item",Category.FOOD, 10.0, 5, "desc"); // Create a new item with name, price, and quantity
     }
 
     @Test

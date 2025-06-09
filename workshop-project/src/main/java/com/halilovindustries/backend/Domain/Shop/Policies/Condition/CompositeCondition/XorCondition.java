@@ -5,7 +5,16 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("XOR")
 public class XorCondition extends CompositeCondition {
+    // Default constructor for JPA
+    public XorCondition() {
+    }
     public XorCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
     }

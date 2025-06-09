@@ -5,7 +5,16 @@ import java.util.HashMap;
 import com.halilovindustries.backend.Domain.Shop.Item;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.Condition;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+
+@Entity
+@DiscriminatorValue("OR")
 public class OrCondition extends CompositeCondition {
+    // Default constructor for JPA
+    public OrCondition() {
+    }
     public OrCondition(Condition condition1, Condition condition2) {
         super(condition1, condition2);
     }

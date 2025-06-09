@@ -6,7 +6,7 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionTyp
 
 
 public class ConditionDTO {
-    private int id=-1;
+    private String id;
     private ConditionType condition_type;
     private int itemId;
     private Category category;
@@ -119,10 +119,10 @@ public class ConditionDTO {
     public Category getCategory2() {
         return category2;
     }
-    public int getId() {
+    public String getId() {
         return id;
     }
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 }
