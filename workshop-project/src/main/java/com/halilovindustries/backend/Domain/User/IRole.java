@@ -49,6 +49,9 @@ public abstract class IRole {
         List<Integer> idsToRemove = new ArrayList<>();
         idsToRemove.add(appointeeID);
         for (IRole role : appointments2) {
+            if (role.getUser().getUserID() != appointeeID) {
+                continue; // Skip if the role does not match the appointee ID
+            }
             idsToRemove.addAll(role.removeAllAppointments());
             Registered registered = role.getUser();
             registered.removeRoleFromShop(role.getShopID());
