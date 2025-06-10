@@ -5,6 +5,8 @@ package Tests.AcceptanceTests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -201,7 +203,7 @@ public class AcceptanceTestFixtures {
 
     public void mockPositivePayment(PaymentDetailsDTO details) {
         when(payment.validatePaymentDetails(details)).thenReturn(true);
-        when(payment.processPayment(1.0, details)).thenReturn(12345); // or any valid transaction ID
+        when(payment.processPayment(anyDouble(), eq(details))).thenReturn(12345);
         when(externalSystems.handshake()).thenReturn(true);
     }
 

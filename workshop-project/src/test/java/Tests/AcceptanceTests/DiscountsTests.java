@@ -34,47 +34,47 @@ public class DiscountsTests extends BaseAcceptanceTests {
     }
 
 
-    // // --- OR Condition Tests ---
-    // @Test
-    // public void testORCondition_AllowsPurchaseIfEitherConditionMet() {
-    //     // Arrange
-    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
-    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
-    //     );
-    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-    //     String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-    //     // Add OR condition: Either total price >= 100 or quantity >= 3
-    //     ConditionDTO orCondition = new ConditionDTO(
-    //         ConditionType.OR, -1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1,
-    //         ConditionLimits.QUANTITY, 0, -1, -1, 1, 3, null
-    //     );
-    //     Response<Void> addRsp = shopService.addPurchaseCondition(ownerToken, shop.getId(), orCondition);
-    //     assertTrue(addRsp.isOk(), "Owner should be able to add an OR purchase condition");
+    // --- OR Condition Tests ---
+    @Test
+    public void testORCondition_AllowsPurchaseIfEitherConditionMet() {
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        // Add OR condition: Either total price >= 100 or quantity >= 3
+        ConditionDTO orCondition = new ConditionDTO(
+            ConditionType.OR, -1, Category.ELECTRONICS, ConditionLimits.PRICE, 100, -1, -1, -1,
+            ConditionLimits.QUANTITY, 0, -1, -1, 1, 3, null
+        );
+        Response<Void> addRsp = shopService.addPurchaseCondition(ownerToken, shop.getId(), orCondition);
+        assertTrue(addRsp.isOk(), "Owner should be able to add an OR purchase condition");
 
-    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-    //     ItemDTO toBuy = shopItems.get(2);
-    //     shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
-    //     // Add to cart (only 1, so quantity condition not met, but price may be)
-    //     Response<Void> addResp = orderService.addItemToCart(
-    //         customerToken,
-    //         shop.getId(),
-    //         List.of(toBuy).get(0).getItemID(),
-    //         1
-    //     );
-    //     assertTrue(addResp.isOk(), "Adding items to cart should succeed");
-    //     // 4) Checkout
-    //     fixtures.mockPositivePayment(p);
-    //     fixtures.mockPositiveShipment(s);
-    //     Response<Order> buyRsp = orderService.buyCartContent(
-    //         customerToken, p, s
-    //     );
-    //     assertTrue(buyRsp.isOk(), "Purchase should succeed because PRICE condition is met");
-    //     // Invariant: order recorded in history
-    //     List<Order> history = orderService.viewPersonalOrderHistory(customerToken).getData();
-    //     assertEquals(1, history.size(), "Order history should contain the successful purchase");
-    // }
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(2);
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
+        // Add to cart (only 1, so quantity condition not met, but price may be)
+        Response<Void> addResp = orderService.addItemToCart(
+            customerToken,
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
+        );
+        assertTrue(addResp.isOk(), "Adding items to cart should succeed");
+        // 4) Checkout
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+        Response<Order> buyRsp = orderService.buyCartContent(
+            customerToken, p, s
+        );
+        assertTrue(buyRsp.isOk(), "Purchase should succeed because PRICE condition is met");
+        // Invariant: order recorded in history
+        List<Order> history = orderService.viewPersonalOrderHistory(customerToken).getData();
+        assertEquals(1, history.size(), "Order history should contain the successful purchase");
+    }
 
     @Test
     public void testORCondition_BlocksPurchaseIfNoneConditionsMet() {
@@ -156,37 +156,37 @@ public class DiscountsTests extends BaseAcceptanceTests {
         // Assert
         assertTrue(response.isOk(), "Owner should be able to add a discount");
     }
-    // @Test
-    // public void testDiscountAppliedToBasket_ShouldSucceed() {
-    //     // Arrange
-    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
-    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
-    //     );
-    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-    //     String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-    //     DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
-    //     // Act
-    //     Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
-    //     assertTrue(response.isOk(), "Owner should be able to add a discount");
+    @Test
+    public void testDiscountAppliedToBasket_ShouldSucceed() {
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        DiscountDTO discount = new DiscountDTO(DiscountKind.BASE,-1, Category.ELECTRONICS, 10, null, DiscountType.BASE);
+        // Act
+        Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
+        assertTrue(response.isOk(), "Owner should be able to add a discount");
 
-    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-    //     ItemDTO toBuy = shopItems.get(2);
-    //     shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(2);
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
-    //     // 3) Add to cart
-    //     Response<Void> addResp = orderService.addItemToCart(
-    //         customerToken,
-    //         shop.getId(),
-    //         List.of(toBuy).get(0).getItemID(),
-    //         1
-    //     );
-    //     assertTrue(addResp.isOk(), "Adding items to cart should succeed");
-    //     // 4) Checkout
-    //     Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
-    //     assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
-    // }
+        // 3) Add to cart
+        Response<Void> addResp = orderService.addItemToCart(
+            customerToken,
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
+        );
+        assertTrue(addResp.isOk(), "Adding items to cart should succeed");
+        // 4) Checkout
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
+        assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
+    }
     // @Test
     // public void testMaxDiscountAppliedToBasket_ShouldSucceed(){
     //     // Arrange
@@ -218,39 +218,39 @@ public class DiscountsTests extends BaseAcceptanceTests {
     //     Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
     //     assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
     // }
-    // @Test
-    // public void testCombinedDiscountAppliedToBasket_ShouldSucceed(){
-    //     // Arrange
-    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
-    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
-    //     );
-    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-    //     String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-    //     DiscountDTO discount = new DiscountDTO(DiscountKind.COMBINE,-1, Category.ELECTRONICS, 10, null,-1,null,50,null ,DiscountType.BASE,DiscountType.BASE);
-    //     // Act
-    //     Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
-    //     assertTrue(response.isOk(), "Owner should be able to add a discount");
+    @Test
+    public void testCombinedDiscountAppliedToBasket_ShouldSucceed(){
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        DiscountDTO discount = new DiscountDTO(DiscountKind.COMBINE,-1, Category.ELECTRONICS, 10, null,-1,null,50,null ,DiscountType.BASE,DiscountType.BASE);
+        // Act
+        Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
+        assertTrue(response.isOk(), "Owner should be able to add a discount");
 
-    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-    //     ItemDTO toBuy = shopItems.get(2);
-    //     shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(2);
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
-    //     // 3) Add to cart
-    //     Response<Void> addResp = orderService.addItemToCart(
-    //         customerToken,
-    //         shop.getId(),
-    //         List.of(toBuy).get(0).getItemID(),
-    //         1
-    //     );
-    //     assertTrue(addResp.isOk(), "Adding items to cart should succeed");
-    //     // 4) Checkout
-    //     Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
-    //     System.out.println("Total price: " + created.getTotalPrice());
-    //     System.out.println("Item price: " + toBuy.getPrice());
-    //     assertTrue(created.getTotalPrice()==toBuy.getPrice()*0.45, "Discount should be applied to the total price");
-    // }
+        // 3) Add to cart
+        Response<Void> addResp = orderService.addItemToCart(
+            customerToken,
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
+        );
+        assertTrue(addResp.isOk(), "Adding items to cart should succeed");
+        // 4) Checkout
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
+        System.out.println("Total price: " + created.getTotalPrice());
+        System.out.println("Item price: " + toBuy.getPrice());
+        assertTrue(created.getTotalPrice()==toBuy.getPrice()*0.45, "Discount should be applied to the total price");
+    }
 
 
 

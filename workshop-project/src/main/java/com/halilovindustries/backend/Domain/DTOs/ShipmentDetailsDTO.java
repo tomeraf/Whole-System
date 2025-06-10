@@ -33,10 +33,10 @@ public class ShipmentDetailsDTO {
     public String getZipcode() { return zipcode; }
 
     public boolean fullShipmentDetails() {
-        return ID != null && !ID.isEmpty() &&
+        return ID != null &&
                name != null && !name.isEmpty() &&
-               email != null && !email.isEmpty() &&
-               phone != null && !phone.isEmpty() &&
+               email != null &&
+               phone != null && 
                country != null && !country.isEmpty() &&
                city != null && !city.isEmpty() &&
                address != null && !address.isEmpty() &&
