@@ -80,14 +80,6 @@ public class MainLayout extends AppLayout {
 
             // valid token → build full drawer
             UI.getCurrent().access(() -> {
-                // 1) Greeting
-                greeting = new Span(presenter.isLoggedIn(token)
-                    ? "Hello, " + presenter.getUsername(token)
-                    : "Hello, sign in");
-                greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
-                
-                greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
-                header = new Header(greeting);
 
                 scroller = new Scroller(createNavigation());
 
@@ -114,27 +106,44 @@ public class MainLayout extends AppLayout {
         nav.addItem(new SideNavItem("My Cart", CartView.class, VaadinIcon.CART.create()));
         nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.SHOP.create()));
 
+        // Initialize greeting with default value first
+        String defaultGreeting = "Hello, sign in";
+        greeting = new Span(defaultGreeting);
+        greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+        header = new Header(greeting);
+
         presenter.getSessionToken(token -> {
-            if (token != null
-                    && presenter.validateToken(token)
-                    && presenter.isLoggedIn(token)) {
+            if (token != null && presenter.validateToken(token) && presenter.isLoggedIn(token)) {
+                // Update greeting for logged in user
+                String userGreeting = "Hello, " + presenter.getUsername(token);
+                
+                UI.getCurrent().access(() -> {
+                    greeting.setText(userGreeting);
+                    
+                    // Add logged-in user specific navigation items
+                    nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
+                    nav.addItem(new SideNavItem("Inbox", InboxView.class, VaadinIcon.ENVELOPE.create()));
+                    nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
 
-                nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
-                nav.addItem(new SideNavItem("Inbox",   InboxView.class,   VaadinIcon.ENVELOPE.create()));
-                nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
-
-                presenter.isSystemManager(isManager -> {
-                    if (isManager) {
-                        nav.addItem(new SideNavItem(
-                            "System",
-                            SystemManagerView.class,
-                            VaadinIcon.TOOLS.create()
-                        ));
-                    }
+                    presenter.isSystemManager(isManager -> {
+                        if (isManager) {
+                            UI.getCurrent().access(() -> {
+                                nav.addItem(new SideNavItem(
+                                    "System",
+                                    SystemManagerView.class,
+                                    VaadinIcon.TOOLS.create()
+                                ));
+                            });
+                        }
+                    });
+                });
+            } else {
+                // Keep default greeting for non-logged-in users
+                UI.getCurrent().access(() -> {
+                    greeting.setText(defaultGreeting);
                 });
             }
         });
-
 
         List<MenuEntry> menuEntries = MenuConfiguration.getMenuEntries();
         menuEntries.forEach(entry -> {
@@ -236,7 +245,7 @@ public class MainLayout extends AppLayout {
     protected void onAttach(AttachEvent event) {
         super.onAttach(event);
         System.out.println("MainLayout onAttach called");
-        refreshDrawer();
+        
         presenter.getSessionToken(token -> {
             UI ui = UI.getCurrent();
             
@@ -260,5 +269,6 @@ public class MainLayout extends AppLayout {
                 }
             });
         });
+        refreshDrawer();
     }
 }
