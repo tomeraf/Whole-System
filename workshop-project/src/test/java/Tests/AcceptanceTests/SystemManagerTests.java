@@ -22,6 +22,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         systemManger.setSystemManager(true);
     }
 
+    // // TODO: 
     // //suspend user tests
     // @Test
     // public void testSuspendUser_AsSystemManager_ShouldSucceed() {
@@ -31,6 +32,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     Registered user = userRepository.getUserByName("user");
     //     assertTrue(user.isSuspended(), "User should be suspended");
     // }
+
     @Test
     public void testSuspendUser_NotAsSystemManager_ShouldFail() {
         String userToken=fixtures.generateRegisteredUserSession("user", "password");
@@ -39,6 +41,8 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         Registered user = userRepository.getUserByName("manager");
         assertTrue(!user.isSuspended(), "User should not be suspended");
     }
+    
+    // // TODO:
     // @Test
     // public void testSuspendUser_InvalidDates_ShouldFail() {
     //     fixtures.generateRegisteredUserSession("user", "password");
@@ -48,6 +52,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     assertTrue(!user.isSuspended(), "User should not be suspended");
     // }
 
+    // // TODO:
     // @Test
     // public void testSuspendUser_WithValidDateRange_ShouldSucceed() {
     //     // Arrange: register a normal user
@@ -86,6 +91,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     assertTrue(info.contains(end.toLocalDate().toString()), "Should list end date");
     // }
 
+    // // TODO:
     // @Test
     // public void testSuspendUser_WithFutureStart_ShouldNotSuspendImmediately() {
     //     // Arrange: register a normal user
@@ -116,6 +122,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     assertFalse(info.contains(end.toLocalDate().toString()), "Should not list future end date");
     // }
 
+    // // TODO:
     // @Test
     // public void testSuspendUser_AlreadySuspended_ShouldFail() {
     //     // Arrange: register a normal user
@@ -156,9 +163,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         assertFalse(response.isOk(), "Suspending a non‐existent user should fail");
     }
 
-
-    
-
+    // // TODO:
     // // unsuspend user tests
     // @Test
     // public void testUnsuspendUser_AsSystemManager_ShouldSucceed() {
@@ -169,6 +174,8 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     Registered user = userRepository.getUserByName("user");
     //     assertFalse(user.isSuspended(), "User should be unsuspended");
     // }
+
+    // // TODO:
     // @Test
     // public void testUnsuspendUser_NotAsSystemManager_ShouldFail() {
     //     fixtures.generateRegisteredUserSession("user", "password");
@@ -179,6 +186,8 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     Registered user = userRepository.getUserByName("user");
     //     assertTrue(user.isSuspended(), "User should still be suspended");
     // }
+
+    // // TODO:
     // @Test
     // public void testUnsuspendUser_UserNotSuspended_ShouldFail() {
     //     fixtures.generateRegisteredUserSession("user", "password");
@@ -198,6 +207,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         assertFalse(response.isOk(), "Unsuspending a non‐existent user should fail");
     }
 
+    // // TODO:
     // //watch suspension tests
     // @Test
     // public void testWatchSuspension_AsSystemManager_ShouldSucceed() {
@@ -208,6 +218,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
     //     String suspensionInfo = response.getData();
     //     assertTrue(suspensionInfo.contains("user:user lo tov"), "Suspension info should contain the user's name");
     // }
+
     @Test
     public void testWatchSuspension_NotAsSystemManager_ShouldFail() {
         fixtures.generateRegisteredUserSession("user", "password");
@@ -216,6 +227,8 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         Response<String> response = userService.watchSuspensions(user2token);
         assertTrue(!response.isOk(), "User should not be able to watch another user's suspension");
     }
+    
+    // // TODO:
     // @Test
     // public void testWatchSuspension_SuspensionOver_ShouldSucceed(){
     //     fixtures.generateRegisteredUserSession("user", "password");
@@ -273,6 +286,7 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         assertFalse(second.isOk(), "Closing an already closed shop should fail");
     }
 
+    // // TODO:
     // //try to to do an action while suspended
     // @Test
     // public void testActionWhileSuspended_ShouldFail() {
