@@ -1,22 +1,23 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://shuttle.proxy.rlwy.net:24301/railway
-    username: postgres
-    password: JvklzxmYUeNshCraWQsrofhBNOgQyPMd
-    driver-class-name: org.postgresql.Driver
-  # datasource:
-  #   url: jdbc:h2:file:./data/workshop;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-  #   username: sa
-  #   password: 
-  #   driver-class-name: org.h2.Driver
+#  datasource:
+#    url: jdbc:postgresql://shuttle.proxy.rlwy.net:24301/railway
+#    username: postgres
+#    password: JvklzxmYUeNshCraWQsrofhBNOgQyPMd
+#    driver-class-name: org.postgresql.Driver
+   datasource:
+     url: jdbc:h2:file:./data/workshop;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+     username: sa
+     password:
+     driver-class-name: org.h2.Driver
 
 external:
   externalUrl: https://damp-lynna-wsep-1984852e.koyeb.app/
 
 startup:
-  initFile: empty_init.txt
+  initFile: initTest.txt
   # empty_init.txt
   # init.txt
+  # initTest.txt
   defaultSystemManager:
     name: idan
     password: 1234
