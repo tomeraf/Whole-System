@@ -6,7 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="workshop-project" />
+        <module name="workshop-project (1)" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -19,7 +19,8 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Backend" options="-parameters" />
       <module name="my-app" options="" />
-      <module name="workshop-project" options="-parameters" />
+      <module name="workshop-project" options="" />
+      <module name="workshop-project (1)" options="-parameters" />
     </option>
   </component>
 </project>
