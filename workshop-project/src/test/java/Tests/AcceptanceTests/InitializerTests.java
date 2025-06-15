@@ -13,8 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class InitializerTests extends BaseAcceptanceTests {
@@ -36,80 +35,6 @@ public class InitializerTests extends BaseAcceptanceTests {
         initializer.init();
     }
 
-
-
-    @Test
-    public void successfullyInitialized(){
-        String content = """
-        // System setup - first registered user is system manager
-        register-user(u1, u1, 1999-06-16);
-        make-system-manager(u1);
-
-// Registering users
-        register-user(u2, u2, 2000-01-01);
-        register-user(u3, u3, 2000-01-01);
-        register-user(u4, u4, 2000-01-01);
-        register-user(u5, u5, 2000-01-01);
-        register-user(u6, u6, 2000-01-01);
-
-// User u2 logs in
-        login-user(u2, u2);
-
-// User u2 opens shop "s1"
-        create-shop(u2, s1);
-
-// User u2 add Bamba to the shop
-        add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
-
-// User u2 appoints u3 as manager of the shop with permission to manage inventory
-        add-shop-manager(0, u3, UPDATE_ITEM_QUANTITY);
-
-// u2 appoints u4 and u5 as shop owners
-        add-shop-owner(0, u4);
-        add-shop-owner(0, u5);
-
-// u2 logs out
-        logout-user(u2);
-        """;
-        try {
-            runInit(content);
-
-            Response<String> res = userService.loginUser(ST, "u1", "u1");
-            assertTrue(res.isOk(), "u1 should exist");
-            userService.logoutRegistered(res.getData());
-
-            res = userService.loginUser(ST, "u2", "u2");
-            assertTrue(res.isOk(), "u2 should exist");
-            userService.logoutRegistered(res.getData());
-
-             res = userService.loginUser(ST, "u3", "u3");
-            assertTrue(res.isOk(), "u3 should exist");
-            userService.logoutRegistered(res.getData());
-
-            res = userService.loginUser(ST, "u4", "u4");
-            assertTrue(res.isOk(), "u4 should exist");
-            userService.logoutRegistered(res.getData());
-
-            res = userService.loginUser(ST, "u5", "u5");
-            assertTrue(res.isOk(), "u5 should exist");
-            userService.logoutRegistered(res.getData());
-
-            res = userService.loginUser(ST, "u6", "u6");
-            assertTrue(res.isOk(), "u6 should exist");
-            userService.logoutRegistered(res.getData());
-
-            ST = userService.loginUser(ST, "u2", "u2").getData();
-            Response<ShopDTO> res2 = shopService.getShopInfo(ST, 0);
-            assertTrue(res.isOk(), "s1 should exist");
-
-
-
-        } catch (Exception E){
-            fail("something went wrong: "+ E.getMessage());
-        }
-
-    }
-
     @Test
     public void User_Management_register(){
         String content = """
@@ -120,10 +45,12 @@ public class InitializerTests extends BaseAcceptanceTests {
             runInit(content);
 
             Response<String> res = userService.loginUser(ST, "u1", "u1");
+            ST = res.getData();
             assertTrue(res.isOk(), "u1 should exist");
             userService.logoutRegistered(res.getData());
 
             res = userService.loginUser(ST, "u2", "u2");
+            ST = res.getData();
             assertTrue(res.isOk(), "u2 should exist");
             userService.logoutRegistered(res.getData());
         } catch (Exception E){
@@ -185,7 +112,10 @@ public class InitializerTests extends BaseAcceptanceTests {
 
             ST = userService.loginUser(ST, "u2", "u2").getData();
             Response<ShopDTO> res2 = shopService.getShopInfo(ST, 0);
-            assertTrue(res.isOk(), "s1 should exist");
+            assertTrue(res2.isOk(), "s1 should exist");
+
+            res2 = shopService.getShopInfo(ST, 1);
+            assertFalse(res2.isOk(), "s2 shouldn't exist");
 
 
 
