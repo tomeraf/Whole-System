@@ -3,7 +3,9 @@ package Tests.AcceptanceTests;
 
 
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.Response;
+import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Service.init.Initializer;
 import com.halilovindustries.backend.Service.init.StartupConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -69,46 +72,47 @@ public class InitializerTests extends BaseAcceptanceTests {
         register-user(u5, u5, 2000-01-01);
         register-user(u6, u6, 2000-01-01);
         login-user(u2, u2);
-        createShop(s1, firstShop);
-        createShop(s2, secondShop);
-        closeShop(s2);
-        addShopOwner(0, u3);
-        addShopOwner(0, u4);
-        removeAppointment(0 u4);
-        addShopManager(0, u5, UPDATE_ITEM_QUANTITY);
-        addShopManager(0, u6, ANSWER_BID);
-        removeAppointment(0 u6);
-        addUserPermission(0, u5, VIEW);
-        addUserPermission(0, u5, APPOINTMENT);
-        removeUserPermission(0, u5, VIEW);
-        logoutUser();
+        create-shop(s1, firstShop);
+        create-shop(s2, secondShop);
+        close-shop(1);
+        add-shop-owner(0, u3);
+        add-shop-owner(0, u4);
+        remove-appointment(0, u4);
+        add-shop-manager(0, u5, UPDATE_ITEM_QUANTITY);
+        add-shop-manager(0, u6, ANSWER_BID);
+        remove-appointment(0, u6);
+        add-user-permission(0, u5, VIEW);
+        add-user-permission(0, u5, APPOINTMENT);
+        remove-user-permission(0, u5, VIEW);
+        logout-user();
     """;
         try {
             runInit(content);
 
             Response<String> res = userService.loginUser(ST, "u1", "u1");
             assertTrue(res.isOk(), "u1 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u2", "u2");
             assertTrue(res.isOk(), "u2 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u3", "u3");
             assertTrue(res.isOk(), "u3 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u4", "u4");
             assertTrue(res.isOk(), "u4 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u5", "u5");
             assertTrue(res.isOk(), "u5 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u6", "u6");
+            ST = res.getData();
             assertTrue(res.isOk(), "u6 should exist");
-            userService.logoutRegistered(res.getData());
+            ST = userService.logoutRegistered(res.getData()).getData();
 
             ST = userService.loginUser(ST, "u2", "u2").getData();
             Response<ShopDTO> res2 = shopService.getShopInfo(ST, 0);
@@ -117,9 +121,21 @@ public class InitializerTests extends BaseAcceptanceTests {
             res2 = shopService.getShopInfo(ST, 1);
             assertFalse(res2.isOk(), "s2 shouldn't exist");
 
+            List<UserDTO> members = shopService.getShopMembers(ST, 0).getData();
+            assertEquals(members.size(),3, "s1 should have 3 members");
+            for(UserDTO member : members){
+                assertTrue(member.getUsername().equals("u2") || member.getUsername().equals("u3")
+                        || member.getUsername().equals("u5"), "only 2 3 and 5 should be in");
+            }
 
+            List<Permission> u5Permissions = shopService.getMemberPermissions(ST, 0, "u5").getData();
+            assertEquals(u5Permissions.size(),2, "u5 should have 2 permissions");
+            for(Permission permission : u5Permissions){
+                assertTrue(permission.toString().equals("APPOINTMENT") ||
+                        permission.toString().equals("UPDATE_ITEM_QUANTITY"), "only UPDATE_ITEM_QUANTITY and APPOINTMENT should be in u5 permissions.");
+            }
 
-
+            ST = userService.logoutRegistered(ST).getData();
         } catch (Exception E){
             fail("something went wrong: "+ E.getMessage());
         }
