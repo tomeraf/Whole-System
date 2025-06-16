@@ -1,6 +1,7 @@
 package Tests.AcceptanceTests;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,8 +15,10 @@ import org.junit.jupiter.api.Test;
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount.CompositeDiscount;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
@@ -410,5 +413,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         assertEquals(15, discounts.get(0).getPercentage(), "Discount percentage should be 15%");
         assertFalse(discounts.get(0).getId().isEmpty(), "Discount ID should be assigned");
     }
+
+    
 
 }
