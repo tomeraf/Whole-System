@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
@@ -28,10 +29,10 @@ public class DBOrderRepository implements IOrderRepository{
     // public void removeOrder(int orderId) {
     //     jpaOrderRepository.deleteById(orderId);
     // }
-    // @Override
-    // public Order getOrder(int orderId) {
-    //     return jpaOrderRepository.findById(orderId).orElse(null);
-    // }
+    @Override
+    public Order getOrder(int orderId) {
+        return jpaOrderRepository.findById(orderId).orElse(null);
+    }
     // @Override
     // public List<Order> getAllOrders(){
     //     return jpaOrderRepository.findAll();
@@ -40,18 +41,17 @@ public class DBOrderRepository implements IOrderRepository{
     public List<Order> getOrdersByCustomerId(int userID){
         return jpaOrderRepository.findByUserId(userID);
     }
-    // @Override
-    // public List<ItemDTO> getOrdersByShopId(int shopId) {
-    //     List<Order> orders = jpaOrderRepository.findAll();
-    //     HashMap<Integer, List<ItemDTO>> itemsMap = new HashMap<>();
-    //     for (Order order : orders) {
-    //         List<ItemDTO> items = order.getShopItems(shopId);
-    //         if (items != null && !items.isEmpty()) {
-    //             itemsMap.put(order.getId(), items);
-    //         }
-    //     }
-    //     return itemsMap.getOrDefault(shopId, List.of());
-    // }
+    @Override
+    public HashMap<Integer,List<ItemDTO>> getOrdersByShopId(int shopId) {
+        HashMap<Integer, List<ItemDTO>> shopOrders = new HashMap<>();
+        for (Order order : jpaOrderRepository.findAll()) {
+            List<ItemDTO> items = order.getItemsByShopId(shopId);
+            if (!items.isEmpty()) {
+                shopOrders.put(order.getId(), items);
+            }
+        }
+        return shopOrders;
+    }
     @Override
     public int getNextId(){
         return jpaOrderRepository.getNextId()+1;

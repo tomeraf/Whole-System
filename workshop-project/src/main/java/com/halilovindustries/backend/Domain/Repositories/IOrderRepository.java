@@ -9,9 +9,9 @@ import com.halilovindustries.backend.Domain.DTOs.*;
 public interface IOrderRepository {
     void addOrder(Order order);
     // void removeOrder(int orderId);
-    // Order getOrder(int orderId);
+    Order getOrder(int orderId);
     // List<Order> getAllOrders();
     List<Order> getOrdersByCustomerId(int userID);
-    // List<ItemDTO> getOrdersByShopId(int shopId);
+    HashMap<Integer,List<ItemDTO>> getOrdersByShopId(int shopId);//<orderId, List<ItemDTO>>
     int getNextId();
 }

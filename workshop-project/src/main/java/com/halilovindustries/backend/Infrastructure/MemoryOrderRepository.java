@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
@@ -28,30 +29,30 @@ public class MemoryOrderRepository implements IOrderRepository {
     //     orders.remove(orderId);
     // }
 
-    // @Override
-    // public Order getOrder(int orderId) {
-    //     if(!orders.containsKey(orderId)) {
-    //         throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
-    //     }
-    //     return orders.get(orderId);
-    // }
+    @Override
+    public Order getOrder(int orderId) {
+        if(!orders.containsKey(orderId)) {
+            throw new IllegalArgumentException("Order with ID " + orderId + " does not exist.");
+        }
+        return orders.get(orderId);
+    }
 
     // @Override
     // public List<Order> getAllOrders() {
     //     return orders.values().stream().toList();
     // }
 
-    // @Override
-    // public List<ItemDTO> getOrdersByShopId(int shopId) {
-    //     List<ItemDTO> orderList = new ArrayList<>();
-    //     for (Order order : orders.values()) {
-    //         List<ItemDTO> items = order.getShopItems(shopId);
-    //         if (items != null) {
-    //             orderList.addAll(items);
-    //         }
-    //     }
-    //     return orderList;
-    // }
+    @Override
+    public HashMap<Integer,List<ItemDTO>> getOrdersByShopId(int shopId) {
+        HashMap<Integer, List<ItemDTO>> shopOrders = new HashMap<>();
+        for (Order order : orders.values()) {
+            List<ItemDTO> items = order.getItemsByShopId(shopId);
+            if (!items.isEmpty()) {
+                shopOrders.put(order.getId(), items);
+            }
+        }
+        return shopOrders;
+    }
     public List<Order> getOrdersByCustomerId(int userID) {
         List<Order> orderList = new ArrayList<>();
         for (Order order : orders.values()) {
