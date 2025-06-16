@@ -15,5 +15,6 @@ public interface JpaShopRepository extends JpaRepository<Shop, Integer>{
     List<Shop> findByUserId(@Param("userId") int userId);
     @Query("SELECT COALESCE(MAX(s.id), -1) FROM Shop s")
     int getNextId();
-    
+    @Query("SELECT COALESCE(MAX(m.id), -1) FROM Message m")
+    int getNextMessageId();
 }

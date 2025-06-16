@@ -620,7 +620,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId);
-            interactionService.sendMessage(user, shop, title, content);
+            interactionService.sendMessage(user, shop, title, content, shopRepository.getNextMessageId());
             for (int reciverId : shop.getOwnerIDs()) {
                 notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
             }
@@ -651,7 +651,7 @@ public class ShopService {
                     return Response.error("User is suspended");
                 }
                 Shop shop = shopRepository.getShopById(shopId);
-                Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
+                Message response = interactionService.respondToMessage(user, shop, messageId, title, content, shopRepository.getNextMessageId());
                 Registered reciver = userRepository.getUserByName(response.getUserName());
                 reciver.addMessage(response);
                 notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 @Entity
 public class Message {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    //@GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String userName;
     private String shopName;
@@ -23,7 +23,8 @@ public class Message {
     private boolean FromUser;
 
     
-    public Message(String userName, String shopName, LocalDateTime dateTime, String title, String content, boolean FromUser) {
+    public Message(int id, String userName, String shopName, LocalDateTime dateTime, String title, String content, boolean FromUser) {
+        this.id = id;
         this.userName = userName;
         this.shopName = shopName;
         this.dateTime = dateTime;

@@ -14,5 +14,6 @@ public interface IShopRepository {
     HashMap<Integer,Shop> getAllShops();
     List<Shop> getUserShops(int userId);
     int getNextId();
+    int getNextMessageId();
 
 }

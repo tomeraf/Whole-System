@@ -250,7 +250,7 @@ public class NotificationsTests extends BaseAcceptanceTests{
        // Register listener for all shop members (including owner)
        Shop realShop = shopRepository.getShopById(shop.getId());
        int founderId = realShop.getFounderID();
-
+       
        UI mockUI = mock(UI.class);
        doAnswer(invocation -> {
            Command command = invocation.getArgument(0);
@@ -278,61 +278,70 @@ public class NotificationsTests extends BaseAcceptanceTests{
        UI.setCurrent(null);
    }
 
-//    @Test
-//    public void testNotificationOnBuyCartContent() throws Exception {
-//        // Arrange
-//        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
-//        ShopDTO shop = fixtures.generateShopAndItems(buyerToken, "MyShop");
+    @Test
+    public void testNotificationOnBuyCartContent() throws Exception {
+        // Add before registering the listener
+        UI mockUI = mock(UI.class);
+        doAnswer(invocation -> {
+            Command command = invocation.getArgument(0);
+            command.execute();
+            return null;
+        }).when(mockUI).access(any(Command.class));
+        UI.setCurrent(mockUI);
 
-//        ItemDTO firstItem = shop.getItems().get(0);
+        // Arrange
+        String buyerToken = fixtures.generateRegisteredUserSession("buyer", "buyer");
+        ShopDTO shop = fixtures.generateShopAndItems(buyerToken, "MyShop");
+        
+        Shop realShop = shopRepository.getShopById(shop.getId());
+        int founderId = realShop.getFounderID();
+        String expectedMessage = "Items were purchased by buyer";
+        CompletableFuture<String> messageReceived = new CompletableFuture<>();
 
-//        // Prepare items map for addItemsToCart
-//        HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
-//        HashMap<Integer, Integer> itemsForShop = new HashMap<>();
-//        itemsForShop.put(firstItem.getItemID(), 1);  // buy 1 quantity of the first item
-//        userItems.put(shop.getId(), itemsForShop);
+        // Register listener
+        Consumer<String> listener = msg -> {
+            System.out.println("!!!!!!!!!!!!!!!!!!!!Listener received: " + msg);
+            messageReceived.complete(msg);
+        };
+        Registration registration = Broadcaster.register("1", String.valueOf(founderId), listener);
 
-//        // Add items to cart
-//        Response<Void> addToCartResponse = orderService.addItemsToCart(buyerToken, userItems);
-//        assertTrue(addToCartResponse.isOk(), "Adding items to cart should succeed");
+        ItemDTO firstItem = shop.getItems().get(0);
 
-//        // Prepare mock UI to allow access() calls
-//        UI mockUI = mock(UI.class);
-//        doAnswer(invocation -> {
-//            Command command = invocation.getArgument(0);
-//            command.execute();
-//            return null;
-//        }).when(mockUI).access(any(Command.class));
-//        UI.setCurrent(mockUI);
+        // Prepare items map for addItemsToCart
+        HashMap<Integer, HashMap<Integer, Integer>> userItems = new HashMap<>();
+        HashMap<Integer, Integer> itemsForShop = new HashMap<>();
+        itemsForShop.put(firstItem.getItemID(), 1);  // buy 1 quantity of the first item
+        userItems.put(shop.getId(), itemsForShop);
 
-//        Shop realShop = shopRepository.getShopById(shop.getId());
-//        int founderId = realShop.getFounderID();
-
-//        CompletableFuture<String> notificationReceived = new CompletableFuture<>();
-//        Registration registration = Broadcaster.register(String.valueOf(founderId), notificationReceived::complete);
-
-//        // Prepare dummy payment and shipment details
-//        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "12/25","333");
-//        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
-
-//        //return true for validation
-//        when(payment.validatePaymentDetails(any(PaymentDetailsDTO.class))).thenReturn(true);
-//        when(shipment.validateShipmentDetails(any(ShipmentDetailsDTO.class))).thenReturn(true);
+        // Add items to cart
+        Response<Void> addToCartResponse = orderService.addItemToCart(buyerToken, shop.getId(), firstItem.getItemID(), 1);
+        assertTrue(addToCartResponse.isOk(), "Adding items to cart should succeed");
 
 
-//        // Act
-//        Response<Order> buyResponse = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
 
-//        // Assert
-//        assertTrue(buyResponse.isOk(), "Buying cart content should succeed");
+    // Prepare dummy payment and shipment details
+        PaymentDetailsDTO paymentDetails = new PaymentDetailsDTO("4111111111111111", "tomer", "123", "333", "12", "25");
+        ShipmentDetailsDTO shipmentDetails = new ShipmentDetailsDTO("123", "ido", "sss@gmail.com", "123456789","il","ber","hamanit18","444");
 
-//        String notification = notificationReceived.get(5, TimeUnit.SECONDS);
-//        assertNotNull(notification, "Notification should be received");
-//        assertTrue(notification.contains("purchased"), "Notification should mention purchase. this is the notification: " + notification);
+        //return true for validation
+        fixtures.mockPositivePayment(paymentDetails);
+        fixtures.mockPositiveShipment(shipmentDetails);
 
-//        registration.remove();
-//        UI.setCurrent(null);
-//    }
+        // Act
+        Response<Order> buyResponse = orderService.buyCartContent(buyerToken, paymentDetails, shipmentDetails);
+
+        // Assert
+        assertTrue(buyResponse.isOk(), "Buying cart content should succeed");    
+        
+        // Wait for listener to be triggered
+        String actualMessage = messageReceived.get(10, TimeUnit.SECONDS);
+        assertEquals(expectedMessage, actualMessage, "Listener should receive the correct message");
+
+        // Clean up
+        registration.remove();
+        // And add at the end of the test
+        UI.setCurrent(null); // Clean up
+    }
 
     @Test
     public void testCloseShopUnauthorizedUser() throws Exception {
@@ -440,87 +449,74 @@ public class NotificationsTests extends BaseAcceptanceTests{
         }
     }
 
-//     @Test
-//     public void testSendMessageFailsWithEmptyContent() throws Exception {
-//         // Arrange
-//         String token = fixtures.generateRegisteredUserSession("emptyMsgUser", "pass");
-//         ShopDTO shopDTO = fixtures.generateShopAndItems(token, "AnotherShop");
+    @Test
+    public void testSendMessageSuccessWithNonEmptyContent() throws Exception {
+        // Arrange
+        String token = fixtures.generateRegisteredUserSession("emptyMsgUser", "pass");
+        ShopDTO shopDTO = fixtures.generateShopAndItems(token, "AnotherShop");
 
-//         // Act
-//         Response<Void> res = shopService.sendMessage(token, shopDTO.getId(), "", "");
+        // Act
+        Response<Void> res = shopService.sendMessage(token, shopDTO.getId(), "nice", "hi");
 
-//         // Assert
-//         assertFalse(res.isOk(), "Message send should fail with empty content");
+        // Assert
+        assertTrue(res.isOk(), "Message send should fail with empty content");
 
-//         // ✅ Notification should NOT be sent
-//         //int recipientId = Integer.parseInt(jwtAdapter.getUsername(token));
-//         try {
-//             assertEquals(0, notificationHandler.getNotifications(String.valueOf(recipientId)).size(), "User should have been notified about message response");
-//         }
-//         catch (Exception e) {
-//             assertTrue(true);
-//         }
-//     }
+        Shop realShop = shopRepository.getShopById(shopDTO.getId());
+        int founderId = realShop.getFounderID();
+        int d = notificationHandler.getNotifications(String.valueOf(founderId)).size();
+        assertEquals(1, d, "User should have been notified about message response");
+    }
 
 
-//     @Test
-//     public void testSendMessageFailsWithInvalidToken() throws Exception {
-//         // Arrange
-//         String invalidToken = "thisIsNotAValidToken";
-//         String validToken = fixtures.generateRegisteredUserSession("userValid", "pass");
-//         ShopDTO shopDTO = fixtures.generateShopAndItems(validToken, "TokenFailShop");
+    @Test
+    public void testSendMessageFailsWithEmptyContent() throws Exception {
+        // Arrange
+        String token = fixtures.generateRegisteredUserSession("emptyMsgUser", "pass");
+        ShopDTO shopDTO = fixtures.generateShopAndItems(token, "AnotherShop");
 
-//         // Act
-//         Response<Void> res = shopService.sendMessage(invalidToken, shopDTO.getId(), "Invalid", "Trying to send with bad token");
+        // Act
+        Response<Void> res = shopService.sendMessage(token, shopDTO.getId(), "", "");
 
-//         // Assert
-//         assertFalse(res.isOk(), "Message send should fail with invalid token");
+        // Assert
+        assertFalse(res.isOk(), "Message send should fail with empty content");
 
-//         // ✅ No notification should be sent
-//         int recipientId = Integer.parseInt(jwtAdapter.getUsername(validToken));
-//         try {
-//             assertTrue(notificationHandler.getNotifications(String.valueOf(recipientId)).isEmpty(),
-//                     "No notification should be sent when token is invalid");
-//         } catch (Exception e) {
-//             assertTrue(true);
+        Shop realShop = shopRepository.getShopById(shopDTO.getId());
+        int founderId = realShop.getFounderID();
+        int d = notificationHandler.getNotifications(String.valueOf(founderId)).size();
+        assertEquals(0, d, "User should have been notified about message response");
+    }
 
-//         }
-//     }
 
-//    @Test
-//    public void testOfflineUserReceivesNotificationOnLogin() throws Exception {
-//        // Arrange - register both sender and recipient
-//        String senderToken = fixtures.generateRegisteredUserSession("senderUser", "pass");
-//        String recipientToken = fixtures.registerUserWithoutLogin("recipientUser", "pass"); // Not logged in yet
+    @Test
+    public void testOfflineUserReceivesNotificationOnLogin() throws Exception {
+        // Arrange - register both sender and recipient
+        String recipientToken = fixtures.generateRegisteredUserSession("recipientUser", "pass");
+        
+        String senderToken = fixtures.generateRegisteredUserSession("senderUser", "pass"); 
 
-//        // Sender creates shop
-//        ShopDTO shopDTO = fixtures.generateShopAndItems(senderToken, "OfflineNotifShop");
-//        int shopId = shopDTO.getId();
+        // Sender creates shop
+        ShopDTO shopDTO = fixtures.generateShopAndItems(recipientToken, "OfflineNotifShop");
+        int shopId = shopDTO.getId();
 
-//        // Get recipient userId (from repository, since not logged in)
-//        int recipientId = userRepository.getUserByName("recipientUser").getUserID();
+        userService.logoutRegistered(recipientToken);
 
-//        // Act - sender sends a message
-//        String title = "Delayed Shipping";
-//        String content = "Will this item arrive by Friday?";
-//        Response<Void> sendRes = shopService.sendMessage(senderToken, shopId, title, content);
-//        assertTrue(sendRes.isOk(), "Message send should succeed");
+        Shop realShop = shopRepository.getShopById(shopId);
+        int founderId = realShop.getFounderID();
 
-//        // At this point recipient is not online. Notification should be stored.
-//        Queue<NotificationDTO> storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
-//        assertEquals(1, storedNotifs.size(), "Notification should be stored for offline user");
+        // Act - sender sends a message
+        String title = "Delayed Shipping";
+        String content = "Will this item arrive by Friday?";
+        Response<Void> sendRes = shopService.sendMessage(senderToken, shopId, title, content);
+        assertTrue(sendRes.isOk(), "Message send should succeed");
+        // At this point recipient is not online. Notification should be stored.
+        Queue<NotificationDTO> storedNotifs = notificationHandler.getNotifications(String.valueOf(founderId));
+        assertEquals(1, storedNotifs.size(), "Notification should be stored for offline user");
 
-//        NotificationDTO notif = storedNotifs.peek();
-//        assertTrue(notif.getMessage().contains("You have a new message"), "Notification content should mention new message");
+        NotificationDTO notif = storedNotifs.peek();
+        assertTrue(notif.getMessage().contains("You have a new message"), "Notification content should mention new message");
+    }
 
-//        // Act - recipient now logs in (and we simulate fetching notifications)
-//        String actualRecipientToken = fixtures.loginUser(recipientToken,"recipientUser", "pass");
-//        notificationHandler.notifyUser(String.valueOf(recipientId)); // Simulate WebSocket connect
 
-//        // After notification dispatch, queue should be empty
-//        storedNotifs = notificationHandler.getNotifications(String.valueOf(recipientId));
-//        assertEquals(0, storedNotifs.size(), "Notification queue should be cleared after delivery");
-//    }
     @Test
     public void testDeleteNotification_Success() throws Exception {
         // Arrange: owner creates shop and bidder submits a bid to trigger a notification
@@ -547,14 +543,4 @@ public class NotificationsTests extends BaseAcceptanceTests{
         Queue<NotificationDTO> after = notificationHandler.getNotifications(userId);
         assertTrue(after.isEmpty(), "Notification queue should be empty after deletion");
     }
-
-    // @Test
-    // public void testDeleteNotification_WrongId_Throws() {
-    //     // Arrange: use a new random user ID with no notifications
-    //     String userId = "no-notifs-user";
-    //     // Act & Assert: deleting non-existent notification should throw
-    //     assertThrows(RuntimeException.class, () -> {
-    //         notificationHandler.deleteNotification(userId, 9999);
-    //     }, "Deleting a notification for unknown user or ID should throw");
-    // }
 }
