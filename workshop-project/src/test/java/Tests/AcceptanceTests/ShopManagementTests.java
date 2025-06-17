@@ -2548,4 +2548,15 @@ public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
         assertTrue(resp.isOk(), "getShopOrderHistory should succeed");
         assertTrue(resp.getData().isEmpty(), "Order history should be empty for new shop");
     }
+    @Test
+    public void testGetShopOrderHistory_NoPermissions_ShouldFail() {
+        // 1) Setup initial state
+        String owner = fixtures.generateRegisteredUserSession("ownerSOH3", "pwdSOH3");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "OrderHistoryShop3");
+        String otherUser = fixtures.generateRegisteredUserSession("otherUserSOH", "pwdSOH");
+        // 2) Attempt to get order history without permissions
+        Response<List<BasketDTO>> resp = shopService.getShopOrderHistory(otherUser, shop.getId());
+        // Assert - Basic functionality
+        assertFalse(resp.isOk(), "getShopOrderHistory should fail for user without permissions");
+    }
 }

@@ -1377,6 +1377,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.getShopOrderHistory(user,shop);
             HashMap<Integer,List<ItemDTO>> orderHistory = orderRepository.getOrdersByShopId(shopID);
             List<BasketDTO> orderHistoryFormatted = new ArrayList<>();
             for(Map.Entry<Integer, List<ItemDTO>> entry : orderHistory.entrySet()) {
