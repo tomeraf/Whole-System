@@ -42,7 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class OrderService {
+public class OrderService extends DatabaseAwareService {
     private PurchaseService purchaseService = new PurchaseService();
     private IUserRepository userRepository;
     private IShopRepository shopRepository;
@@ -91,6 +91,7 @@ public class OrderService {
             return Response.ok(itemDTOs);
         } 
         catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error viewing cart: " + e.getMessage());
             return Response.error("Error viewing cart: " + e.getMessage());
         }
@@ -129,6 +130,7 @@ public class OrderService {
             return Response.ok();
         } 
         catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error adding items to cart: " + e.getMessage());
             return Response.error("Error adding items to cart: " + e.getMessage());
         }
@@ -165,6 +167,7 @@ public class OrderService {
             logger.info(() -> "Items removed from cart successfully");
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error removing items from cart: " + e.getMessage());
             return Response.error("Error removing items from cart: " + e.getMessage());
         }
@@ -255,6 +258,7 @@ public class OrderService {
             return Response.error("Thread interrupted during cart purchase");
         }
         catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error buying cart content: " + e.getMessage());
             return Response.error("Error buying cart content: " + e.getMessage());
         } finally {
@@ -299,6 +303,7 @@ public class OrderService {
 
             } 
             catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error submitting bid offer: " + e.getMessage());
                 return Response.error("Error submitting bid offer: " + e.getMessage());
             }
@@ -350,6 +355,7 @@ public class OrderService {
             logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId + ", by user ID: " + user.getUsername());
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error answering on counter bid: " + e.getMessage());
             return Response.error("Error answering on counter bid: " + e.getMessage());
         }
@@ -372,6 +378,7 @@ public class OrderService {
             logger.info(() -> "Personal search history viewed successfully for user ID: " + userId);
             return Response.ok(orders);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error viewing personal search history: " + e.getMessage());
             return Response.error("Error viewing personal search history: " + e.getMessage());
         }
@@ -397,6 +404,7 @@ public class OrderService {
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error purchasing bid item: " + e.getMessage());
             return Response.error("Error purchasing bid item: " + e.getMessage());
         }
@@ -422,6 +430,7 @@ public class OrderService {
 
             } 
             catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error submitting auction offer: " + e.getMessage());
                 return Response.error("Error submitting auction offer: " + e.getMessage());
             }
@@ -445,6 +454,7 @@ public class OrderService {
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error purchasing auction item: " + e.getMessage());
             return Response.error("Error purchasing auction item: " + e.getMessage());
         }

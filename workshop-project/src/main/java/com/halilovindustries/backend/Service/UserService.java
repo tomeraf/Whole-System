@@ -27,7 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserService {
+public class UserService extends DatabaseAwareService {
 
     private IUserRepository userRepository;
     private IAuthentication jwtAdapter;
@@ -89,6 +89,7 @@ public class UserService {
             logger.info(() -> "User exited the system");
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error exiting the system: " + e.getMessage());
             return Response.error("Error exiting the system: " + e.getMessage());
         }
@@ -114,6 +115,7 @@ public class UserService {
             Response<String> newToken = enterToSystem();
             return Response.ok(newToken.getData());
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Logout Error: " + e.getMessage());
             return Response.error("Logout Error: " + e.getMessage());
         }
@@ -156,6 +158,7 @@ public class UserService {
                 // should be actually inside guest.register..
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error registering user: " + e.getMessage());
                 return Response.error("Error registering user: " + e.getMessage());
             }
@@ -204,6 +207,7 @@ public class UserService {
             logger.info(() -> "User logged in successfully");
             return Response.ok(newSessionToken);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error logging in user: " + e.getMessage());
             return Response.error("Error logging in user: " + e.getMessage());
         }
@@ -218,6 +222,7 @@ public class UserService {
             notificationHandler.notifyUser(userID+"");// delayed notifications
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error notifying login: " + e.getMessage());
             return Response.error("Error notifying login: " + e.getMessage());
         }
@@ -240,6 +245,7 @@ public class UserService {
             user.addSuspension(startDate, endDate);
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error suspending user: " + e.getMessage());
             return Response.error("Error suspending user: " + e.getMessage());
         }
@@ -259,6 +265,7 @@ public class UserService {
             user.removeSuspension();
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error unsuspending user: " + e.getMessage());
             return Response.error("Error unsuspending user: " + e.getMessage());
         }
@@ -281,6 +288,7 @@ public class UserService {
             }
             return Response.ok(sb.toString());
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error watching suspensions: " + e.getMessage());
             return Response.error("Error watching suspensions: " + e.getMessage());
         }
@@ -296,6 +304,7 @@ public class UserService {
             return userRepository.getUserById(userID) != null && 
                    userRepository.getUserById(userID).getUsername() != null;
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking login status: " + e.getMessage());
             return false;
         }
@@ -312,6 +321,7 @@ public class UserService {
             List<Message> inbox = user.getInbox();
             return Response.ok(inbox);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error getting inbox: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -325,6 +335,7 @@ public class UserService {
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             return userRepository.getUserById(userID) != null;
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking invalid tokens: " + e.getMessage());
             return false;
         }
@@ -339,6 +350,7 @@ public class UserService {
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             return userRepository.getUserById(userID).getUsername();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error getting username: " + e.getMessage());
             return null;
         }
@@ -356,6 +368,7 @@ public class UserService {
             }
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> e.getMessage());
             return Response.error(e.getMessage());
         }
@@ -376,6 +389,7 @@ public class UserService {
             }
             return false;
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking system manager existence: " + e.getMessage());
             return false;
         }
@@ -402,6 +416,7 @@ public class UserService {
             userRepository.saveUser(user);
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error making system manager: " + e.getMessage());
             return Response.error("Error making system manager: " + e.getMessage());
         }

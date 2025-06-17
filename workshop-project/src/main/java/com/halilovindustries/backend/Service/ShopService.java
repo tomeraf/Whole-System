@@ -45,7 +45,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ShopService {
+public class ShopService extends DatabaseAwareService {
 
     private IUserRepository userRepository;
     private IShopRepository shopRepository;
@@ -140,6 +140,7 @@ public class ShopService {
             }
             return Response.ok(itemDTOs);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error showing shop items: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -168,6 +169,7 @@ public class ShopService {
             }
             return Response.ok(itemDTOs);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error filtering items in all shops: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -195,6 +197,7 @@ public class ShopService {
             }
             return Response.ok(itemDTOs);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error filtering items in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -221,6 +224,7 @@ public class ShopService {
                     + userRepository.getUserById(userID).getUsername());
             return Response.ok(shopDto);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop info: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -260,6 +264,7 @@ public class ShopService {
 
             return Response.ok(members);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop members: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -298,6 +303,7 @@ public class ShopService {
             logger.info(() -> "Shop created: " + shopDto.getName() + " by user: " + userID);
             return Response.ok(shopDto);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error creating shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         } finally {
@@ -333,6 +339,7 @@ public class ShopService {
                 shopWrite.unlock();
             }
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error closing shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -361,6 +368,7 @@ public class ShopService {
                     () -> "Item added to shop: " + itemName + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(itemDto);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error adding item to shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -391,6 +399,7 @@ public class ShopService {
                         + userID);
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error removing item from shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -429,6 +438,7 @@ public class ShopService {
                         + userID);
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error changing item name in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -467,6 +477,7 @@ public class ShopService {
                         + " by user: " + userID);
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error changing item quantity in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -506,6 +517,7 @@ public class ShopService {
                         + userID);
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error changing item price in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -547,6 +559,7 @@ public class ShopService {
                         + " by user: " + userID);
                 return Response.ok();
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error changing item description in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -579,6 +592,7 @@ public class ShopService {
             shoppingService.RateShop(shop, orders, userID, rating);
             logger.info(() -> "Shop rated: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error rating shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -603,6 +617,7 @@ public class ShopService {
             shoppingService.RateItem(shop, userID, itemID, orders, rating);
             logger.info(() -> "Item rated: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error rating item: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -630,6 +645,7 @@ public class ShopService {
             logger.info(() -> "Message sent: " + title + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok();
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error sending message: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -666,6 +682,7 @@ public class ShopService {
         }
 
         catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error responding to message: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -683,6 +700,7 @@ public class ShopService {
             List<Message> inbox = shop.getInbox();
             return Response.ok(inbox);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error getting inbox: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -711,6 +729,7 @@ public class ShopService {
                 logger.info(() -> "Shop owner added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                         + userID);
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error adding shop owner: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             }
@@ -758,6 +777,7 @@ public class ShopService {
                 notificationHandler.notifyUser(appointee.getUserID() + "",
                         "You no longer have your role in shop: " + shop.getName());
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             }
@@ -793,6 +813,7 @@ public class ShopService {
                 logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                         + userID);
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error adding shop manager: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             } finally {
@@ -828,6 +849,7 @@ public class ShopService {
                 logger.info(() -> "Shop manager permission added: " + appointeeName + " in shop: " + shop.getName()
                         + " by user: " + userID);
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error adding shop manager permission: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             }
@@ -863,6 +885,7 @@ public class ShopService {
                 logger.info(() -> "Shop manager permission removed: " + appointeeName + " in shop: " + shop.getName()
                         + " by user: " + userID);
             } catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error removing shop manager permission: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             }
@@ -892,6 +915,7 @@ public class ShopService {
             logger.info(() -> "Members permissions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(permissions);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving members permissions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -929,6 +953,7 @@ public class ShopService {
         }
 
         catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error answering bid: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -964,6 +989,7 @@ public class ShopService {
             Thread.currentThread().interrupt();
             return Response.error("Thread was interrupted.");
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error submitting counter bid: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -984,6 +1010,7 @@ public class ShopService {
             managementService.openAuction(user, shop, itemID, startingPrice, startDate, endDate);
             logger.info(() -> "Auction opened: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error opening auction: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1006,6 +1033,7 @@ public class ShopService {
             logger.info(() -> "Discount added in shop: " + shop.getName() + " by user: "
                     + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error adding discount: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1027,6 +1055,7 @@ public class ShopService {
             logger.info(() -> "Discount removed in shop: " + shop.getName() + " by user: "
                     + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error removing discount: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1051,6 +1080,7 @@ public class ShopService {
             this.managementService.updateDiscountType(user, shop, discountType);
             logger.info(() -> "Discount type updated in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error updating discount type: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1076,6 +1106,7 @@ public class ShopService {
             this.managementService.updatePurchaseType(user, shop, purchaseType);
             logger.info(() -> "Purchase type updated in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error updating purchase type: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1096,6 +1127,7 @@ public class ShopService {
             managementService.addPurchaseCondition(user, shop, condition);
             logger.info(() -> "Purchase condition added in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error adding purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1116,6 +1148,7 @@ public class ShopService {
             managementService.removePurchaseCondition(user, shop, conditionID);
             logger.info(() -> "Purchase condition removed in shop: " + shop.getName() + " by user: " + userID);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error removing purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1137,6 +1170,7 @@ public class ShopService {
             logger.info(() -> "Purchase conditions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(conditions);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving purchase conditions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1157,6 +1191,7 @@ public class ShopService {
             logger.info(() -> "Discounts retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(discounts);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving discounts: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1177,6 +1212,7 @@ public class ShopService {
             logger.info(() -> "Active auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving active auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1197,6 +1233,7 @@ public class ShopService {
             logger.info(() -> "future auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving future auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1219,6 +1256,7 @@ public class ShopService {
             logger.info(() -> "Active bids retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(bids);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving active bids: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1274,6 +1312,7 @@ public class ShopService {
             logger.info(() -> "Active user bids retrieved in shop: " + shop.getName() + " for user: " + userID);
             return Response.ok(bids);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving active bids: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1293,6 +1332,7 @@ public class ShopService {
             Shop shop = this.shopRepository.getShopByName(shopName);
             return Response.ok(shop.getId());
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop ID: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }   
@@ -1313,6 +1353,7 @@ public class ShopService {
             logger.info(() -> "Won auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving won auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1330,6 +1371,7 @@ public class ShopService {
             logger.info(() -> "Purchase types retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(purchaseTypes);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving purchase types: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -1346,20 +1388,23 @@ public class ShopService {
             logger.info(() -> "Discount types retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(discountTypes);
         } catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error retrieving discount types: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
     }
     @Scheduled(fixedRate = 30000) // Runs every 60 seconds
     public void checkAndNotifyAuctions() {
-    List<Shop> shops = shopRepository.getAllShops().values().stream().toList();
-    for (Shop shop : shops) {
-        HashMap<Integer,String> notifications = shop.auctionMessages();
-        for (Map.Entry<Integer, String> entry : notifications.entrySet()) {
-            int userId = entry.getKey();
-            String message = entry.getValue();
-            notificationHandler.notifyUser(String.valueOf(userId), message);
-        }
+        executeSkippableOperation(() -> {
+            List<Shop> shops = shopRepository.getAllShops().values().stream().toList();
+            for (Shop shop : shops) {
+                HashMap<Integer,String> notifications = shop.auctionMessages();
+                for (Map.Entry<Integer, String> entry : notifications.entrySet()) {
+                    int userId = entry.getKey();
+                    String message = entry.getValue();
+                    notificationHandler.notifyUser(String.valueOf(userId), message);
+                }
+            }
+        }); 
     }
-}
 }

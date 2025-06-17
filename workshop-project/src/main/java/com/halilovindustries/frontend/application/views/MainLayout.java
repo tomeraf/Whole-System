@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.views;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,6 +40,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 @AnonymousAllowed
 public class MainLayout extends AppLayout {
 
+    private DatabaseStatusView databaseStatusView;
+
     private H1 viewTitle;
     private HomePresenter presenter;
     private VerticalLayout drawerContent;
@@ -48,12 +51,18 @@ public class MainLayout extends AppLayout {
 
     private Registration broadcasterRegistration;
 
-    public MainLayout(HomePresenter presenter) {
+    @Autowired
+    public MainLayout(HomePresenter presenter, 
+                      DatabaseStatusView databaseStatusView) {
 
         this.presenter = presenter;
         setPrimarySection(Section.DRAWER);          // Set the primary section to the drawer
         this.drawerContent = new VerticalLayout();   // init
         addHeaderContent();                         // Add header
+        
+        // Add the database status view to the navbar (it's invisible anyway)
+        databaseStatusView.setVisible(false);  // Ensure it's not visible
+        addToNavbar(databaseStatusView);
     }
     
     /** Rebuilds header + nav + footer in the drawer */
