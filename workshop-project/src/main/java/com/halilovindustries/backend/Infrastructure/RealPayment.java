@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-import com.halilovindustries.backend.Service.init.ExternalConfig;
+import com.halilovindustries.backend.Domain.init.ExternalConfig;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import org.springframework.stereotype.Component;
 

@@ -2,7 +2,7 @@ package com.halilovindustries.backend.Infrastructure;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-import com.halilovindustries.backend.Service.init.ExternalConfig;
+import com.halilovindustries.backend.Domain.init.ExternalConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;

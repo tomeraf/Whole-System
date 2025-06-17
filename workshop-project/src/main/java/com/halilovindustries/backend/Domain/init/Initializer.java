@@ -1,4 +1,4 @@
-package com.halilovindustries.backend.Service.init;
+package com.halilovindustries.backend.Domain.init;
 
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
