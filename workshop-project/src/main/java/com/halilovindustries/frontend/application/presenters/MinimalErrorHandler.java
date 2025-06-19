@@ -1,6 +1,7 @@
 package com.halilovindustries.frontend.application.presenters;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.server.ErrorEvent;
 import com.vaadin.flow.server.ErrorHandler;
 import com.vaadin.flow.server.VaadinSession;
@@ -35,13 +36,15 @@ public class MinimalErrorHandler implements ErrorHandler {
             throwable.getMessage().contains("tree is most likely corrupted")) {
             
             try {
-                if (VaadinSession.getCurrent() != null) {
-                    // This line actually forces a session invalidation
-                    VaadinSession.getCurrent().getSession().invalidate();
+                UI ui = UI.getCurrent();
+                if (ui != null) {
+                    // Force page reload to clear corrupted state
+                    Page page = ui.getPage();
+                    page.executeJs("window.location.href = '/';");
                     
-                    // Try to redirect to the home page
-                    if (UI.getCurrent() != null) {
-                        UI.getCurrent().getPage().setLocation("/");
+                    // Also try to invalidate the session
+                    if (VaadinSession.getCurrent() != null) {
+                        VaadinSession.getCurrent().getSession().invalidate();
                     }
                 }
             } catch (Exception e) {

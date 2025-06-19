@@ -2,8 +2,10 @@ package com.halilovindustries.frontend.application.presenters;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.JWTAdapter;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Service.DatabaseHealthService;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -29,34 +31,52 @@ import com.vaadin.flow.component.notification.Notification.Position;
 @Component
 public class HomePresenter extends AbstractPresenter {
 
+    private final DatabaseHealthService databaseHealthService;
+    private static final String MAINTENANCE_TOKEN = "maintenance-mode-token";
+    
     @Autowired
     public HomePresenter(
         UserService userService,
         ShopService shopService,
         JWTAdapter jwtAdapter,
-        OrderService orderService     // ← add here
+        OrderService orderService,
+        DatabaseHealthService databaseHealthService
     ) {
         this.userService   = userService;
         this.shopService   = shopService;
         this.jwtAdapter    = jwtAdapter;
-        this.orderService  = orderService;           // ← assign
+        this.orderService  = orderService;
+        this.databaseHealthService = databaseHealthService;
     }
 
     public void saveSessionToken() {
         System.out.println("Saving session token...");
-        Response<String> response = userService.enterToSystem();
-        if (!response.isOk()) {
-            System.out.println("Error: " + response.getError());
-        } else {
-            String token = response.getData();
-            // Store in localStorage using JS
+        
+        try {
+            // Check database health before trying to enter system
+            databaseHealthService.checkBeforeAction("initialize session");
+            
+            // Only proceed if database is available
+            Response<String> response = userService.enterToSystem();
+            if (!response.isOk()) {
+                System.out.println("Error: " + response.getError());
+            } else {
+                String token = response.getData();
+                // Store in localStorage using JS
+                UI.getCurrent().getPage()
+                    .executeJs("sessionStorage.setItem('token', $0);", token);
+                System.out.println("Token saved: " + token);
+            }
+        } catch (MaintenanceModeException e) {
+            // In maintenance mode, create a dummy session token
+            System.out.println("Database unavailable, using maintenance mode token");
             UI.getCurrent().getPage()
-                .executeJs("sessionStorage.setItem('token', $0);", token);
-            System.out.println("Token saved: " + token);
+                .executeJs("sessionStorage.setItem('token', $0);", MAINTENANCE_TOKEN);
+        } catch (Exception e) {
+            System.err.println("Error saving session token: " + e.getMessage());
         }
     }
 
-    // in HomePresenter
     public void registerUser(String name,
                             String password,
                             LocalDate dateOfBirth,

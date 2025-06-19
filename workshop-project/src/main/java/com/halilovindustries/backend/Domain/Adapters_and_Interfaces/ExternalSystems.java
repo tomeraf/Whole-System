@@ -48,7 +48,7 @@ public class ExternalSystems implements IExternalSystems {
 
             return "OK".equalsIgnoreCase(response.body().trim());
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error during handshake: " + e.getMessage());
             return false;
         }
     }

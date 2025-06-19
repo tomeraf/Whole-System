@@ -29,6 +29,7 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthenticat
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSystems;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -79,6 +80,8 @@ public class OrderService extends DatabaseAwareService {
     @Transactional
     public Response<List<ItemDTO>> checkCartContent(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -90,6 +93,11 @@ public class OrderService extends DatabaseAwareService {
             logger.info(() -> "Cart contents: All items were listed successfully");
             return Response.ok(itemDTOs);
         } 
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
         catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error viewing cart: " + e.getMessage());
@@ -110,6 +118,8 @@ public class OrderService extends DatabaseAwareService {
 
 
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -129,6 +139,11 @@ public class OrderService extends DatabaseAwareService {
             logger.info(() -> "Items added to cart successfully");
             return Response.ok();
         } 
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
         catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error adding items to cart: " + e.getMessage());
@@ -150,6 +165,8 @@ public class OrderService extends DatabaseAwareService {
     @Transactional
     public Response<Void> removeItemFromCart(String sessionToken, int shopId, int itemID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -166,7 +183,12 @@ public class OrderService extends DatabaseAwareService {
             guest.getCart().deleteItem(shopId, itemID); // Remove items from the cart
             logger.info(() -> "Items removed from cart successfully");
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error removing items from cart: " + e.getMessage());
             return Response.error("Error removing items from cart: " + e.getMessage());
@@ -184,6 +206,8 @@ public class OrderService extends DatabaseAwareService {
         List<Lock> acquiredLocks = new ArrayList<>();
         
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -257,6 +281,11 @@ public class OrderService extends DatabaseAwareService {
             logger.error(() -> "Thread interrupted during cart purchase");
             return Response.error("Thread interrupted during cart purchase");
         }
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
         catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error buying cart content: " + e.getMessage());
@@ -284,9 +313,13 @@ public class OrderService extends DatabaseAwareService {
 
         shopRead.lock();     
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
 
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User not logged in");
                 }
@@ -302,7 +335,12 @@ public class OrderService extends DatabaseAwareService {
                 return Response.ok();
 
             } 
-            catch (Exception e) {
+            
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error submitting bid offer: " + e.getMessage());
                 return Response.error("Error submitting bid offer: " + e.getMessage());
@@ -330,6 +368,8 @@ public class OrderService extends DatabaseAwareService {
     @Transactional
     public Response<Void> answerOnCounterBid(String sessionToken,int shopId,int bidId,boolean accept) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -354,7 +394,12 @@ public class OrderService extends DatabaseAwareService {
             }
             logger.info(() -> "Counter bid answered successfully for bid ID: " + bidId + ", by user ID: " + user.getUsername());
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error answering on counter bid: " + e.getMessage());
             return Response.error("Error answering on counter bid: " + e.getMessage());
@@ -370,6 +415,8 @@ public class OrderService extends DatabaseAwareService {
 @Transactional
     public Response<List<Order>> viewPersonalOrderHistory(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -377,7 +424,12 @@ public class OrderService extends DatabaseAwareService {
             List<Order> orders = orderRepository.getOrdersByCustomerId(userId);
             logger.info(() -> "Personal search history viewed successfully for user ID: " + userId);
             return Response.ok(orders);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error viewing personal search history: " + e.getMessage());
             return Response.error("Error viewing personal search history: " + e.getMessage());
@@ -386,6 +438,8 @@ public class OrderService extends DatabaseAwareService {
     @Transactional
     public Response<Void> purchaseBidItem(String sessionToken,int shopId,int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -403,7 +457,12 @@ public class OrderService extends DatabaseAwareService {
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + user.getUsername()+"from bid");
             logger.info(() -> "Bid item purchased successfully for bid ID: " + bidId);
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error purchasing bid item: " + e.getMessage());
             return Response.error("Error purchasing bid item: " + e.getMessage());
@@ -413,6 +472,8 @@ public class OrderService extends DatabaseAwareService {
     public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
 
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User not logged in");
                 }
@@ -429,7 +490,12 @@ public class OrderService extends DatabaseAwareService {
                 return Response.ok();
 
             } 
-            catch (Exception e) {
+            
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error submitting auction offer: " + e.getMessage());
                 return Response.error("Error submitting auction offer: " + e.getMessage());
@@ -438,6 +504,8 @@ public class OrderService extends DatabaseAwareService {
     @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -453,7 +521,12 @@ public class OrderService extends DatabaseAwareService {
             notificationHandler.notifyUsers(shop.getOwnerIDs().stream().toList(), "Item " + order.getItems().get(0).getName() + " was purchased by " + registered.getUsername()+"from auction");
             logger.info(() -> "Auction item purchased successfully for auction ID: " + auctionID);
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error purchasing auction item: " + e.getMessage());
             return Response.error("Error purchasing auction item: " + e.getMessage());

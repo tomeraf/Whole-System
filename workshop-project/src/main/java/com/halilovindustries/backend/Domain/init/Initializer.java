@@ -7,12 +7,15 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Service.DatabaseHealthService;
 import com.halilovindustries.backend.Service.NotificationHandler;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -30,20 +33,46 @@ public class Initializer {
     private final OrderService orderService;
     private String initST;
     private final StartupConfig initConfig;
+    private final DatabaseHealthService databaseHealthService;
 
     @Autowired
-    public Initializer( StartupConfig initConfig, UserService userService, ShopService shopService, OrderService orderService) {
+    public Initializer( StartupConfig initConfig, UserService userService, ShopService shopService, OrderService orderService, DatabaseHealthService databaseHealthService) {
         this.userService = userService;
         this.shopService = shopService;
         this.orderService = orderService;
-        initST = userService.enterToSystem().getData();
         this.initConfig = initConfig;
+        this.databaseHealthService = databaseHealthService;
     }
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        // Check if database is available
+        boolean dbAvailable = databaseHealthService.isDatabaseConnected();
+        
+        // Check if init file is valid for maintenance mode
+        boolean validForMaintenance = isInitFileValidForMaintenanceMode();
+        
+        if (dbAvailable) {
+            // Database is available, proceed with initialization
+            System.out.println("Database is available. Initializing system...");
+            init();
+        } else if (validForMaintenance) {
+            // Database is down but the init file is empty or just has comments
+            System.out.println("Database is unavailable but init file is valid for maintenance mode.");
+        } else {
+            // Database is down and init file has commands
+            System.err.println("ERROR: Database is unavailable and init file contains commands. System cannot start.");
+            // You could throw an exception here to stop the application
+            throw new RuntimeException("Cannot start system: Database unavailable and init file requires database access");
+        }
+    }
+
     public void init() {
         System.out.println("Initializing application data...");
         
+        // Get a session token first
+        initST = userService.enterToSystem().getData();
+
         // Then proceed with other initialization
         readAndApply();
         
@@ -73,6 +102,38 @@ public class Initializer {
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to read or process init file: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks if the init file is valid for starting in maintenance mode.
+     * When database is offline, only empty init files (or those with just comments) are valid.
+     * 
+     * @return true if the init file is valid for maintenance mode, false otherwise
+     */
+    public boolean isInitFileValidForMaintenanceMode() {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), 
+                StandardCharsets.UTF_8))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                
+                // Skip empty lines and comments
+                if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) {
+                    continue;
+                }
+                
+                // If we found at least one command, the file is not valid for maintenance mode
+                return false;
+            }
+            
+            // If we reach here, the file only contains comments or is empty
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error validating init file: " + e.getMessage());
+            return false; // If we can't read the file, consider it invalid
         }
     }
 
@@ -433,7 +494,6 @@ public class Initializer {
 
         } catch (Exception e) {
             System.err.println("Error processing command: " + line);
-            e.printStackTrace();
             return false;
         }
     }

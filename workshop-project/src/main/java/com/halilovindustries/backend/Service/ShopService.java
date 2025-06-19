@@ -29,6 +29,7 @@ import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
@@ -74,58 +75,88 @@ public class ShopService extends DatabaseAwareService {
     // show and filter
     @Transactional
     public Response<List<ShopDTO>> showAllShops(String sessionToken) {
-        if (!authenticationAdapter.validateToken(sessionToken)) {
-            return Response.error("User not logged in");
-        }
-        ArrayList<Shop> s = new ArrayList<Shop>(
-                shopRepository.getAllShops().values().stream().filter((shop) -> shop.isOpen()).toList());
-        List<ShopDTO> shopDTOs = new ArrayList<>();
-        for (Shop shop : s) {
-            List<Item> items = shop.getItems();
-            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : items) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
-                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
-                        item.getNumOfOrders());
-                itemDTOs.put(item.getId(), itemDTO);
+        try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                return Response.error("User not logged in");
             }
-            ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
-                    shop.getRating(), shop.getRatingCount());
-            shopDTOs.add(shopDTO);
+            ArrayList<Shop> s = new ArrayList<Shop>(
+                    shopRepository.getAllShops().values().stream().filter((shop) -> shop.isOpen()).toList());
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : s) {
+                List<Item> items = shop.getItems();
+                HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
+                for (Item item : items) {
+                    ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
+                            item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
+                            item.getNumOfOrders());
+                    itemDTOs.put(item.getId(), itemDTO);
+                }
+                ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
+                        shop.getRating(), shop.getRatingCount());
+                shopDTOs.add(shopDTO);
+            }
+            return Response.ok(shopDTOs);
         }
-        return Response.ok(shopDTOs);
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error showing all shops: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
     }
 
     @Transactional
     public Response<List<ShopDTO>> showUserShops(String sessionToken) {
-        if (!authenticationAdapter.validateToken(sessionToken)) {
-            return Response.error("User not logged in");
-        }
-        int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-
-        List<ShopDTO> shopDTOs = new ArrayList<>();
-        List<Shop> userShops = shopRepository.getUserShops(userID).stream()
-                .filter(Shop::isOpen)
-                .toList();
-        for (Shop shop : userShops) {
-            List<Item> items = shop.getItems();
-            HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-            for (Item item : items) {
-                ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
-                        item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
-                        item.getNumOfOrders());
-                itemDTOs.put(item.getId(), itemDTO);
+        try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                return Response.error("User not logged in");
             }
-            ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
-                    shop.getRating(), shop.getRatingCount());
-            shopDTOs.add(shopDTO);
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+    
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            List<Shop> userShops = shopRepository.getUserShops(userID).stream()
+                    .filter(Shop::isOpen)
+                    .toList();
+            for (Shop shop : userShops) {
+                List<Item> items = shop.getItems();
+                HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
+                for (Item item : items) {
+                    ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
+                            item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
+                            item.getNumOfOrders());
+                    itemDTOs.put(item.getId(), itemDTO);
+                }
+                ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
+                        shop.getRating(), shop.getRatingCount());
+                shopDTOs.add(shopDTO);
+            }
+            return Response.ok(shopDTOs);
         }
-        return Response.ok(shopDTOs);
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error showing user shops: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
     }
 
     @Transactional
     public Response<List<ItemDTO>> showShopItems(String sessionToken, int shopId) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -139,7 +170,12 @@ public class ShopService extends DatabaseAwareService {
                 itemDTOs.add(itemDTO);
             }
             return Response.ok(itemDTOs);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error showing shop items: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -148,6 +184,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<ItemDTO>> filterItemsAllShops(String sessionToken, HashMap<String, String> filters) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -168,7 +206,12 @@ public class ShopService extends DatabaseAwareService {
                 }
             }
             return Response.ok(itemDTOs);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error filtering items in all shops: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -177,6 +220,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<ItemDTO>> filterItemsInShop(String sessionToken, int shopId, HashMap<String, String> filters) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -196,7 +241,12 @@ public class ShopService extends DatabaseAwareService {
                 itemDTOs.add(itemDTO);
             }
             return Response.ok(itemDTOs);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error filtering items in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -205,6 +255,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<ShopDTO> getShopInfo(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -223,7 +275,12 @@ public class ShopService extends DatabaseAwareService {
             logger.info(() -> "Shop info retrieved: " + shopDto.getName() + " by user: "
                     + userRepository.getUserById(userID).getUsername());
             return Response.ok(shopDto);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop info: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -232,6 +289,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<UserDTO>> getShopMembers(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -263,7 +322,12 @@ public class ShopService extends DatabaseAwareService {
             );
 
             return Response.ok(members);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop members: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -275,6 +339,8 @@ public class ShopService extends DatabaseAwareService {
     public Response<ShopDTO> createShop(String sessionToken, String name, String description) {
         Lock creationLock = concurrencyHandler.getGlobalShopCreationLock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
@@ -302,7 +368,12 @@ public class ShopService extends DatabaseAwareService {
                     shop.getRating(), shop.getRatingCount());
             logger.info(() -> "Shop created: " + shopDto.getName() + " by user: " + userID);
             return Response.ok(shopDto);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error creating shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -316,9 +387,13 @@ public class ShopService extends DatabaseAwareService {
         // If not, prompt to log in or register
         // If logged in, close the shop with the provided details
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             Lock shopWrite = concurrencyHandler.getShopWriteLock(shopID);
             shopWrite.lock();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 // now exclusive: no reads or other writes
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
@@ -338,7 +413,12 @@ public class ShopService extends DatabaseAwareService {
             } finally {
                 shopWrite.unlock();
             }
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error closing shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -351,6 +431,8 @@ public class ShopService extends DatabaseAwareService {
         // If not, prompt to log in or register
         // If logged in, add the item to the shop with the provided details
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -367,7 +449,12 @@ public class ShopService extends DatabaseAwareService {
             logger.info(
                     () -> "Item added to shop: " + itemName + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(itemDto);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error adding item to shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -383,8 +470,12 @@ public class ShopService extends DatabaseAwareService {
 
         shopRead.lock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -398,7 +489,12 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item removed from shop: " + itemID + " in shop: " + shop.getName() + " by user: "
                         + userID);
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error removing item from shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -422,8 +518,12 @@ public class ShopService extends DatabaseAwareService {
 
         shopRead.lock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -437,7 +537,12 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item name changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
                         + userID);
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error changing item name in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -461,8 +566,12 @@ public class ShopService extends DatabaseAwareService {
 
         shopRead.lock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -476,7 +585,12 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item quantity changed in shop: " + itemID + " in shop: " + shop.getName()
                         + " by user: " + userID);
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error changing item quantity in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -500,9 +614,13 @@ public class ShopService extends DatabaseAwareService {
 
         shopRead.lock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
 
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -516,7 +634,12 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item price changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
                         + userID);
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error changing item price in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -542,9 +665,13 @@ public class ShopService extends DatabaseAwareService {
 
         shopRead.lock();
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             itemLock.lockInterruptibly();
 
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -558,7 +685,12 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item description changed in shop: " + itemID + " in shop: " + shop.getName()
                         + " by user: " + userID);
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error changing item description in shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -578,6 +710,8 @@ public class ShopService extends DatabaseAwareService {
     public Response<Void> rateShop(String sessionToken, int shopID, int rating) {
         // If logged in, rate the shop with the provided rating
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -591,7 +725,12 @@ public class ShopService extends DatabaseAwareService {
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
             shoppingService.RateShop(shop, orders, userID, rating);
             logger.info(() -> "Shop rated: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error rating shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -604,6 +743,8 @@ public class ShopService extends DatabaseAwareService {
         // If not, prompt to log in or register
         // If logged in, rate the item with the provided rating
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -616,7 +757,12 @@ public class ShopService extends DatabaseAwareService {
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
             shoppingService.RateItem(shop, userID, itemID, orders, rating);
             logger.info(() -> "Item rated: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error rating item: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -626,6 +772,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Void> sendMessage(String sessionToken, int shopId, String title, String content) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -644,7 +792,12 @@ public class ShopService extends DatabaseAwareService {
             }
             logger.info(() -> "Message sent: " + title + " in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error sending message: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -656,8 +809,12 @@ public class ShopService extends DatabaseAwareService {
         ReentrantLock messageLock = concurrencyHandler.getBidLock(shopId, messageId);
 
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             messageLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -681,6 +838,11 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Thread was interrupted.");
         }
 
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
         catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error responding to message: " + e.getMessage());
@@ -691,6 +853,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<Message>> getInbox(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -699,7 +863,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Message> inbox = shop.getInbox();
             return Response.ok(inbox);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error getting inbox: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -710,8 +879,12 @@ public class ShopService extends DatabaseAwareService {
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             lock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -728,7 +901,12 @@ public class ShopService extends DatabaseAwareService {
                 this.managementService.addOwner(user, shop, appointee);
                 logger.info(() -> "Shop owner added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                         + userID);
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error adding shop owner: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -746,9 +924,13 @@ public class ShopService extends DatabaseAwareService {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
 
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             lock.lockInterruptibly();
 
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -776,7 +958,12 @@ public class ShopService extends DatabaseAwareService {
                 
                 notificationHandler.notifyUser(appointee.getUserID() + "",
                         "You no longer have your role in shop: " + shop.getName());
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error removing appointment: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -794,8 +981,12 @@ public class ShopService extends DatabaseAwareService {
             Set<Permission> permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             lock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -812,7 +1003,12 @@ public class ShopService extends DatabaseAwareService {
                 managementService.addManager(user, shop, appointee, permission);
                 logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                         + userID);
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error adding shop manager: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -830,8 +1026,12 @@ public class ShopService extends DatabaseAwareService {
             Permission permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             lock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -848,7 +1048,12 @@ public class ShopService extends DatabaseAwareService {
                 managementService.addPermission(user, shop, appointee, permission);
                 logger.info(() -> "Shop manager permission added: " + appointeeName + " in shop: " + shop.getName()
                         + " by user: " + userID);
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error adding shop manager permission: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -866,8 +1071,12 @@ public class ShopService extends DatabaseAwareService {
             Permission permission) {
         ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             lock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -884,7 +1093,12 @@ public class ShopService extends DatabaseAwareService {
                 managementService.removePermission(user, shop, appointee, permission);
                 logger.info(() -> "Shop manager permission removed: " + appointeeName + " in shop: " + shop.getName()
                         + " by user: " + userID);
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
                 logger.error(() -> "Error removing shop manager permission: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
@@ -900,6 +1114,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<Permission>> getMemberPermissions(String sessionToken, int shopID, String memberName) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -914,7 +1130,12 @@ public class ShopService extends DatabaseAwareService {
             System.out.println(permissions.toString());
             logger.info(() -> "Members permissions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(permissions);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving members permissions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -926,8 +1147,12 @@ public class ShopService extends DatabaseAwareService {
         ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
 
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             bidLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -952,6 +1177,11 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Thread was interrupted.");
         }
 
+        
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
         catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error answering bid: " + e.getMessage());
@@ -963,8 +1193,12 @@ public class ShopService extends DatabaseAwareService {
         ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
 
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             bidLock.lockInterruptibly();
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -988,7 +1222,12 @@ public class ShopService extends DatabaseAwareService {
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             return Response.error("Thread was interrupted.");
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error submitting counter bid: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -998,6 +1237,8 @@ public class ShopService extends DatabaseAwareService {
     public Response<Void> openAuction(String sessionToken, int shopID, int itemID, double startingPrice,
             LocalDateTime startDate, LocalDateTime endDate) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1009,7 +1250,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.openAuction(user, shop, itemID, startingPrice, startDate, endDate);
             logger.info(() -> "Auction opened: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error opening auction: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1020,6 +1266,8 @@ public class ShopService extends DatabaseAwareService {
     // policies
     public Response<Void> addDiscount(String sessionToken, int shopID, DiscountDTO discountDetails) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1032,7 +1280,12 @@ public class ShopService extends DatabaseAwareService {
             managementService.addDiscount(user, shop, discountDetails);
             logger.info(() -> "Discount added in shop: " + shop.getName() + " by user: "
                     + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error adding discount: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1042,6 +1295,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Void> removeDiscount(String sessionToken, int shopID, String discountID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1054,7 +1309,12 @@ public class ShopService extends DatabaseAwareService {
             managementService.removeDiscount(user, shop, discountID);
             logger.info(() -> "Discount removed in shop: " + shop.getName() + " by user: "
                     + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error removing discount: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1068,6 +1328,8 @@ public class ShopService extends DatabaseAwareService {
         // If logged in, update the discount type for the item in the shop with the
         // provided details
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1079,7 +1341,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             this.managementService.updateDiscountType(user, shop, discountType);
             logger.info(() -> "Discount type updated in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error updating discount type: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1094,6 +1361,8 @@ public class ShopService extends DatabaseAwareService {
         // If logged in, update the purchase type for the item in the shop with the
         // provided details
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1105,7 +1374,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             this.managementService.updatePurchaseType(user, shop, purchaseType);
             logger.info(() -> "Purchase type updated in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error updating purchase type: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1115,6 +1389,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Void> addPurchaseCondition(String sessionToken, int shopID, ConditionDTO condition) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1126,7 +1402,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.addPurchaseCondition(user, shop, condition);
             logger.info(() -> "Purchase condition added in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error adding purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1136,6 +1417,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Void> removePurchaseCondition(String sessionToken, int shopID, String conditionID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1147,7 +1430,12 @@ public class ShopService extends DatabaseAwareService {
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.removePurchaseCondition(user, shop, conditionID);
             logger.info(() -> "Purchase condition removed in shop: " + shop.getName() + " by user: " + userID);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error removing purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1157,6 +1445,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<ConditionDTO>> getPurchaseConditions(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1169,7 +1459,12 @@ public class ShopService extends DatabaseAwareService {
             List<ConditionDTO> conditions = managementService.getPurchaseConditions(user, shop);
             logger.info(() -> "Purchase conditions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(conditions);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving purchase conditions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1178,6 +1473,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<DiscountDTO>> getDiscounts(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1190,7 +1487,12 @@ public class ShopService extends DatabaseAwareService {
             List<DiscountDTO> discounts = managementService.getDiscounts(user, shop);
             logger.info(() -> "Discounts retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(discounts);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving discounts: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1199,6 +1501,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional 
     public Response<List<AuctionDTO>> getActiveAuctions(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1211,7 +1515,12 @@ public class ShopService extends DatabaseAwareService {
             List<AuctionDTO> auctions = shop.getActiveAuctions();
             logger.info(() -> "Active auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving active auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1220,6 +1529,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<AuctionDTO>> getFutureAuctions(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1232,7 +1543,12 @@ public class ShopService extends DatabaseAwareService {
             List<AuctionDTO> auctions = shop.getFutureAuctions();
             logger.info(() -> "future auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving future auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1241,6 +1557,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<BidDTO>> getBids(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1255,7 +1573,12 @@ public class ShopService extends DatabaseAwareService {
                 .toList();
             logger.info(() -> "Active bids retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(bids);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving active bids: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1264,6 +1587,8 @@ public class ShopService extends DatabaseAwareService {
 
     public Response<List<BidDTO>> getUserBids(String sessionToken, int shopID, String flag) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1311,7 +1636,12 @@ public class ShopService extends DatabaseAwareService {
 
             logger.info(() -> "Active user bids retrieved in shop: " + shop.getName() + " for user: " + userID);
             return Response.ok(bids);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving active bids: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1321,6 +1651,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Integer> getShopId(String sessionToken, String shopName) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1331,7 +1663,12 @@ public class ShopService extends DatabaseAwareService {
             }
             Shop shop = this.shopRepository.getShopByName(shopName);
             return Response.ok(shop.getId());
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving shop ID: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1340,6 +1677,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<AuctionDTO>> getWonAuctions(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1352,7 +1691,12 @@ public class ShopService extends DatabaseAwareService {
             List<AuctionDTO> auctions = shop.getWonAuctions(userID);
             logger.info(() -> "Won auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(auctions);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving won auctions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1362,6 +1706,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<PurchaseType>> getPurchaseTypes(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1370,7 +1716,12 @@ public class ShopService extends DatabaseAwareService {
             List<PurchaseType> purchaseTypes = shop.getPurchaseTypes();
             logger.info(() -> "Purchase types retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(purchaseTypes);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving purchase types: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
@@ -1379,6 +1730,8 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<List<DiscountType>> getDiscountTypes(String sessionToken, int shopID) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -1387,12 +1740,18 @@ public class ShopService extends DatabaseAwareService {
             List<DiscountType> discountTypes = shop.getDiscountTypes();
             logger.info(() -> "Discount types retrieved in shop: " + shop.getName() + " by user: " + userID);
             return Response.ok(discountTypes);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
             handleDatabaseException(e);
             logger.error(() -> "Error retrieving discount types: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
     }
+
     @Scheduled(fixedRate = 30000) // Runs every 60 seconds
     public void checkAndNotifyAuctions() {
         executeSkippableOperation(() -> {

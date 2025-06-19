@@ -274,7 +274,6 @@ public class MainLayout extends AppLayout {
                     
                 } catch (Exception e) {
                     System.err.println("Error in onAttach: " + e.getMessage());
-                    e.printStackTrace();
                 }
             });
         });

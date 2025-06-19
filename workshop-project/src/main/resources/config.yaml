@@ -5,20 +5,27 @@ spring:
     password: JvklzxmYUeNshCraWQsrofhBNOgQyPMd
     driver-class-name: org.postgresql.Driver
     hikari:
-      connection-timeout: 10000  # 10 seconds
+      connection-timeout: 5000        # Reduced to 5 seconds for faster startup
       maximum-pool-size: 10
       minimum-idle: 2
-      idle-timeout: 30000        # 30 seconds
-      max-lifetime: 60000        # 1 minute - shorter than typical DB server timeout
+      idle-timeout: 30000
+      max-lifetime: 60000
       auto-commit: true
       connection-test-query: SELECT 1
-      validation-timeout: 5000   # 5 seconds
-      initialization-fail-timeout: -1  # Try to reconnect indefinitely
-  
+      validation-timeout: 5000
+      initialization-fail-timeout: 0  # CRITICAL: This allows app to start even if DB is down
+      connection-init-sql: SELECT 1   # Simple validation query
+    
+    # Add these critical properties
+    continue-on-error: true           # Continue application startup even if datasource fails
+
   jpa:
     properties:
       hibernate:
-        enable_lazy_load_no_trans: true  # Helps with LazyInitializationException
+        enable_lazy_load_no_trans: true
+    hibernate:
+      ddl-auto: none                  # Don't try to modify DB schema on startup
+      
   # datasource:
   #   url: jdbc:h2:file:./data/workshop;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
   #   username: sa

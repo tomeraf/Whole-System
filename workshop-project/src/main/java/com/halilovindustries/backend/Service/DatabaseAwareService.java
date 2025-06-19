@@ -1,83 +1,60 @@
 package com.halilovindustries.backend.Service;
 
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.halilovindustries.backend.Domain.Response;
-
-import java.util.function.Supplier;
 
 public abstract class DatabaseAwareService {
     
     @Autowired
-    protected DatabaseHealthService dbHealthService;
+    protected DatabaseHealthService databaseHealthService;
     
     /**
-     * Execute a database operation with proper error handling for Response-based services
+     * Check database health before performing operations
+     * @param action Description of the action being performed
+     * @throws MaintenanceModeException if system is in maintenance mode
      */
-    protected <T> Response<T> executeDbOperationWithResponse(Supplier<Response<T>> operation) {
-        try {
-            return operation.get();
-        } catch (Exception e) {
-            // Check if it's a database connectivity issue
-            if (isDbConnectionException(e)) {
-                dbHealthService.reportDatabaseError(e);
-            }
-            return Response.error("Database error: " + e.getMessage());
-        }
+    protected void checkDatabaseHealth(String action) throws MaintenanceModeException {
+        databaseHealthService.checkBeforeAction(action);
     }
     
     /**
-     * Handle database exception and report it through the health service
+     * Handle database exceptions consistently
+     * @param e The exception that occurred
      */
     protected void handleDatabaseException(Exception e) {
-        if (isDbConnectionException(e)) {
-            dbHealthService.reportDatabaseError(e);
+        // Report to health service if it's a database connectivity issue
+        if (isDatabaseException(e)) {
+            databaseHealthService.reportDatabaseError(e);
         }
     }
     
-    private boolean isDbConnectionException(Exception e) {
-        if (e == null || e.getMessage() == null) {
-            return false;
-        }
-        
-        String message = e.getMessage().toLowerCase();
-        String className = e.getClass().getName();
-        
-        return className.contains("SQL") ||
-               className.contains("Database") ||
-               className.contains("Connection") ||
-               className.contains("JDBCConnection") ||
-               className.contains("DataAccessResource") ||
-               className.contains("CannotCreateTransaction") ||
-               message.contains("database") ||
-               message.contains("connection") ||
-               message.contains("sql") ||
-               message.contains("timeout") ||
-               message.contains("could not open connection");
-    }
-
-    protected boolean isDatabaseAvailable() {
-        try {
-            return dbHealthService.isHealthy();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     /**
-     * Execute a database operation that can be skipped if database is not available
-     * (useful for scheduled tasks)
+     * Determine if the exception is related to database connectivity
+     */
+    private boolean isDatabaseException(Exception e) {
+        // Check for common database exception types
+        return e instanceof org.springframework.dao.DataAccessException ||
+               e.getMessage() != null && (
+                   e.getMessage().contains("database") ||
+                   e.getMessage().contains("connection") ||
+                   e.getMessage().contains("sql")
+               );
+    }
+    
+    /**
+     * Execute an operation that can skip database checks during maintenance
      */
     protected void executeSkippableOperation(Runnable operation) {
-        if (!isDatabaseAvailable()) {
-            // Skip operation if database is not available
-            return;
-        }
-        
         try {
-            operation.run();
+            // Check if we're in maintenance mode first
+            if (!databaseHealthService.isInMaintenanceMode()) {
+                operation.run();
+            } else {
+                // Skip operation in maintenance mode
+                System.out.println("Skipping database operation in maintenance mode");
+            }
         } catch (Exception e) {
             handleDatabaseException(e);
-            // Don't propagate exception for skippable operations
         }
     }
 }
