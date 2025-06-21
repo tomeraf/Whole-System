@@ -1,14 +1,8 @@
 package com.halilovindustries.backend.Service;
 
-import java.beans.Transient;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.junit.platform.commons.logging.Logger;
@@ -20,8 +14,6 @@ import com.halilovindustries.backend.Domain.User.Registered;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Shop.*;
 
-import com.halilovindustries.backend.Domain.User.ShoppingBasket;
-
 import jakarta.transaction.Transactional;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
@@ -31,7 +23,6 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
-import com.halilovindustries.backend.Domain.DTOs.Pair;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DomainServices.PurchaseService;
@@ -43,7 +34,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OrderService {
-    private PurchaseService purchaseService = new PurchaseService();
+    private PurchaseService purchaseService;
     private IUserRepository userRepository;
     private IShopRepository shopRepository;
     private IOrderRepository orderRepository;
@@ -53,7 +44,6 @@ public class OrderService {
     private IShipment shipment;
     private IExternalSystems externalSystems;
 
-    private final ConcurrencyHandler ConcurrencyHandler;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
@@ -65,7 +55,7 @@ public class OrderService {
         this.authenticationAdapter = authenticationAdapter;
         this.payment = payment;
         this.shipment = shipment;
-        this.ConcurrencyHandler = concurrencyHandler;
+        this.purchaseService = PurchaseService.getInstance(concurrencyHandler);
         this.notificationHandler = notificationHandler;
         this.externalSystems = externalSystems;
     }
@@ -105,9 +95,6 @@ public class OrderService {
     // items = shopId, itemID
     @Transactional
     public Response<Void> addItemToCart(String sessionToken, int shopId,int itemID, int quantity) {
-        Lock shopLock=null;
-
-
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
@@ -116,12 +103,7 @@ public class OrderService {
             Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
-            }
-
-
-            
-            shopLock = ConcurrencyHandler.getShopReadLock(shopId);
-            shopLock.lock();
+            }           
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             purchaseService.addItemsToCart(guest, shop,itemID,quantity); // Add items to the cart
 
@@ -131,11 +113,6 @@ public class OrderService {
         catch (Exception e) {
             logger.error(() -> "Error adding items to cart: " + e.getMessage());
             return Response.error("Error adding items to cart: " + e.getMessage());
-        }
-        finally {
-            if (shopLock != null) {
-                shopLock.unlock();
-            }
         }
     }
 
@@ -177,9 +154,7 @@ public class OrderService {
      * @return the created Order, or null on failure
      */
     @Transactional
-    public Response<Order> buyCartContent(String sessionToken, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {
-        List<Lock> acquiredLocks = new ArrayList<>();
-        
+    public Response<Order> buyCartContent(String sessionToken, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails) {        
         try {
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
@@ -195,44 +170,6 @@ public class OrderService {
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }
-            
-            List<Pair<Integer, Integer>> locksToAcquire = new ArrayList<>();
-        
-            // First add shops (with itemID = -1 to indicate shop lock)
-            Set<Integer> shopIds = guest.getCart().getBaskets().stream()
-                    .map(ShoppingBasket::getShopID)
-                    .collect(Collectors.toSet());
-            for (int shopId : shopIds) {
-                locksToAcquire.add(new Pair<>(shopId, -1));
-            }
-
-            // Then add items
-            for (ShoppingBasket basket : guest.getCart().getBaskets()) {
-                int shopID = basket.getShopID();
-                for (Integer item : basket.getItems().keySet()) {
-                    locksToAcquire.add(new Pair<>(shopID, item));
-                }
-            }
-
-            // Sort: shop locks first (itemID == -1), then by itemID
-            locksToAcquire.sort(Comparator
-                .comparing(Pair<Integer, Integer>::getKey)
-                .thenComparing(Pair::getValue)
-            );
-
-            // Lock all
-            for (Pair<Integer, Integer> pair : locksToAcquire) {
-                Lock lock;
-                if (pair.getValue() == -1) {
-                    lock = ConcurrencyHandler.getShopReadLock(pair.getKey());
-                } else {
-                    lock = ConcurrencyHandler.getItemLock(pair.getKey(), pair.getValue());
-                }
-                lock.lockInterruptibly();
-                acquiredLocks.add(lock);
-            }
-
-            // all needed shops and items are locked
             // Now we can proceed with the purchase
             List<Shop> shops = new ArrayList<>();
             for (int i = 0; i < guest.getCart().getBaskets().size(); i++) {
@@ -248,20 +185,9 @@ public class OrderService {
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
             return Response.ok(order); 
         } 
-        
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error(() -> "Thread interrupted during cart purchase");
-            return Response.error("Thread interrupted during cart purchase");
-        }
         catch (Exception e) {
             logger.error(() -> "Error buying cart content: " + e.getMessage());
             return Response.error("Error buying cart content: " + e.getMessage());
-        } finally {
-            Collections.reverse(acquiredLocks);
-            for (Lock lock : acquiredLocks) {
-                lock.unlock();
-            }
         }
     }
 
@@ -274,45 +200,26 @@ public class OrderService {
      */
     @Transactional  
     public Response<Void> submitBidOffer(String sessionToken, int shopId, int itemID, double offerPrice) {
-
-        Lock shopRead = ConcurrencyHandler.getShopReadLock(shopId);
-        ReentrantLock itemLock = ConcurrencyHandler.getItemLock(shopId, itemID);
-
-        shopRead.lock();     
         try {
-            itemLock.lockInterruptibly();
-
-            try {
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User not logged in");
-                }
-                int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
-                if(guest.isSuspended()) {
-                    throw new Exception("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice);
-                notificationHandler.notifyUsers(shop.getMembersIDs(),"New bid offer for item " + shop.getItem(itemID).getName() + ",the offer is: " + offerPrice);
-                logger.info(() -> "Bid offer submitted successfully for item ID: " + itemID);
-                return Response.ok();
-
-            } 
-            catch (Exception e) {
-                logger.error(() -> "Error submitting bid offer: " + e.getMessage());
-                return Response.error("Error submitting bid offer: " + e.getMessage());
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User not logged in");
             }
-            finally {
-                itemLock.unlock();
+            int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
             }
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            purchaseService.submitBidOffer(guest,shop ,itemID, offerPrice);
+            notificationHandler.notifyUsers(shop.getMembersIDs(),"New bid offer for item " + shop.getItem(itemID).getName() + ",the offer is: " + offerPrice);
+            logger.info(() -> "Bid offer submitted successfully for item ID: " + itemID);
+            return Response.ok();
+
         } 
-        catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            // handle interruption…
-        } finally {
-            shopRead.unlock();
+        catch (Exception e) {
+            logger.error(() -> "Error submitting bid offer: " + e.getMessage());
+            return Response.error("Error submitting bid offer: " + e.getMessage());
         }
-        return null;
     }
     
     /**
