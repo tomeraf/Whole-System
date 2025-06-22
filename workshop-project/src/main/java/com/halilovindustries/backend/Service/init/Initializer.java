@@ -15,8 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -51,8 +54,31 @@ public class Initializer {
     }
 
     private void readAndApply() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+        /*try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), StandardCharsets.UTF_8))) {
+
+
+
+
+        try(BufferedReader reader = Files.newBufferedReader(Path.of(initConfig.getInitFile()), StandardCharsets.UTF_8);
+        ){
+
+
+
+         */
+
+        try {
+            InputStream stream = getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile());
+            BufferedReader reader;
+
+            if (stream != null) {
+                // Read from classpath
+                reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+            } else {
+                // Read from file system
+                reader = Files.newBufferedReader(Path.of(initConfig.getInitFile()), StandardCharsets.UTF_8);
+            }
+
 
             String line;
             int lineNumber = 1;
@@ -75,8 +101,17 @@ public class Initializer {
             throw new RuntimeException("Failed to read init file: " + e.getMessage(), e);
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), StandardCharsets.UTF_8))) {
+        try {
+            InputStream stream = getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile());
+            BufferedReader reader;
+
+            if (stream != null) {
+                // Read from classpath
+                reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+            } else {
+                // Read from file system
+                reader = Files.newBufferedReader(Path.of(initConfig.getInitFile()), StandardCharsets.UTF_8);
+            }
 
             String line;
             int lineNumber = 1;

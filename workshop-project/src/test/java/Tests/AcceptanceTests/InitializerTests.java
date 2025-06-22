@@ -9,10 +9,12 @@ import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.User.Permission;
 import com.halilovindustries.backend.Service.init.Initializer;
 import com.halilovindustries.backend.Service.init.StartupConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,19 +26,25 @@ import static org.junit.jupiter.api.Assertions.*;
 public class InitializerTests extends BaseAcceptanceTests {
     private Initializer initializer;
     private String ST;
+    private Path initFile;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        StartupConfig startupConfig = new StartupConfig();
-        startupConfig.setInitFile("initTest.txt");
-        initializer = new Initializer(startupConfig, userService, shopService, orderService);
         ST = userService.enterToSystem().getData();
     }
 
+    @AfterEach
+    public void tearDown() throws Exception {
+        Files.deleteIfExists(initFile);
+    }
+
     private void runInit(String content) throws IOException {
-        Path path = Path.of("src/test/resources/initTest.txt");
-        Files.writeString(path, content);
+        initFile = Files.createTempFile("initTest", ".txt");
+        Files.writeString(initFile, content); // optional content
+        StartupConfig startupConfig = new StartupConfig();
+        startupConfig.setInitFile(initFile.toString());
+        initializer = new Initializer(startupConfig, userService, shopService, orderService);
         initializer.init();
     }
     @Test
@@ -52,12 +60,13 @@ public class InitializerTests extends BaseAcceptanceTests {
           register-user(u4, u4, 2000-01-01);
           register-user(u5, u5, 2000-01-01);
           register-user(u6, u6, 2000-01-01);
+          logout-user(u6);
 
           // User u2 logs in
           login-user(u2, u2);
 
           // User u2 opens shop "s1"
-          create-shop(u2, s1);
+          create-shop(s1, descs1);
 
           // User u2 add Bamba to the shop
           add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
@@ -112,7 +121,7 @@ public class InitializerTests extends BaseAcceptanceTests {
 
             List<ItemDTO> items = shopService.showShopItems(ST, 0).getData();
             assertEquals(1, items.size(), "s1 should have 1 item");
-            assertEquals(items.get(0).toString(),"Bamba","the only item should be Bamba");
+            assertEquals(items.get(0).getName(),"Bamba","the only item should be Bamba");
 
             ST = userService.logoutRegistered(ST).getData();
         } catch (Exception E){
@@ -131,7 +140,7 @@ public class InitializerTests extends BaseAcceptanceTests {
           // Registering users
           register-user(u2, u2, 2000-01-01);
           register-user(u3, u3, 2000-01-01);
-          register--user(u4, u4, 2000-01-01);
+          register-user(u4, u4, 2000-01-01);
           register-user(u5, u5, 2000-01-01);
           register-user(u6, u6, 2000-01-01);
 
@@ -139,7 +148,7 @@ public class InitializerTests extends BaseAcceptanceTests {
           login-user(u2, u2);
 
           // User u2 opens shop "s1"
-          create-shop(u2, s1);
+          create-shop(s1, descs1);
 
           // User u2 add Bamba to the shop
           add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
@@ -183,13 +192,21 @@ public class InitializerTests extends BaseAcceptanceTests {
     }
 
 
-    /*
+
 
     @Test
     public void User_Management_register(){
         String content = """
-        register-user(u1, u1, 1999-06-16);
-        register-user(u2, u2, 2000-01-01);
+        // System setup - first registered user is system manager
+          register-user(u1, u1, 1999-06-16);
+          make-system-manager(u1);
+
+          // Registering users
+          register-user(u2, u2, 2000-01-01);
+          register-user(u3, u3, 2000-01-01);
+          register-user(u4, u4, 2000-01-01);
+          register-user(u5, u5, 2000-01-01);
+          register-user(u6, u6, 2000-01-01);
     """;
         try {
             runInit(content);
@@ -199,14 +216,33 @@ public class InitializerTests extends BaseAcceptanceTests {
             ST = userService.logoutRegistered(res.getData()).getData();
 
             res = userService.loginUser(ST, "u2", "u2");
-            ST = res.getData();
             assertTrue(res.isOk(), "u2 should exist");
             ST = userService.logoutRegistered(res.getData()).getData();
+
+            res = userService.loginUser(ST, "u3", "u3");
+            assertTrue(res.isOk(), "u3 should exist");
+            ST = userService.logoutRegistered(res.getData()).getData();
+
+            res = userService.loginUser(ST, "u4", "u4");
+            assertTrue(res.isOk(), "u4 should exist");
+            ST = userService.logoutRegistered(res.getData()).getData();
+
+            res = userService.loginUser(ST, "u5", "u5");
+            assertTrue(res.isOk(), "u5 should exist");
+            ST = userService.logoutRegistered(res.getData()).getData();
+
+            res = userService.loginUser(ST, "u6", "u6");
+            ST = res.getData();
+            assertTrue(res.isOk(), "u6 should exist");
+            ST = userService.logoutRegistered(res.getData()).getData();
+
         } catch (Exception E){
             fail("something went wrong: "+ E.getMessage());
         }
 
     }
+
+    /*
 
     @Test
     public void shop_creation_test(){
