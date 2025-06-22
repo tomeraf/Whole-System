@@ -3,7 +3,10 @@ package com.halilovindustries.backend.Domain.DomainServices;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
@@ -16,27 +19,40 @@ import com.halilovindustries.backend.Domain.User.*;
 
 public class ManagementService {
     private static ManagementService instance = null;
-    private ManagementService() {
-        // private constructor to prevent instantiation
+    private final ConcurrencyHandler concurrencyHandler;
+    // Spring יזריק את ה־ConcurrencyHandler singleton
+    private ManagementService(ConcurrencyHandler concurrencyHandler) {
+        this.concurrencyHandler = concurrencyHandler;
+        // מאתחלים את השדה ה־static
+        instance = this;
     }
-    public static ManagementService getInstance() {
+    public static ManagementService getInstance(ConcurrencyHandler concurrencyHandler) {
         if (instance == null) {
-            instance = new ManagementService();
+            instance = new ManagementService(concurrencyHandler);
         }
         return instance;
     }
     
     public void addOwner(Registered appointer, Shop shop, Registered appointee) {
-        Owner owner = new Owner(appointer.getUserID(),shop.getId());
-        if (shop.getOwnerIDs().contains(appointee.getUserID())) {
-            throw new IllegalArgumentException("User is already an owner of the shop");
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shop.getId(), appointee.getUsername());
+        try {
+            lock.lockInterruptibly();
+            Owner owner = new Owner(appointer.getUserID(),shop.getId());
+            if (shop.getOwnerIDs().contains(appointee.getUserID())) {
+                throw new IllegalArgumentException("User is already an owner of the shop");
+            }
+            if (shop.getManagerIDs().contains(appointee.getUserID())) {
+                throw new IllegalArgumentException("User is already a manager of the shop");
+            }
+            appointer.addOwner(shop.getId(), (int)appointee.getUserID(), owner);
+            appointee.setRoleToShop(shop.getId(), owner);
+            shop.addOwner(appointee.getUserID());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // handle interruption
+        } finally {
+            lock.unlock();
         }
-        if (shop.getManagerIDs().contains(appointee.getUserID())) {
-            throw new IllegalArgumentException("User is already a manager of the shop");
-        }
-        appointer.addOwner(shop.getId(), (int)appointee.getUserID(), owner);
-        appointee.setRoleToShop(shop.getId(), owner);
-        shop.addOwner(appointee.getUserID());
     }
 
     public void removeAppointment(Registered appointer, Shop shop, Registered userToRemove) {
@@ -45,16 +61,25 @@ public class ManagementService {
         }
 
     public void addManager(Registered appointer, Shop shop, Registered appointee, Set<Permission> permission) {
-        Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
-        if (shop.getManagerIDs().contains(appointee.getUserID())) {
-            throw new IllegalArgumentException("User is already a manager of the shop");
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shop.getId(), appointee.getUsername());
+        try {
+            lock.lockInterruptibly();
+            Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
+            if (shop.getManagerIDs().contains(appointee.getUserID())) {
+                throw new IllegalArgumentException("User is already a manager of the shop");
+            }
+            if (shop.getOwnerIDs().contains(appointee.getUserID())) {
+                throw new IllegalArgumentException("User is already an owner of the shop");
+            }
+            appointer.addManager(shop.getId(), appointee.getUserID(), manager);
+            appointee.setRoleToShop(shop.getId(), manager);
+            shop.addManager(appointee.getUserID());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // handle interruption
+        } finally {
+            lock.unlock();
         }
-        if (shop.getOwnerIDs().contains(appointee.getUserID())) {
-            throw new IllegalArgumentException("User is already an owner of the shop");
-        }
-        appointer.addManager(shop.getId(), appointee.getUserID(), manager);
-        appointee.setRoleToShop(shop.getId(), manager);   
-        shop.addManager(appointee.getUserID());
     }
 
     public void addPermission(Registered appointer, Shop shop, Registered appointee, Permission permission) {
@@ -81,31 +106,64 @@ public class ManagementService {
         }
     }
     public void removeItemFromShop(Registered supplyManager, Shop shop, int itemID) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_SUPPLY)) {
-            shop.removeItem(itemID);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to remove items from the shop");
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shop.getId(), itemID);
+        try {
+            itemLock.lockInterruptibly();
+            if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_SUPPLY)) {
+                shop.removeItem(itemID);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to remove items from the shop");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            itemLock.unlock();
         }
     }
     public void updateItemName(Registered supplyManager, Shop shop, int itemID, String name) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
-            shop.updateItemName(itemID, name);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item name");
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shop.getId(), itemID);
+        try {
+            itemLock.lockInterruptibly();
+            if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
+                shop.updateItemName(itemID, name);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to update item name");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            itemLock.unlock();
         }
     }
     public void updateItemPrice(Registered supplyManager, Shop shop, int itemID, double price) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_PRICE)) {
-            shop.updateItemPrice(itemID, price);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item price");
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shop.getId(), itemID);
+
+        try {
+            itemLock.lockInterruptibly();
+            if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_PRICE)) {
+                shop.updateItemPrice(itemID, price);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to update item price");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            itemLock.unlock();
         }
     }
     public void updateItemQuantity(Registered supplyManager, Shop shop, int itemID, int quantity) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_QUANTITY)) {
-            shop.updateItemQuantity(itemID, quantity);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item quantity");
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shop.getId(), itemID);
+        try {
+            itemLock.lockInterruptibly();
+            if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_QUANTITY)) {
+                shop.updateItemQuantity(itemID, quantity);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to update item quantity");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            itemLock.unlock();
         }
     }
     // public void updateItemRating(Registered supplyManager, Shop shop, int itemID, double rating) {
@@ -124,10 +182,18 @@ public class ManagementService {
     }
     //Not to forget purchase and sale policy
     public void updateItemDescription(Registered supplyManager, Shop shop, int itemID, String description) {
-        if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
-            shop.updateItemDescription(itemID, description);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to update item description");
+        ReentrantLock itemLock = concurrencyHandler.getItemLock(shop.getId(), itemID);
+        try {
+            itemLock.lockInterruptibly();
+            if (supplyManager.hasPermission(shop.getId(), Permission.UPDATE_ITEM_DESCRIPTION)) {
+                shop.updateItemDescription(itemID, description);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to update item description");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            itemLock.unlock();
         }
     }
     
@@ -139,7 +205,6 @@ public class ManagementService {
         }
     }
 
-
     public void updateDiscountType(Registered supplyManager, Shop shop, DiscountType discountType) {
         if( supplyManager.hasPermission(shop.getId(), Permission.UPDATE_DISCOUNT_POLICY)) {
             shop.updateDiscountType(discountType);
@@ -149,15 +214,21 @@ public class ManagementService {
     }
 
     public void closeShop(Registered supplyManager, Shop shop,Registered founder) {
-        if(supplyManager.isSystemManager()){
-            closeShopAsSystemManager(supplyManager, shop,founder);     
-        } else if (supplyManager.getAppointer(shop.getId())==-1) {
-            shop.closeShop();
-        } else {
-            throw new IllegalArgumentException("You don't have permission to close the shop");
+        Lock shopWrite = concurrencyHandler.getShopWriteLock(shop.getId());
+        shopWrite.lock();
+        try {
+            if(supplyManager.isSystemManager()){
+                closeShopAsSystemManager(supplyManager, shop,founder);     
+            } else if (supplyManager.getAppointer(shop.getId())==-1) {
+                shop.closeShop();
+            } else {
+                throw new IllegalArgumentException("You don't have permission to close the shop");
+            }
+        } finally {
+            shopWrite.unlock();
         }
     }
-    private void closeShopAsSystemManager(Registered systemManager, Shop shop,Registered founder) {;
+    private void closeShopAsSystemManager(Registered systemManager, Shop shop,Registered founder) {
         shop.closeShop();
         shop.clearRoles();
         founder.getRoleInShop(shop.getId()).removeAllAppointments();
@@ -174,14 +245,23 @@ public class ManagementService {
         }
     }
 	public Pair<Integer,String> answerBid(Registered user, Shop shop, int bidID, boolean accept,List<Integer> members) {//Pair<Integer,String> is used to return the id of the buyer the bid and the message
-        if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            shop.addBidDecision(user.getUserID(),bidID, accept, members);
-            BidPurchase bidPurchase = shop.getBidPurchase(bidID);
-            return notifyBid(bidPurchase);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to answer bids");
+        ReentrantLock bidLock = concurrencyHandler.getBidLock(shop.getId(), bidID);
+        try {
+            bidLock.lockInterruptibly();
+            if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
+                shop.addBidDecision(user.getUserID(),bidID, accept, members);
+                BidPurchase bidPurchase = shop.getBidPurchase(bidID);
+                return notifyBid(bidPurchase);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to answer bids");
+            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            return null;
+        } finally {
+            bidLock.unlock();
         }
-	}
+    }
     private Pair<Integer,String> notifyBid(BidPurchase bidPurchase) {
         Pair<Integer,String> notificationPair= null;
         if(bidPurchase.isAccepted()==1){
@@ -192,10 +272,18 @@ public class ManagementService {
         return notificationPair;
     }
     public void submitCounterBid(Registered user, Shop shop, int bidID, double offerAmount) {
-        if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
-            shop.submitCounterBid(user.getUserID(), bidID, offerAmount);
-        } else {
-            throw new IllegalArgumentException("You don't have permission to submit counter bids");
+        ReentrantLock bidLock = concurrencyHandler.getBidLock(shop.getId(), bidID);
+        try {
+            bidLock.lockInterruptibly();
+            if (user.hasPermission(shop.getId(), Permission.ANSWER_BID)) {
+                shop.submitCounterBid(user.getUserID(), bidID, offerAmount);
+            } else {
+                throw new IllegalArgumentException("You don't have permission to submit counter bids");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            bidLock.unlock();
         }
     }
     public void openAuction(Registered user, Shop shop, int itemID, double startingPrice, LocalDateTime startDate,
