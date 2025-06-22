@@ -1,11 +1,13 @@
 package com.halilovindustries.backend.Service.init;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "startup")
 public class StartupConfig {
+    @Value("${init.file:initTest.txt}")
     private String initFile;
     private DefaultSystemManager defaultSystemManager;
 

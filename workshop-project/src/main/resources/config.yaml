@@ -14,10 +14,9 @@ external:
   externalUrl: https://damp-lynna-wsep-1984852e.koyeb.app/
 
 startup:
-  initFile: initTest.txt
+  initFile: empty_init.txt
   # empty_init.txt
   # init.txt
-  # initTest.txt
   defaultSystemManager:
     name: idan
     password: 1234

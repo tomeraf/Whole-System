@@ -7,7 +7,6 @@ import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.Permission;
-import com.halilovindustries.backend.Service.NotificationHandler;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
@@ -58,51 +57,307 @@ public class Initializer {
             String line;
             int lineNumber = 1;
             while ((line = reader.readLine()) != null) {
-                line = line.trim(); // Removes all leading and trailing whitespace characters from a string.
-                if (line.isEmpty()) continue; //for spaces
+                line = line.trim();
+                if (!line.isEmpty()) {
 
-                boolean success = processCommand(line);
-                if (!success) {
-                    throw new RuntimeException("Initialization failed at line " + lineNumber + ": " + line);
+                    boolean success = checkingSyntax(line);
+                    if (!success) {
+                        throw new RuntimeException("Syntax checking failed at line " + lineNumber + ": " + line);
+                    }
                 }
 
                 lineNumber++;
             }
 
-            System.out.println("All initialization commands completed successfully.");
+            System.out.println("All Syntax checking commands completed successfully.");
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read or process init file: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to read init file: " + e.getMessage(), e);
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), StandardCharsets.UTF_8))) {
+
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+
+                    boolean success = processCommand(line);
+                    if (!success) {
+                        throw new RuntimeException("Processing commands failed at line " + lineNumber + ": " + line);
+                    }
+                }
+
+                lineNumber++;
+            }
+
+            System.out.println("All init commands completed successfully.");
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process init file: " + e.getMessage(), e);
+        }
+    }
+
+    private String[][] lineParsed(String line) {
+        String[][] ret = new String[2][];
+        ret[0]=new String[1];
+        ret[0][0]="";
+        ret[1]= new String[0];
+
+        // Ignore empty lines or comments
+        if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) return ret;
+
+        // Basic syntax check
+        if (!line.endsWith(";") || !line.contains("(")) {
+            System.err.println("Invalid command format: " + line);
+            return null;
+        }
+
+        // Extract command name
+        int parenIndex = line.indexOf('(');
+        String command = line.substring(0, parenIndex).trim();
+
+        // Extract arguments inside the parentheses by:
+        String argsPart = line.substring(parenIndex + 1, line.lastIndexOf(')')).trim();
+
+        // Split arguments by comma and trim each
+        String[] args = Arrays.stream(argsPart.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+
+        ret[0][0] = command;
+        ret[1] = args;
+        return ret;
+    }
+
+    private boolean checkingSyntax(String line) {
+            String[][] parts = lineParsed(line);
+            if(parts==null)
+                return false;
+
+            String command =parts[0][0];
+            String[] args = parts[1].clone();
+
+            try{
+
+            switch (command) {
+                case "":{
+                    return true;
+                }
+                case "register-user": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("register-user should have 3 args");
+                    return true;
+                }
+
+                case "make-system-manager": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("make-system-manager should have 1 arg: username");
+                    return true;
+                }
+
+                case "login-user": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("login-user should have 2 args");
+                    return true;
+                }
+
+                case "logout-user": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("logout-user should have 1 arg: username");
+                    return true;
+                }
+                case "exit-as-guest": {
+                    if (args.length != 0)
+                        throw new IllegalArgumentException("logout-guest should have 0 args");
+                    return true;
+                }
+
+                case "create-shop": {
+                    if (args.length < 2)
+                        throw new IllegalArgumentException("create-shop should have 2 args");
+                    return true;
+                }
+
+                case "add-shop-manager": {
+                    if (args.length < 3)
+                        throw new IllegalArgumentException("add-shop-manager should have at least 3 args");
+                    return true;
+                }
+                case "add-shop-owner": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("add-shop-owner should have 2 args");
+                    return true;
+                }
+
+                case "add-item": {
+                    if (args.length != 6)
+                        throw new IllegalArgumentException("add-item should have 6 args (the last is quantity)");
+                    return true;
+                }
+
+                case "remove-item": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("remove-item should have 2 args");
+                    return true;
+                }
+
+
+                case "change-item-price": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("change-item-price should have 3 args");
+                    return true;
+                }
+
+                case "change-item-quantity": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("set-item-quantity requires 3 args");
+                    return true;
+                }
+
+
+                case "change-item-name": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("change-item-name should have 3 args");
+                    return true;
+                }
+
+                case "change-item-description": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("change-item-description should have 3 args");
+                    return true;
+                }
+
+                case "rate-shop": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("rate-shop should have 2 args");
+                    return true;
+                }
+
+                case "rate-item": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("rate-item should have 3 args");
+                    return true;
+                }
+
+                case "close-shop": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("close-shop should have 1 arg");
+                    return true;
+                }
+
+                case "send-message": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("send-message should have 3 args");
+                    return true;
+                }
+
+                case "respond-to-message": {
+                    if (args.length != 4)
+                        throw new IllegalArgumentException("respond-to-message should have 4 args");
+                    return true;
+                }
+
+                case "open-auction": {
+                    if (args.length != 5)
+                        throw new IllegalArgumentException("open-auction requires 5 args");
+                    return true;
+                }
+
+                case "answer-bid": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("answer-bid requires 3 args: shopId, bidId, accept(true/false)");
+                    return true;
+                }
+
+                case "submit-counter-bid": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("submit-counter-bid requires 3 args");
+                    return true;
+                }
+
+                case "update-discount-type": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("update-discount-type requires 2 args");
+                    return true;
+                }
+
+                case "update-purchase-type": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("update-purchase-type requires 2 args");
+                    return true;
+                }
+
+                case "add-permission": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("add-permission requires 3 args");
+                    return true;
+                }
+
+                case "remove-permission": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("remove-permission requires 3 args");
+                    return true;
+                }
+
+                case "remove-appointment": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("remove-appointment requires 2 args");
+                    return true;
+                }
+
+                case "add-to-cart": {
+                    if (args.length != 3)
+                       throw new IllegalArgumentException("add-to-cart should have 3 args");
+                    return true;
+                }
+
+                case "remove-from-cart": {
+                    if (args.length != 2)
+                        throw new IllegalArgumentException("remove-from-cart should have 2 args");
+                    return true;
+                }
+
+                case "suspend": {
+                    if (args.length != 3)
+                        throw new IllegalArgumentException("suspend should have 3 args: username, startDate, endDate");
+                    return true;
+                }
+
+                case "unsuspend": {
+                    if (args.length != 1)
+                        throw new IllegalArgumentException("unsuspend should have 1 arg: username");
+                    return true;
+                }
+
+                default:
+                    System.err.println("Unknown checking command: " + command);
+                    return false;
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error checking syntax of command: " + line);
+            e.printStackTrace();
+            return false;
         }
     }
 
     private boolean processCommand(String line) {
-        line = line.trim();
+        String[][] parts = lineParsed(line);
+        if(parts==null)
+            return false;
+        String command =parts[0][0];
+        String[] args = parts[1].clone();
 
-        // Ignore empty lines or comments
-        if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) return true;
+        try{
 
-        try {
-            // Basic syntax check
-            if (!line.endsWith(";") || !line.contains("(")) {
-                System.err.println("Invalid command format: " + line);
-                return false;
-            }
-
-            // Extract command name
-            int parenIndex = line.indexOf('(');
-            String command = line.substring(0, parenIndex).trim();
-
-            // Extract arguments inside the parentheses by:
-            String argsPart = line.substring(parenIndex + 1, line.lastIndexOf(')')).trim();
-
-            // Split arguments by comma and trim each
-            String[] args = Arrays.stream(argsPart.split(","))
-                    .map(String::trim)
-                    .toArray(String[]::new);
-
-            // Dispatch to actual logic
             switch (command) {
+                case "":{
+                    return true;
+                }
+
                 case "register-user": {
                     if (args.length != 3)
                         throw new IllegalArgumentException("register-user should have 3 args");
@@ -314,20 +569,6 @@ public class Initializer {
                     return res.isOk();
                 }
 
-                /* dto cant rly give
-                case "add-discount": {
-                    if (args.length != 2)
-                        throw new IllegalArgumentException("add-discount requires 2 args");
-
-                    DiscountDTO dto = new DiscountDTO(); // set more if needed
-                    dto.setType(DiscountType.valueOf(args[1]));
-
-                    Response<Void> res = shopService.addDiscount(initST, Integer.parseInt(args[0]), dto);
-                    return res.isOk();
-                }
-
-
-                 */
                 case "update-discount-type": {
                     if (args.length != 2)
                         throw new IllegalArgumentException("update-discount-type requires 2 args");
@@ -395,17 +636,6 @@ public class Initializer {
                     return res.isOk();
                 }
 
-                /*  dtos cant rly give
-                case "buy-cart": {
-                    if (args.length != 0)
-                        throw new IllegalArgumentException("buy-cart should have no arguments");
-
-                    Response<Void> res = orderService.purchaseCart(initST);
-                    return res.isOk();
-                }
-
-                 */
-
                 case "suspend": {
                     if (args.length != 3)
                         throw new IllegalArgumentException("suspend should have 3 args: username, startDate, endDate");
@@ -423,11 +653,8 @@ public class Initializer {
                     return res.isOk();
                 }
 
-
-
-
                 default:
-                    System.err.println("Unknown command: " + command);
+                    System.err.println("Unknown processing command: " + command);
                     return false;
             }
 
