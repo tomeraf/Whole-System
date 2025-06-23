@@ -286,4 +286,12 @@ public class HomePresenter extends AbstractPresenter {
             });
         });
     }
+
+    public boolean isInMaintenanceMode() {
+        try {
+            return databaseHealthService.isInMaintenanceMode();
+        } catch (Exception e) {
+            return true; // Assume maintenance mode if check fails
+        }
+    }
 }

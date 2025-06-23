@@ -82,7 +82,10 @@ public class DatabaseMaintenanceAspect {
     
     private boolean isMaintenanceRelatedMethod(ProceedingJoinPoint joinPoint) {
         String methodName = joinPoint.getSignature().getName();
-        return methodName.contains("maintenance") || methodName.contains("health");
+        return methodName.contains("maintenance") || 
+            methodName.contains("health") || 
+            methodName.equals("isInMaintenanceMode") ||
+            methodName.equals("isDatabaseConnected");
     }
     
     @SuppressWarnings("unchecked")

@@ -7,7 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
-import com.halilovindustries.websocket.DatabaseEventBroadcaster;
+//import com.halilovindustries.websocket.DatabaseEventBroadcaster;
 
 import jakarta.annotation.PostConstruct;
 
@@ -17,14 +17,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DatabaseHealthService {
     
     private final JdbcTemplate jdbcTemplate;
-    private final DatabaseEventBroadcaster broadcaster;
+    //private final DatabaseEventBroadcaster broadcaster;
     private boolean isHealthy = true;
     private final AtomicBoolean inMaintenanceMode = new AtomicBoolean(false);
     
     @Autowired
-    public DatabaseHealthService(JdbcTemplate jdbcTemplate, DatabaseEventBroadcaster broadcaster) {
+    public DatabaseHealthService(JdbcTemplate jdbcTemplate
+    //, DatabaseEventBroadcaster broadcaster
+    ) {
         this.jdbcTemplate = jdbcTemplate;
-        this.broadcaster = broadcaster;
+        //this.broadcaster = broadcaster;
     }
     
     @PostConstruct
@@ -38,7 +40,7 @@ public class DatabaseHealthService {
     public void onApplicationReady() {
         // Broadcast initial state when application is fully ready
         if (!isHealthy) {
-            broadcaster.broadcastEvent(false, "System is in maintenance mode: Database is unavailable. You can browse but cannot perform operations.");
+            //broadcaster.broadcastEvent(false, "System is in maintenance mode: Database is unavailable. You can browse but cannot perform operations.");
             inMaintenanceMode.set(true);
         }
     }
@@ -50,7 +52,7 @@ public class DatabaseHealthService {
                 // Only broadcast if state changed from unhealthy to healthy
                 isHealthy = true;
                 inMaintenanceMode.set(false);
-                broadcaster.broadcastEvent(true, "Database connection restored! System is fully operational.");
+                //broadcaster.broadcastEvent(true, "Database connection restored! System is fully operational.");
             } else {
                 isHealthy = true;
             }
@@ -60,7 +62,7 @@ public class DatabaseHealthService {
                 // Only broadcast if state changed from healthy to unhealthy
                 isHealthy = false;
                 inMaintenanceMode.set(true);
-                broadcaster.broadcastEvent(false, "System is in maintenance mode: Database is unavailable. You can browse but cannot perform operations.");
+                //broadcaster.broadcastEvent(false, "System is in maintenance mode: Database is unavailable. You can browse but cannot perform operations.");
             } else {
                 isHealthy = false;
             }
@@ -80,12 +82,12 @@ public class DatabaseHealthService {
         isHealthy = false;
         inMaintenanceMode.set(true);
         // Always broadcast for each user action
-        broadcaster.broadcastEvent(false, "Database connection issue: The system cannot complete your request because the database is currently unavailable.");
+        //broadcaster.broadcastEvent(false, "Database connection issue: The system cannot complete your request because the database is currently unavailable.");
     }
 
     public void reportActionFailure(String action) {
         if (!isHealthy) {
-            broadcaster.broadcastEvent(false, "Cannot " + action + " - Database is currently unavailable. Please try again later.");
+            //broadcaster.broadcastEvent(false, "Cannot " + action + " - Database is currently unavailable. Please try again later.");
         }
     }
     
