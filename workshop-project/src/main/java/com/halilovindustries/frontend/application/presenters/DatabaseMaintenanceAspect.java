@@ -2,9 +2,14 @@ package com.halilovindustries.frontend.application.presenters;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import com.halilovindustries.backend.Service.DatabaseHealthService;
+
+import java.util.List;
+import java.util.Map;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.vaadin.flow.component.UI;
@@ -26,8 +31,14 @@ public class DatabaseMaintenanceAspect {
     public Object handleMaintenanceMode(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             // Check database health if not in the middle of a maintenance mode notification
-            if (!isSessionTokenMethod(joinPoint) && !isMaintenanceRelatedMethod(joinPoint)) {
+            if (!isSessionTokenMethod(joinPoint) && !isMaintenanceRelatedMethod(joinPoint) && 
+                !isNavigationMethod(joinPoint)) {
                 databaseHealthService.checkBeforeAction("perform this operation");
+            }
+            
+            // Always proceed with navigation events even in maintenance mode
+            if (isNavigationMethod(joinPoint)) {
+                return joinPoint.proceed();
             }
             
             // Proceed with the original method call
@@ -52,6 +63,16 @@ public class DatabaseMaintenanceAspect {
             
             return getNullReturnValue(joinPoint);
         }
+    }
+
+    // Add this new method to check if a method is navigation-related
+    private boolean isNavigationMethod(ProceedingJoinPoint joinPoint) {
+        String methodName = joinPoint.getSignature().getName();
+        return methodName.equals("navigateTo") || 
+            methodName.equals("getRouter") || 
+            methodName.equals("afterNavigation") ||
+            methodName.equals("beforeNavigation") ||
+            methodName.equals("validateToken");
     }
     
     private boolean isSessionTokenMethod(ProceedingJoinPoint joinPoint) {
@@ -84,15 +105,40 @@ public class DatabaseMaintenanceAspect {
     }
     
     private Object getNullReturnValue(ProceedingJoinPoint joinPoint) {
-        // Return appropriate default values based on return type
-        String returnType = joinPoint.getSignature().toString();
-        if (returnType.contains("Boolean")) {
+        // Get the return type from the method signature
+        Class<?> returnType = ((MethodSignature) joinPoint.getSignature()).getReturnType();
+        
+        // Handle primitive types specifically
+        if (returnType == boolean.class) {
             return Boolean.FALSE;
-        } else if (returnType.contains("String")) {
-            return null;
-        } else if (returnType.contains("List")) {
-            return java.util.Collections.emptyList();
+        } else if (returnType == int.class) {
+            return 0;
+        } else if (returnType == long.class) {
+            return 0L;
+        } else if (returnType == double.class) {
+            return 0.0;
+        } else if (returnType == float.class) {
+            return 0.0f;
+        } else if (returnType == byte.class) {
+            return (byte) 0;
+        } else if (returnType == char.class) {
+            return (char) 0;
+        } else if (returnType == short.class) {
+            return (short) 0;
         }
+        
+        // Handle common object types
+        if (returnType == Boolean.class) {
+            return Boolean.FALSE;
+        } else if (returnType == String.class) {
+            return "";
+        } else if (List.class.isAssignableFrom(returnType)) {
+            return java.util.Collections.emptyList();
+        } else if (Map.class.isAssignableFrom(returnType)) {
+            return java.util.Collections.emptyMap();
+        }
+        
+        // Default for other object types
         return null;
     }
 }

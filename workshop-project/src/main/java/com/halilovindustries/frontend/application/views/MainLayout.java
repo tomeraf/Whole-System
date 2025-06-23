@@ -12,6 +12,7 @@ import com.halilovindustries.frontend.application.presenters.HomePresenter;
 import com.halilovindustries.frontend.application.presenters.SupplyPresenter;
 import com.halilovindustries.websocket.Broadcaster;
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -67,35 +68,77 @@ public class MainLayout extends AppLayout {
     
     /** Rebuilds header + nav + footer in the drawer */
     public void refreshDrawer() {
-        if(scroller != null) {
-            remove(scroller);
-        }
-        if(header != null) {
-            remove(header);
-        }
-        if(greeting != null) {
-            remove(greeting);
+        // First check if UI is properly attached
+        UI ui = UI.getCurrent();
+        if (ui == null || !ui.isAttached()) {
+            System.out.println("Not refreshing drawer - UI not available");
+            return;
         }
         
-        presenter.getSessionToken(token -> {
-            if (token == null || !presenter.validateToken(token)) {
-                // // invalid token → build empty drawer
-                // UI.getCurrent().access(() -> {
-                //     Scroller scroller = new Scroller(createNavigation());
-                //     addToDrawer(scroller);
-                // });
-                return;   
+        try {
+            // Remove existing components
+            if(scroller != null) {
+                remove(scroller);
+                scroller = null;
             }
-
-            // valid token → build full drawer
-            UI.getCurrent().access(() -> {
-
-                scroller = new Scroller(createNavigation());
-
-                addToDrawer(header, scroller, createFooter());   
+            if(header != null) {
+                remove(header);
+                header = null;
+            }
+            if(greeting != null) {
+                remove(greeting);
+                greeting = null;
+            }
             
-            });
-        });
+            // Create basic navigation regardless of database state
+            SideNav nav = new SideNav();
+            nav.addItem(new SideNavItem("Home", HomePageView.class, VaadinIcon.HOME.create()));
+            nav.addItem(new SideNavItem("Shops", ShopsView.class, VaadinIcon.SHOP.create()));
+
+            // Initialize greeting with default value
+            String defaultGreeting = "Hello, sign in";
+            greeting = new Span(defaultGreeting);
+            greeting.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.LARGE);
+            header = new Header(greeting);
+            
+            // Always add these basic components to ensure UI renders
+            scroller = new Scroller(nav);
+            addToDrawer(header, scroller, createFooter());
+            
+            // Then try to enhance with user data if available
+            try {
+                presenter.getSessionToken(token -> {
+                    if (token != null && presenter.validateToken(token)) {
+                        try {
+                            // If user is logged in, add additional navigation options
+                            if (presenter.isLoggedIn(token)) {
+                                UI.getCurrent().access(() -> {
+                                    try {
+                                        // Update greeting
+                                        greeting.setText("Hello, " + presenter.getUsername(token));
+                                        
+                                        // Add logged-in specific items
+                                        nav.addItem(new SideNavItem("My Cart", CartView.class, VaadinIcon.CART.create()));
+                                        nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
+                                        nav.addItem(new SideNavItem("Inbox", InboxView.class, VaadinIcon.ENVELOPE.create()));
+                                        nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
+                                    } catch (Exception e) {
+                                        System.err.println("Error adding nav items: " + e.getMessage());
+                                    }
+                                });
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error in token validation: " + e.getMessage());
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Error getting session token: " + e.getMessage());
+                // Continue with basic layout even if this fails
+            }
+        } catch (Exception e) {
+            System.err.println("Error in refreshDrawer: " + e.getMessage());
+        }
     }
 
     private void addHeaderContent() {
@@ -255,28 +298,53 @@ public class MainLayout extends AppLayout {
         super.onAttach(event);
         System.out.println("MainLayout onAttach called");
         
-        presenter.getSessionToken(token -> {
-            UI ui = UI.getCurrent();
+        try {
+            // Always ensure basic UI elements are shown
+            refreshDrawer();
             
-            if (ui == null || !ui.isAttached()) {
-                System.out.println("UI not available or not attached in getSessionToken callback");
-                return;
-            }
-
-            ui.access(() -> {
-                try {
-                    boolean valid = token != null && presenter.validateToken(token);
-                    boolean loggedIn = valid && presenter.isLoggedIn(token);
-                    if (loggedIn) {
-                        String id = presenter.extractUserId(token);
-                        registerForNotifications(id);
+            // Try to register for notifications if user is logged in
+            try {
+                presenter.getSessionToken(token -> {
+                    UI ui = UI.getCurrent();
+                    
+                    if (ui == null || !ui.isAttached()) {
+                        System.out.println("UI not available or not attached in getSessionToken callback");
+                        return;
                     }
                     
-                } catch (Exception e) {
-                    System.err.println("Error in onAttach: " + e.getMessage());
-                }
-            });
-        });
-        refreshDrawer();
+                    ui.access(() -> {
+                        try {
+                            boolean valid = token != null && presenter.validateToken(token);
+                            boolean loggedIn = valid && presenter.isLoggedIn(token);
+                            if (loggedIn) {
+                                String id = presenter.extractUserId(token);
+                                registerForNotifications(id);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error registering notifications: " + e.getMessage());
+                        }
+                    });
+                });
+            } catch (Exception e) {
+                System.err.println("Error checking session token: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("Error in onAttach: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        super.onDetach(detachEvent);
+        
+        // Clean up UI components to prevent state tree issues
+        if (scroller != null) {
+            remove(scroller);
+            scroller = null;
+        }
+        if (header != null) {
+            remove(header);
+            header = null;
+        }
     }
 }

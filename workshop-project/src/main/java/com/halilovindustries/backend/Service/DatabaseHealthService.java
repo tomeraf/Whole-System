@@ -90,7 +90,7 @@ public class DatabaseHealthService {
     }
     
     public void checkBeforeAction(String action) throws MaintenanceModeException {
-        if (!isHealthy() || inMaintenanceMode.get()) {
+        if (!isDatabaseConnected()) {
             reportActionFailure(action);
             throw new MaintenanceModeException("System is in maintenance mode. Cannot " + action);
         }
