@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -534,7 +535,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId);
-            interactionService.sendMessage(user, shop, title, content);
+            interactionService.sendMessage(user, shop, title, content, shopRepository.getNextMessageId());
             for (int reciverId : shop.getOwnerIDs()) {
                 notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
             }
@@ -561,7 +562,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId);
-            Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
+            Message response = interactionService.respondToMessage(user, shop, messageId, title, content, shopRepository.getNextMessageId());
             Registered reciver = userRepository.getUserByName(response.getUserName());
             reciver.addMessage(response);
             notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
@@ -668,7 +669,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopID);
-            managementService.addManager(user, shop, appointee, permission);
+            managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
             logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                     + userID);
         } catch (Exception e) {

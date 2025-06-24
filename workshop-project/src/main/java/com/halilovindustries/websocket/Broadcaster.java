@@ -43,7 +43,7 @@ public class Broadcaster {
      */
     public static synchronized Registration register(String sessionId, String userUuid, Consumer<String> listener) {
         // Generate unique session ID
-        //String sessionId = UI.getCurrent().getUIId() + "-" + System.currentTimeMillis();
+        //String sessionId = UI.getCurrent().getUIId(   ) + "-" + System.currentTimeMillis();
         
         // Store in both maps
         listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);

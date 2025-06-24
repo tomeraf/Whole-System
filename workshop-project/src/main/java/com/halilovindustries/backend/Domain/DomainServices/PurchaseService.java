@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.halilovindustries.backend.Domain.DTOs.Order;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
@@ -68,7 +69,9 @@ public class PurchaseService {
     
     // use case 2.5
     @Transactional
-    public Order buyCartContent(Guest user, List<Shop> shops, IShipment ship, IPayment pay, int orderID, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, IExternalSystems monitor) {
+    public Order buyCartContent(Guest user, List<Shop> shops, IShipment ship, IPayment pay, int orderID,
+                                    PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails,
+                                    IExternalSystems monitor, Function<Integer, Shop> shopFetcher) {
         if (shops.isEmpty()) {
             throw new IllegalArgumentException("Error: no shops to purchase from.");    
         }
@@ -76,7 +79,7 @@ public class PurchaseService {
             throw new IllegalStateException("External services are unavailable. Try again later.");
         }
         ShoppingCart cart = user.getCart();
-        Map<Integer, Map<Integer, Integer>> items = cart.getItems();
+        Map<Integer, Map<Integer, Integer>> items = cart.getItems();            //<shopId,<itemId,quantity>>
         HashMap<Shop, HashMap<Integer, Integer>> itemsToBuy = new HashMap<>();
         for(Shop shop : shops) {
             Map<Integer,Integer> itemsMap = items.get(shop.getId());
@@ -87,13 +90,7 @@ public class PurchaseService {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
-        for(Shop shop : itemsToBuy.keySet()) {
-            HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-            if(!shop.canPurchaseBasket(itemsMap)) {
-                throw new IllegalArgumentException("Error: cant purchase items.");
-            }
-        }
-                // Acquire fine-grained locks per item
+        // Acquire fine-grained locks per item
         List<Lock> acquiredLocks = new ArrayList<>();
         try {
             // Build list of locks (shopId, itemId) pairs
@@ -109,12 +106,21 @@ public class PurchaseService {
                 int cmp = a.getKey().compareTo(b.getKey());
                 return (cmp != 0) ? cmp : a.getValue().compareTo(b.getValue());
             });
-
+            
             // Lock each item
             for (Pair<Integer, Integer> p : locksToAcquire) {
                 ReentrantLock itemLock = concurrencyHandler.getItemLock(p.getKey(), p.getValue());
                 itemLock.lockInterruptibly();
                 acquiredLocks.add(itemLock);
+            }
+            for(Shop shop : itemsToBuy.keySet()) {
+                // Fetch the latest shop instance to ensure we have the most up-to-date state *after* aquiring item locks
+                shop = shopFetcher.apply(shop.getId());    // Ensure we have the latest shop instance
+                itemsToBuy.put(shop, itemsToBuy.get(shop)); // Update the items to buy with the latest shop instance
+                HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
+                if(!shop.canPurchaseBasket(itemsMap)) {
+                    throw new IllegalArgumentException("Error: cant purchase items.");
+                }
             }
             HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
             for(Shop shop : itemsToBuy.keySet()) {
@@ -123,7 +129,7 @@ public class PurchaseService {
             Double total = 0.0;
             for(Shop shop : itemsToBuy.keySet()) {
                 HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-                total=+shop.purchaseBasket(itemsMap);
+                total =+ shop.purchaseBasket(itemsMap);
             }
             Integer paymentId = pay.processPayment(total, paymentDetails);
             if (paymentId == null) {

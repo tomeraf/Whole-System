@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MemoryShopRepository implements IShopRepository {
     private HashMap<Integer, Shop> shops = new HashMap<>();
+    int msgCounter = 0;
 
     @Override
     public void addShop(Shop shop) {
@@ -60,6 +61,20 @@ public class MemoryShopRepository implements IShopRepository {
     @Override
     public int getNextId() {
         return shops.size(); // Simple ID generation strategy
+    }
+
+    @Override
+    public int getNextMessageId() {
+        int c = msgCounter; // Capture the current message counter
+        msgCounter++;
+        return c; // Simple message ID generation strategy
+    }
+
+    @Override
+    public Shop getShopByIdWithLock(int shopId) {
+        // In a memory repository, we can't implement locking as in a database.
+        // This method is here to satisfy the interface contract.
+        return getShopById(shopId);
     }
 
 }

@@ -11,6 +11,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
@@ -223,6 +226,8 @@ public class UserAuthenticationTests extends BaseAcceptanceTests {
     }
 
     @Test
+    @Transactional
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     public void testConcurrentRegistrationWithSameUsername_ShouldAllowOnlyOneSuccess() throws InterruptedException {
         PaymentDetailsDTO p = new PaymentDetailsDTO(
             "1234567890123456", "Some Name", "1", "123", "12", "25"
@@ -240,7 +245,10 @@ public class UserAuthenticationTests extends BaseAcceptanceTests {
             String guest1 = userService.enterToSystem().getData();
             String guest2 = userService.enterToSystem().getData();
             String desiredUsername = "dupUser"+i;
-
+            // commit these inserts so child threads can see them
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+            TestTransaction.start();
             // Act - Create two concurrent registration tasks with the same username
             List<Callable<Response<Void>>> registrationTasks = List.of(
                 () -> userService.registerUser(guest1, desiredUsername, "pw", LocalDate.now().minusYears(20)),

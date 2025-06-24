@@ -178,7 +178,7 @@ public class OrderService {
                 shops.add(shop); // Add the shop to the list of shops
             }
 
-            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getNextId(), paymentDetails, shipmentDetails, externalSystems); // Buy the cart content
+            Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getNextId(), paymentDetails, shipmentDetails, externalSystems, (Integer id) -> shopRepository.getShopByIdWithLock(id)); // Buy the cart content
             orderRepository.addOrder(order); // Save the order to the repository
 
             notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());

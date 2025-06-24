@@ -50,7 +50,7 @@ public class AcceptanceTestFixtures {
 
     public String generateRegisteredUserSession(String name, String password) {
         // Create a unique username for each test run to avoid conflicts
-        String uniqueName = name + "_" + System.currentTimeMillis();
+        String uniqueName = name;// + "_" + System.currentTimeMillis();
         
         Response<String> guestResp = userService.enterToSystem();
         assertTrue(guestResp.isOk(), "Guest entry should succeed");
@@ -67,7 +67,7 @@ public class AcceptanceTestFixtures {
 
     public String registerUserWithoutLogin(String name, String password) {
         // Create a unique username for each test run
-        String uniqueName = name + "_" + System.currentTimeMillis();
+        String uniqueName = name;// + "_" + System.currentTimeMillis();
         Response<String> guestResp = userService.enterToSystem();
         assertTrue(guestResp.isOk(), "Guest entry should succeed");
         String guestToken = guestResp.getData();
