@@ -1546,7 +1546,6 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws Exception {
         for (int i = 0; i < 10; i++) {
-            
             // --- 1) SETUP & COMMIT ---
             String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
             ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop"+i);

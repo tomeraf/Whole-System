@@ -5,17 +5,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 import com.halilovindustries.backend.Domain.DTOs.Pair;
+import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.User.*;
+import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
 
 public class ManagementService {
     private static ManagementService instance = null;
@@ -60,10 +63,11 @@ public class ManagementService {
         shop.removeAppointment(idsToRemove);
         }
 
-    public void addManager(Registered appointer, Shop shop, Registered appointee, Set<Permission> permission) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shop.getId(), appointee.getUsername());
+    public void addManager(Registered appointer,int shopId, Registered appointee, Set<Permission> permission, Function<Integer,Shop> shopFetcher) {
+       ReentrantLock lock = concurrencyHandler.getShopUserLock(shopId, appointee.getUsername());
         try {
-            lock.lockInterruptibly();
+          lock.lockInterruptibly();
+            Shop shop = shopFetcher.apply(shopId); // Fetch the shop using the provided function
             Manager manager = new Manager(appointer.getUserID(),shop.getId(), permission);
             if (shop.getManagerIDs().contains(appointee.getUserID())) {
                 throw new IllegalArgumentException("User is already a manager of the shop");
@@ -77,7 +81,8 @@ public class ManagementService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             // handle interruption
-        } finally {
+        } 
+        finally {
             lock.unlock();
         }
     }

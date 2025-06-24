@@ -15,5 +15,6 @@ public interface IShopRepository {
     List<Shop> getUserShops(int userId);
     int getNextId();
     int getNextMessageId();
+    Shop getShopByIdWithLock(int shopId);
 
 }

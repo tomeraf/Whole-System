@@ -70,4 +70,11 @@ public class MemoryShopRepository implements IShopRepository {
         return c; // Simple message ID generation strategy
     }
 
+    @Override
+    public Shop getShopByIdWithLock(int shopId) {
+        // In a memory repository, we can't implement locking as in a database.
+        // This method is here to satisfy the interface contract.
+        return getShopById(shopId);
+    }
+
 }

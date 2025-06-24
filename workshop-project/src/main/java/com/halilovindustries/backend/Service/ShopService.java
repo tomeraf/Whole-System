@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -668,7 +669,7 @@ public class ShopService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopID);
-            managementService.addManager(user, shop, appointee, permission);
+            managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
             logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                     + userID);
         } catch (Exception e) {

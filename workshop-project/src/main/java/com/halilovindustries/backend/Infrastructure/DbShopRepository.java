@@ -59,5 +59,8 @@ public class DbShopRepository implements IShopRepository {
         return jpaShopRepository.getNextMessageId()+1;
     }
 
-
+    @Override
+    public Shop getShopByIdWithLock(int shopId) {
+        return jpaShopRepository.getShopByIdWithLock(shopId);
+    }
 }
