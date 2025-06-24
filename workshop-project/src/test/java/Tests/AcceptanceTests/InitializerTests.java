@@ -140,7 +140,7 @@ public class InitializerTests extends BaseAcceptanceTests {
           // Registering users
           register-user(u2, u2, 2000-01-01);
           register-user(u3, u3, 2000-01-01);
-          register-user(u4, u4, 2000-01-01);
+          register--user(u4, u4, 2000-01-01);
           register-user(u5, u5, 2000-01-01);
           register-user(u6, u6, 2000-01-01);
 
