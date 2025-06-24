@@ -18,47 +18,54 @@ the whole thing happens in one session, which means i cant login into different 
 only service commands are viable here and those are the signatures:
 
 User Management:
-    registerUser(String username, String password, LocalDate birthDate);
-    loginUser(String username, String password);
-    logoutUser(String username);
-    exitAsGuest();
-    suspend(String username, LocalDateTime startDate, LocalDateTime endDate);
-    unsuspend(String username);
+    register-user(String username, String password, LocalDate birthDate)
+    login-user(String username, String password)
+    logout-user(String username)
+    exit-as-guest()
+    suspend(String username, LocalDateTime startDate, LocalDateTime endDate)
+    unsuspend(String username)
+
 
 Shop Management:
-    createShop(String shopName, String shopDescription);
-    closeShop(int shopId);
-    addShopOwner(int shopId, String newOwnerUsername);
-    addShopManager(int shopId, String managerUsername, Set<Permission> permissions);
-    removeAppointment(int shopId, String username);
-    addPermission(int shopId, String managerUsername, Permission permission);
-    removePermission(int shopId, String managerUsername, Permission permission);
+    create-shop(String shopName, String shopDescription)
+    close-shop(int shopId)
+    add-shop-owner(int shopId, String newOwnerUsername)
+    add-shop-manager(int shopId, String managerUsername, Set<Permission> permissions)
+    remove-appointment(int shopId, String username)
+    add-permission(int shopId, String managerUsername, Permission permission)
+    remove-permission(int shopId, String managerUsername, Permission permission)
+
 
 Inventory & Items:
-    addItem(int shopId, String itemName, Category category, double price, String description, int quantity);
-    removeItem(int shopId, int itemId);
-    changeItemPrice(int shopId, int itemId, double newPrice);
-    changeItemQuantity(int shopId, int itemId, int quantity);
-    changeItemName(int shopId, int itemId, String newName);
-    changeItemDescription(int shopId, int itemId, String newDescription);
-    updateDiscountType(int shopId, DiscountType type);
-    updatePurchaseType(int shopId, PurchaseType type);
+    add-item(int shopId, String itemName, Category category, double price, String description, int quantity)
+    remove-item(int shopId, int itemId)
+    change-item-price(int shopId, int itemId, double newPrice)
+    change-item-quantity(int shopId, int itemId, int quantity)
+    change-item-name(int shopId, int itemId, String newName)
+    change-item-description(int shopId, int itemId, String newDescription)
+    update-discount-type(int shopId, DiscountType type)
+    update-purchase-type(int shopId, PurchaseType type)
+
 
 Ratings:
-    rateShop(int shopId, int rating);
-    rateItem(int shopId, int itemId, int rating);
+    rate-shop(int shopId, int rating)
+    rate-item(int shopId, int itemId, int rating)
+
 
 Messaging:
-    sendMessage(int shopId, String subject, String content);
-    respondToMessage(int shopId, int messageId, String subject, String content);
+    send-message(int shopId, String subject, String content)
+    respond-to-message(int shopId, int messageId, String subject, String content)
+
 
 Cart:
-    addToCart(int shopId, int itemId, int quantity);
-    removeFromCart(int shopId, int itemId);
+    add-to-cart(int shopId, int itemId, int quantity)
+    remove-from-cart(int shopId, int itemId)
+
 
 
 Auction & Bidding:
-    openAuction(int shopId, int itemId, double startingPrice, LocalDate start, LocalDate end);
-    answerBid(int shopId, int bidId, boolean accept);
-    submitCounterBid(int shopId, int bidId, double newPrice);
+    open-auction(int shopId, int itemId, double startingPrice, LocalDate start, LocalDate end)
+    answer-bid(int shopId, int bidId, boolean accept)
+    submit-counter-bid(int shopId, int bidId, double newPrice)
+
 
