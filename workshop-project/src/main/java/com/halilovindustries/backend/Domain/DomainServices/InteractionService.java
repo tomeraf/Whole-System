@@ -21,16 +21,16 @@ public class InteractionService {
         }
         return instance;
     }
-    public void sendMessage(Registered sender,Shop shop,String title,String content) {
+    public void sendMessage(Registered sender,Shop shop, String title,String content, int msgId) {
         if(title == null || content == null||title.isEmpty() || content.isEmpty()) {
             throw new IllegalArgumentException("Title and content cannot be null");
         }
-        Message message = new Message(sender.getUsername(),shop.getName(),LocalDateTime.now(),title,content, true);
+        Message message = new Message(msgId, sender.getUsername(),shop.getName(),LocalDateTime.now(),title,content, true);
         shop.addMessage(message);
         sender.addMessage(message);
     }
 
-    public Message respondToMessage(Registered member, Shop shop, int messageId,String title ,String content) {
+    public Message respondToMessage(Registered member, Shop shop, int messageId, String title, String content, int sendedMsgID) {
         if(content == null|| title == null||title.isEmpty() || content.isEmpty()) {
             throw new IllegalArgumentException("Content cannot be null");
         }
@@ -44,7 +44,7 @@ public class InteractionService {
         if(!message.needResponse()) {
             throw new IllegalArgumentException("This message has already been responded to.");
         }
-        Message response = new Message(message.getUserName(),shop.getName(),LocalDateTime.now(),"(Re: " + message.getTitle() + "), " + title ,content, false);
+        Message response = new Message(sendedMsgID, message.getUserName(),shop.getName(),LocalDateTime.now(),"(Re: " + message.getTitle() + "), " + title ,content, false);
         message.setRespondId(response.getId());
         shop.addMessage(response);
         return response;

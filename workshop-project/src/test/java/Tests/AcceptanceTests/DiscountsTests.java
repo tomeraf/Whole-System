@@ -1,6 +1,7 @@
 package Tests.AcceptanceTests;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,8 +15,10 @@ import org.junit.jupiter.api.Test;
 import com.halilovindustries.backend.Domain.Shop.Category;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionLimits;
 import com.halilovindustries.backend.Domain.Shop.Policies.Condition.ConditionType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.Discount;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
+import com.halilovindustries.backend.Domain.Shop.Policies.Discount.CompositeDiscount.CompositeDiscount;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
@@ -187,37 +190,37 @@ public class DiscountsTests extends BaseAcceptanceTests {
         Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
         assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
     }
-    // @Test
-    // public void testMaxDiscountAppliedToBasket_ShouldSucceed(){
-    //     // Arrange
-    //     PaymentDetailsDTO p = new PaymentDetailsDTO(
-    //         "1234567890123456", "Some Name", "1", "123", "12", "25"
-    //     );
-    //     ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
-    //     String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
-    //     String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
-    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
-    //     DiscountDTO discount = new DiscountDTO(DiscountKind.MAX,-1, Category.ELECTRONICS, 10, null,0,null,50,null ,DiscountType.BASE,DiscountType.BASE);
-    //     // Act
-    //     Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
-    //     assertTrue(response.isOk(), "Owner should be able to add a discount");
+    @Test
+    public void testMaxDiscountAppliedToBasket_ShouldSucceed(){
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken,"MyShop");
+        DiscountDTO discount = new DiscountDTO(DiscountKind.MAX,-1, Category.ELECTRONICS, 10, null,0,null,50,null ,DiscountType.BASE,DiscountType.BASE);
+        // Act
+        Response<Void> response = shopService.addDiscount(ownerToken, shop.getId(), discount);
+        assertTrue(response.isOk(), "Owner should be able to add a discount");
 
-    //     List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
-    //     ItemDTO toBuy = shopItems.get(2);
-    //     shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken,shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(2);
+        shopService.changeItemQuantityInShop(ownerToken, shop.getId(), 2, 2);
 
-    //     // 3) Add to cart
-    //     Response<Void> addResp = orderService.addItemToCart(
-    //         customerToken,
-    //         shop.getId(),
-    //         List.of(toBuy).get(0).getItemID(),
-    //         1
-    //     );
-    //     assertTrue(addResp.isOk(), "Adding items to cart should succeed");
-    //     // 4) Checkout
-    //     Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
-    //     assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
-    // }
+        // 3) Add to cart
+        Response<Void> addResp = orderService.addItemToCart(
+            customerToken,
+            shop.getId(),
+            List.of(toBuy).get(0).getItemID(),
+            1
+        );
+        assertTrue(addResp.isOk(), "Adding items to cart should succeed");
+        // 4) Checkout
+        Order created = fixtures.successfulBuyCartContent(customerToken,p,s);
+        assertTrue(created.getTotalPrice() < toBuy.getPrice(), "Discount should be applied to the total price");
+    }
     @Test
     public void testCombinedDiscountAppliedToBasket_ShouldSucceed(){
         // Arrange
@@ -410,5 +413,7 @@ public class DiscountsTests extends BaseAcceptanceTests {
         assertEquals(15, discounts.get(0).getPercentage(), "Discount percentage should be 15%");
         assertFalse(discounts.get(0).getId().isEmpty(), "Discount ID should be assigned");
     }
+
+    
 
 }

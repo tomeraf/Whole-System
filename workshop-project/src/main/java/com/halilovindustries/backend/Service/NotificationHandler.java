@@ -63,6 +63,7 @@ public class NotificationHandler {
     public void notifyUsers(List<Integer> userIds,String message) {
         for (int userId : userIds) {
                notifyUser(userId+"", message);
+               System.err.println("Notification sent to user: " + userId);
         }
 
     }

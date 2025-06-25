@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -147,13 +146,6 @@ public class UserService extends DatabaseAwareService {
      */
     @Transactional
     public Response<Void> registerUser(String sessionToken, String username, String password, LocalDate dateOfBirth) {
-        ReentrantLock usernameLock = concurrencyHandler.getUsernameLock(username);
-
-        try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-            usernameLock.lockInterruptibly();  // lock specifically for that username
-        
             try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -186,15 +178,6 @@ public class UserService extends DatabaseAwareService {
                 logger.error(() -> "Error registering user: " + e.getMessage());
                 return Response.error("Error registering user: " + e.getMessage());
             }
-
-            finally {
-                usernameLock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error(() -> "Registration interrupted for username: " + username);
-            return Response.error("Registration interrupted for username: " + username);
-        }
     }
 
     /**

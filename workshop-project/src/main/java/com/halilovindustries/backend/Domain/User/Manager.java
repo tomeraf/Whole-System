@@ -2,10 +2,12 @@ package com.halilovindustries.backend.Domain.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.netty.util.internal.ConcurrentSet;
 import jakarta.persistence.*;
 
 @Entity 
@@ -14,7 +16,7 @@ public class Manager extends IRole {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private Set<Permission> permission= Set.of(); //hashSet-to prevents duplication
+    private Set<Permission> permission= new HashSet<Permission>();
 
     public Manager(int appointerID, int shopID, Set<Permission> permission) {
         this.appointerID = appointerID;

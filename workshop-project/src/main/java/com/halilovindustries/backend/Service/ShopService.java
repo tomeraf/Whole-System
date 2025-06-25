@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
@@ -51,11 +50,10 @@ public class ShopService extends DatabaseAwareService {
     private IUserRepository userRepository;
     private IShopRepository shopRepository;
     private IOrderRepository orderRepository;
-    private ManagementService managementService = ManagementService.getInstance();
+    private ManagementService managementService;
     private ShoppingService shoppingService;
     private IAuthentication authenticationAdapter;
     private InteractionService interactionService = InteractionService.getInstance();
-    private final ConcurrencyHandler concurrencyHandler;
     private final NotificationHandler notificationHandler;
 
     private static final Logger logger = LoggerFactory.getLogger(ShopService.class);
@@ -68,7 +66,7 @@ public class ShopService extends DatabaseAwareService {
         this.orderRepository = orderRepository;
         this.authenticationAdapter = authenticationAdapter;
         this.shoppingService = new ShoppingService();
-        this.concurrencyHandler = concurrencyHandler;
+        this.managementService = ManagementService.getInstance(concurrencyHandler);
         this.notificationHandler = notificationHandler;
     }
 
@@ -337,14 +335,12 @@ public class ShopService extends DatabaseAwareService {
     // shop management
     @Transactional
     public Response<ShopDTO> createShop(String sessionToken, String name, String description) {
-        Lock creationLock = concurrencyHandler.getGlobalShopCreationLock();
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User not logged in");
             }
-            creationLock.lock();
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) userRepository.getUserById(userID);
             if (user.isSuspended()) {
@@ -377,8 +373,6 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error creating shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
-        } finally {
-            creationLock.unlock();
         }
     }
     @Transactional
@@ -389,31 +383,23 @@ public class ShopService extends DatabaseAwareService {
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
-            Lock shopWrite = concurrencyHandler.getShopWriteLock(shopID);
-            shopWrite.lock();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
                 // now exclusive: no reads or other writes
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                Registered founder= (Registered) this.userRepository.getUserById(shopRepository.getShopById(shopID).getFounderID());
-                if(user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                List<Integer> membersIDs = shop.getMembersIDs();
-                managementService.closeShop(user, shop,founder);
-                notificationHandler.notifyUsers(membersIDs, "Shop " + shop.getName() + " is closed");
-                logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
-                return Response.ok();
-            } finally {
-                shopWrite.unlock();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
             }
-        } 
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            Registered founder= (Registered) this.userRepository.getUserById(shopRepository.getShopById(shopID).getFounderID());
+            if(user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            List<Integer> membersIDs = shop.getMembersIDs();
+            managementService.closeShop(user, shop,founder);
+            notificationHandler.notifyUsers(membersIDs, "Shop " + shop.getName() + " is closed");
+            logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
+            return Response.ok();
+        }
         catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
@@ -460,20 +446,13 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+
     @Transactional
     public Response<Void> removeItemFromShop(String sessionToken, int shopID, int itemID) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, remove the item from the shop with the provided details
-        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
-        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
-
-        shopRead.lock();
         try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-            itemLock.lockInterruptibly();
-            try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
                 if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -489,8 +468,7 @@ public class ShopService extends DatabaseAwareService {
                 logger.info(() -> "Item removed from shop: " + itemID + " in shop: " + shop.getName() + " by user: "
                         + userID);
                 return Response.ok();
-            } 
-        catch (MaintenanceModeException e) {
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
@@ -498,110 +476,66 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
                 logger.error(() -> "Error removing item from shop: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
-            } finally {
-                itemLock.unlock();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Response.error("Operation interrupted while locking item.");
-        } finally {
-            shopRead.unlock();
-        }
     }
+
     @Transactional
     public Response<Void> changeItemName(String sessionToken, int shopID, int itemID, String newName) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item name in the shop with the provided details
-        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
-        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
-
-        shopRead.lock();
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            itemLock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = this.shopRepository.getShopById(shopID);
-                managementService.updateItemName(user, shop, itemID, newName);
-                logger.info(() -> "Item name changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-                return Response.ok();
-            } 
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.updateItemName(user, shop, itemID, newName);
+            logger.info(() -> "Item name changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
+        }
         catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error changing item name in shop: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            } finally {
-                itemLock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Response.error("Operation interrupted while locking item.");
-        } finally {
-            shopRead.unlock();
+            logger.error(() -> "Error changing item name in shop: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
     }
+
     @Transactional
     public Response<Void> changeItemQuantityInShop(String sessionToken, int shopID, int itemID, int newQuantity) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item quantity in the shop with the provided details
-        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
-        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
-
-        shopRead.lock();
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            itemLock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = this.shopRepository.getShopById(shopID);
-                managementService.updateItemQuantity(user, shop, itemID, newQuantity);
-                logger.info(() -> "Item quantity changed in shop: " + itemID + " in shop: " + shop.getName()
-                        + " by user: " + userID);
-                return Response.ok();
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.updateItemQuantity(user, shop, itemID, newQuantity);
+            logger.info(() -> "Item quantity changed in shop: " + itemID + " in shop: " + shop.getName()
+                    + " by user: " + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error changing item quantity in shop: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            } finally {
-                itemLock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Response.error("Operation interrupted while locking item.");
-        } finally {
-            shopRead.unlock();
+            logger.error(() -> "Error changing item quantity in shop: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
     }
     @Transactional
@@ -609,50 +543,30 @@ public class ShopService extends DatabaseAwareService {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item price in the shop with the provided details
-        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
-        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
-
-        shopRead.lock();
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            itemLock.lockInterruptibly();
-
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.updateItemPrice(user, shop, itemID, newPrice);
-                logger.info(() -> "Item price changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-                return Response.ok();
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.updateItemPrice(user, shop, itemID, newPrice);
+            logger.info(() -> "Item price changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error changing item price in shop: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            } finally {
-                itemLock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Response.error("Operation interrupted while locking item.");
-        } finally {
-            shopRead.unlock();
+            logger.error(() -> "Error changing item price in shop: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
-
     }
     @Transactional
     public Response<Void> changeItemDescriptionInShop(String sessionToken, int shopID, int itemID,
@@ -660,48 +574,29 @@ public class ShopService extends DatabaseAwareService {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item name in the shop with the provided details
-        Lock shopRead = concurrencyHandler.getShopReadLock(shopID);
-        ReentrantLock itemLock = concurrencyHandler.getItemLock(shopID, itemID);
-
-        shopRead.lock();
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            itemLock.lockInterruptibly();
-
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.updateItemDescription(user, shop, itemID, newDescription);
-                logger.info(() -> "Item description changed in shop: " + itemID + " in shop: " + shop.getName()
-                        + " by user: " + userID);
-                return Response.ok();
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.updateItemDescription(user, shop, itemID, newDescription);
+            logger.info(() -> "Item description changed in shop: " + itemID + " in shop: " + shop.getName()
+                    + " by user: " + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error changing item description in shop: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            } finally {
-                itemLock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return Response.error("Operation interrupted while locking item.");
-        } finally {
-            shopRead.unlock();
+            logger.error(() -> "Error changing item description in shop: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
     }
 
@@ -783,7 +678,7 @@ public class ShopService extends DatabaseAwareService {
                 return Response.error("User is suspended");
             }
             Shop shop = shopRepository.getShopById(shopId);
-            interactionService.sendMessage(user, shop, title, content);
+            interactionService.sendMessage(user, shop, title, content, shopRepository.getNextMessageId());
             for (int reciverId : shop.getOwnerIDs()) {
                 notificationHandler.notifyUser(reciverId+"", "You have a new message from customer " + userRepository.getUserById(userID).getUsername());
             }
@@ -806,40 +701,24 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title,
             String content) {
-        ReentrantLock messageLock = concurrencyHandler.getBidLock(shopId, messageId);
-
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            messageLock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopId);
-                Message response = interactionService.respondToMessage(user, shop, messageId, title, content);
-                Registered reciver = userRepository.getUserByName(response.getUserName());
-                reciver.addMessage(response);
-                notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
-                logger.info(() -> "Message responded: " + title + " in shop: " + shop.getName() + " by user: "
-                        + user.getUsername());
-            } finally {
-                messageLock.unlock();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
             }
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return Response.error("Thread was interrupted.");
-        }
-
-        
-        catch (MaintenanceModeException e) {
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopId);
+            Message response = interactionService.respondToMessage(user, shop, messageId, title, content, shopRepository.getNextMessageId());
+            Registered reciver = userRepository.getUserByName(response.getUserName());
+            reciver.addMessage(response);
+            notificationHandler.notifyUser(reciver.getUserID()+"", "You have a new message from shop " + shop.getName());
+            logger.info(() -> "Message responded: " + title + " in shop: " + shop.getName() + " by user: "
+                    + user.getUsername());
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
@@ -877,11 +756,6 @@ public class ShopService extends DatabaseAwareService {
     // management
     @Transactional
     public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
-        try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-            lock.lockInterruptibly();
             try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -911,206 +785,149 @@ public class ShopService extends DatabaseAwareService {
                 logger.error(() -> "Error adding shop owner: " + e.getMessage());
                 return Response.error("Error: " + e.getMessage());
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // handle interruption
-        } finally {
-            lock.unlock();
-        }
         return Response.ok();
     }
+
     @Transactional
     public Response<Void> removeAppointment(String sessionToken, int shopID, String appointeeName) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
-
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            lock.lockInterruptibly();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            
+            List<IRole> appointedRoles = userRepository.getAppointmentsOfUserInShop(userID, shopID);
+            IRole roleInShop = user.getRoleInShop(shopID);
+            roleInShop.setAppointments(appointedRoles);
 
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                
-                List<IRole> appointedRoles = userRepository.getAppointmentsOfUserInShop(userID, shopID);
-                IRole roleInShop = user.getRoleInShop(shopID);
-                roleInShop.setAppointments(appointedRoles);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
 
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Registered appointee = userRepository.getUserByName(appointeeName);
-
-                appointedRoles = userRepository.getAppointmentsOfUserInShop(appointee.getUserID(), shopID);
-                roleInShop = appointee.getRoleInShop(shopID);
-                roleInShop.setAppointments(appointedRoles);
-                
-                if (appointee.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.removeAppointment(user, shop, appointee);
-                
-                notificationHandler.notifyUser(appointee.getUserID() + "",
-                        "You no longer have your role in shop: " + shop.getName());
-            } 
-        catch (MaintenanceModeException e) {
+            appointedRoles = userRepository.getAppointmentsOfUserInShop(appointee.getUserID(), shopID);
+            roleInShop = appointee.getRoleInShop(shopID);
+            roleInShop.setAppointments(appointedRoles);
+            
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.removeAppointment(user, shop, appointee);
+            
+            notificationHandler.notifyUser(appointee.getUserID() + "",
+                    "You no longer have your role in shop: " + shop.getName());
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error removing appointment: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // handle interruption
-        } finally {
-            lock.unlock();
+            logger.error(() -> "Error removing appointment: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
         return Response.ok();
     }
     @Transactional
     public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName,
             Set<Permission> permission) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            lock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Registered appointee = userRepository.getUserByName(appointeeName);
-                if (appointee.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.addManager(user, shop, appointee, permission);
-                logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
+            logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error adding shop manager: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            } finally {
-                lock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // handle interruption
+            logger.error(() -> "Error adding shop manager: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
         return Response.ok();
     }
+
     @Transactional
     public Response<Void> addShopManagerPermission(String sessionToken, int shopID, String appointeeName,
             Permission permission) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            lock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Registered appointee = userRepository.getUserByName(appointeeName);
-                if (appointee.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.addPermission(user, shop, appointee, permission);
-                logger.info(() -> "Shop manager permission added: " + appointeeName + " in shop: " + shop.getName()
-                        + " by user: " + userID);
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.addPermission(user, shop, appointee, permission);
+            logger.info(() -> "Shop manager permission added: " + appointeeName + " in shop: " + shop.getName()
+                    + " by user: " + userID);
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error adding shop manager permission: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // handle interruption
-        } finally {
-            lock.unlock();
+            logger.error(() -> "Error adding shop manager permission: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
         return Response.ok();
     }
+
     @Transactional
     public Response<Void> removeShopManagerPermission(String sessionToken, int shopID, String appointeeName,
             Permission permission) {
-        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            lock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Registered appointee = userRepository.getUserByName(appointeeName);
-                if (appointee.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.removePermission(user, shop, appointee, permission);
-                logger.info(() -> "Shop manager permission removed: " + appointeeName + " in shop: " + shop.getName()
-                        + " by user: " + userID);
-            } 
-        catch (MaintenanceModeException e) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.removePermission(user, shop, appointee, permission);
+            logger.info(() -> "Shop manager permission removed: " + appointeeName + " in shop: " + shop.getName()
+                    + " by user: " + userID);
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error removing shop manager permission: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // handle interruption
-        } finally {
-            lock.unlock();
+            logger.error(() -> "Error removing shop manager permission: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
         return Response.ok();
     }
+
     @Transactional
     public Response<List<Permission>> getMemberPermissions(String sessionToken, int shopID, String memberName) {
         try {
@@ -1144,40 +961,25 @@ public class ShopService extends DatabaseAwareService {
     @Transactional
     // bids and auctions
     public Response<Void> answerBid(String sessionToken, int shopID, int bidID, boolean accept) {
-        ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
-
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            bidLock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                List<Integer> members = userRepository.getAllRegisteredsByShopAndPermission(shopID, Permission.ANSWER_BID);
-                Pair<Integer,String> notification=managementService.answerBid(user, shop, bidID, accept,members);
-                if(notification!=null){
-                    notificationHandler.notifyUser(notification.getKey()+"",notification.getValue());
-                }
-                logger.info(() -> "Bid answered: " + bidID + " in shop: " + shop.getName() + " by user: " + userID);
-                return Response.ok();
-            } finally {
-                bidLock.unlock();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
             }
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return Response.error("Thread was interrupted.");
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            List<Integer> members = userRepository.getAllRegisteredsByShopAndPermission(shopID, Permission.ANSWER_BID);
+            Pair<Integer,String> notification=managementService.answerBid(user, shop, bidID, accept,members);
+            if(notification!=null){
+                notificationHandler.notifyUser(notification.getKey()+"",notification.getValue());
+            }
+            logger.info(() -> "Bid answered: " + bidID + " in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok();
         }
-
-        
         catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
@@ -1188,42 +990,29 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+
     @Transactional
     public Response<Void> submitCounterBid(String sessionToken, int shopID, int bidID, double offerAmount) {
-        ReentrantLock bidLock = concurrencyHandler.getBidLock(shopID, bidID);
-
         try {
-            // Check database health before proceeding
             checkDatabaseHealth("current method");
-            bidLock.lockInterruptibly();
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.submitCounterBid(user, shop, bidID, offerAmount);
-                // Notify the customer about the counter bid
-                String customerName = userRepository.getUserById(shop.getBidPurchase(bidID).getSubmitterId()).getUsername();
-                notificationHandler.notifyUser(""+customerName, "You have got a counter bid of " + offerAmount
-                        + " in shop: " + shop.getName());
-                logger.info(() -> "Counter bid submitted: " + bidID + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-                return Response.ok();
-            } finally {
-                bidLock.unlock();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
             }
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return Response.error("Thread was interrupted.");
-        } 
-        catch (MaintenanceModeException e) {
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.submitCounterBid(user, shop, bidID, offerAmount);
+            // Notify the customer about the counter bid
+            String customerName = userRepository.getUserById(shop.getBidPurchase(bidID).getSubmitterId()).getUsername();
+            notificationHandler.notifyUser(""+customerName, "You have got a counter bid of " + offerAmount
+                    + " in shop: " + shop.getName());
+            logger.info(() -> "Counter bid submitted: " + bidID + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
@@ -1233,6 +1022,7 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Error: " + e.getMessage());
         }
     }
+    
     @Transactional
     public Response<Void> openAuction(String sessionToken, int shopID, int itemID, double startingPrice,
             LocalDateTime startDate, LocalDateTime endDate) {
