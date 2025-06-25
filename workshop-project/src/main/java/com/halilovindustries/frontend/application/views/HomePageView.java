@@ -556,7 +556,6 @@ public class HomePageView extends Composite<VerticalLayout> {
                     }
                 } catch (Exception e) {
                     System.err.println("Error in onAttach: " + e.getMessage());
-                    e.printStackTrace();
                 }
             });
         });

@@ -43,7 +43,7 @@ public class Broadcaster {
      */
     public static synchronized Registration register(String sessionId, String userUuid, Consumer<String> listener) {
         // Generate unique session ID
-        //String sessionId = UI.getCurrent().getUIId() + "-" + System.currentTimeMillis();
+        //String sessionId = UI.getCurrent().getUIId(   ) + "-" + System.currentTimeMillis();
         
         // Store in both maps
         listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
@@ -72,7 +72,6 @@ public class Broadcaster {
                     System.out.println("Message successfully delivered to user: " + userUuid);
                 } catch (Exception e) {
                     System.out.println("Error delivering message to user " + userUuid + ": " + e.getMessage());
-                    e.printStackTrace();
                 }
             });
         }

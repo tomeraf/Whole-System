@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-import com.halilovindustries.backend.Service.init.ExternalConfig;
+import com.halilovindustries.backend.Domain.init.ExternalConfig;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import org.springframework.stereotype.Component;
 
@@ -79,7 +79,7 @@ public class RealPayment implements IPayment {
             return (transactionId >= 10000 && transactionId <= 100000) ? transactionId : null;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error processing payment: " + e.getMessage());
             return null;
         }
     }
@@ -108,7 +108,7 @@ public class RealPayment implements IPayment {
             return "1".equals(response.body().trim());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error canceling payment: " + e.getMessage());
             return false;
             }
     }

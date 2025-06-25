@@ -2,7 +2,7 @@ package com.halilovindustries.backend.Domain.Adapters_and_Interfaces;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-import com.halilovindustries.backend.Service.init.ExternalConfig;
+import com.halilovindustries.backend.Domain.init.ExternalConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -48,7 +48,7 @@ public class ExternalSystems implements IExternalSystems {
 
             return "OK".equalsIgnoreCase(response.body().trim());
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error during handshake: " + e.getMessage());
             return false;
         }
     }

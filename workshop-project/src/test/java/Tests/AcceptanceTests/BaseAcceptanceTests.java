@@ -11,10 +11,14 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
+import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
@@ -39,6 +43,7 @@ import com.halilovindustries.backend.Infrastructure.MemoryNotificationRepository
 import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
+import com.halilovindustries.backend.Service.DatabaseHealthService;
 import com.halilovindustries.backend.Service.NotificationHandler;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
@@ -49,6 +54,7 @@ import com.halilovindustries.websocket.VaadinNotifier;
 @SpringBootTest(classes = com.halilovindustries.Application.class)
 @TestPropertySource(locations = "classpath:application.properties")
 @Transactional
+@Rollback
 public abstract class BaseAcceptanceTests {
     @Autowired
     protected IShopRepository shopRepository;
@@ -71,11 +77,14 @@ public abstract class BaseAcceptanceTests {
     @Autowired
     protected OrderService orderService;
 
+    @Autowired
+    protected DatabaseHealthService databaseHealthService;
+
 
     protected IAuthentication jwtAdapter;
-    protected IShipment shipment;
-    protected IPayment payment;
-    protected IExternalSystems externalSystems;
+    @MockitoBean protected IShipment shipment;
+    @MockitoBean protected IPayment payment;
+    @MockitoBean protected IExternalSystems externalSystems;
     protected INotifier notifier;
 
     
@@ -130,10 +139,10 @@ public abstract class BaseAcceptanceTests {
     @BeforeEach
     public void setUp() {
         // Only mock what can't be autowired
-        externalSystems = mock(IExternalSystems.class);
-        payment = mock(IPayment.class); 
-        shipment = mock(IShipment.class);
-        notifier = mock(INotifier.class);
+        // externalSystems = mock(IExternalSystems.class);
+        // payment = mock(IPayment.class); 
+        // shipment = mock(IShipment.class);
+        // notifier = mock(INotifier.class);
         
         // Initialize the JWT adapter with a secret key
         jwtAdapter = new JWTAdapter(); 
