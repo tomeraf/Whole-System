@@ -7,8 +7,9 @@ import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.User.Permission;
-import com.halilovindustries.backend.Service.init.Initializer;
-import com.halilovindustries.backend.Service.init.StartupConfig;
+import com.halilovindustries.backend.Domain.init.Initializer;
+import com.halilovindustries.backend.Domain.init.StartupConfig;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ public class InitializerTests extends BaseAcceptanceTests {
         Files.writeString(initFile, content); // optional content
         StartupConfig startupConfig = new StartupConfig();
         startupConfig.setInitFile(initFile.toString());
-        initializer = new Initializer(startupConfig, userService, shopService, orderService);
+        initializer = new Initializer(startupConfig, userService, shopService, orderService, databaseHealthService);
         initializer.init();
     }
     @Test

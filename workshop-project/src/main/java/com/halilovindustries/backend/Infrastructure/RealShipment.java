@@ -2,7 +2,7 @@ package com.halilovindustries.backend.Infrastructure;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
-import com.halilovindustries.backend.Service.init.ExternalConfig;
+import com.halilovindustries.backend.Domain.init.ExternalConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -66,7 +66,7 @@ public class RealShipment implements IShipment {
             return (transactionId >= 10000 && transactionId <= 100000) ? transactionId : null;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error processing shipment: " + e.getMessage());
             return null;
         }
     }
@@ -94,7 +94,7 @@ public class RealShipment implements IShipment {
             return "1".equals(response.body().trim());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error canceling shipment: " + e.getMessage());
             return false;
         }
     }

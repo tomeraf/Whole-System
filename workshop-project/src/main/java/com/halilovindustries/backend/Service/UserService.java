@@ -17,6 +17,7 @@ import jakarta.transaction.Transactional;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
+import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import com.halilovindustries.backend.Domain.Message;
 
@@ -26,7 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserService {
+public class UserService extends DatabaseAwareService {
 
     private IUserRepository userRepository;
     private IAuthentication jwtAdapter;
@@ -80,6 +81,8 @@ public class UserService {
     @Transactional
     public Response<Void> exitAsGuest(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -87,7 +90,13 @@ public class UserService {
             userRepository.removeGuestById(userID); // Adds to the "reuse" list
             logger.info(() -> "User exited the system");
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error exiting the system: " + e.getMessage());
             return Response.error("Error exiting the system: " + e.getMessage());
         }
@@ -103,6 +112,8 @@ public class UserService {
     public Response<String> logoutRegistered(String sessionToken) {
     // After logout - the user remains in the system, as guest
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -112,7 +123,13 @@ public class UserService {
             // Nothing to do, everything is saved in DB
             Response<String> newToken = enterToSystem();
             return Response.ok(newToken.getData());
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Logout Error: " + e.getMessage());
             return Response.error("Logout Error: " + e.getMessage());
         }
@@ -130,6 +147,8 @@ public class UserService {
     @Transactional
     public Response<Void> registerUser(String sessionToken, String username, String password, LocalDate dateOfBirth) {
             try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
                 if (!jwtAdapter.validateToken(sessionToken)) {
                     throw new Exception("User is not logged in");
                 }
@@ -149,7 +168,13 @@ public class UserService {
                 userRepository.saveUser(registered);
                 // should be actually inside guest.register..
                 return Response.ok();
-            } catch (Exception e) {
+            } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
                 logger.error(() -> "Error registering user: " + e.getMessage());
                 return Response.error("Error registering user: " + e.getMessage());
             }
@@ -166,6 +191,8 @@ public class UserService {
     @Transactional
     public Response<String> loginUser(String sessionToken, String username, String password) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -188,7 +215,13 @@ public class UserService {
                 userRepository.removeGuestById(guestUserID);
             logger.info(() -> "User logged in successfully");
             return Response.ok(newSessionToken);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error logging in user: " + e.getMessage());
             return Response.error("Error logging in user: " + e.getMessage());
         }
@@ -196,13 +229,21 @@ public class UserService {
     //@Transactional
     public Response<Void> loginNotify(String sessionToken){
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             notificationHandler.notifyUser(userID+"");// delayed notifications
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error notifying login: " + e.getMessage());
             return Response.error("Error notifying login: " + e.getMessage());
         }
@@ -214,6 +255,8 @@ public class UserService {
     @Transactional
     public Response<Void> suspendUser(String sessionToken,String username,Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -224,7 +267,13 @@ public class UserService {
             Registered user = userRepository.getUserByName(username);
             user.addSuspension(startDate, endDate);
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error suspending user: " + e.getMessage());
             return Response.error("Error suspending user: " + e.getMessage());
         }
@@ -233,6 +282,8 @@ public class UserService {
     @Transactional
     public Response<Void> unsuspendUser(String sessionToken,String username) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -243,7 +294,13 @@ public class UserService {
             Registered user = userRepository.getUserByName(username);
             user.removeSuspension();
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error unsuspending user: " + e.getMessage());
             return Response.error("Error unsuspending user: " + e.getMessage());
         }
@@ -252,6 +309,8 @@ public class UserService {
     @Transactional
     public Response<String> watchSuspensions(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -265,7 +324,13 @@ public class UserService {
                 sb.append(user.showSuspension());
             }
             return Response.ok(sb.toString());
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error watching suspensions: " + e.getMessage());
             return Response.error("Error watching suspensions: " + e.getMessage());
         }
@@ -274,13 +339,17 @@ public class UserService {
     @Transactional
     public boolean isLoggedIn(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             return userRepository.getUserById(userID) != null && 
                    userRepository.getUserById(userID).getUsername() != null;
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking login status: " + e.getMessage());
             return false;
         }
@@ -289,6 +358,8 @@ public class UserService {
     @Transactional
     public Response<List<Message>> getInbox(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -296,7 +367,13 @@ public class UserService {
             Registered user = (Registered) this.userRepository.getUserById(userID);
             List<Message> inbox = user.getInbox();
             return Response.ok(inbox);
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error getting inbox: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
@@ -304,12 +381,16 @@ public class UserService {
     @Transactional
     public boolean inSystem(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             return userRepository.getUserById(userID) != null;
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking invalid tokens: " + e.getMessage());
             return false;
         }
@@ -318,12 +399,16 @@ public class UserService {
     @Transactional
     public String getUsername(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
             int userID = Integer.parseInt(jwtAdapter.getUsername(sessionToken));
             return userRepository.getUserById(userID).getUsername();
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error getting username: " + e.getMessage());
             return null;
         }
@@ -332,6 +417,8 @@ public class UserService {
     @Transactional
     public Response<Void> isSystemManager(String sessionToken) {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             if (!jwtAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
@@ -340,7 +427,13 @@ public class UserService {
                 throw new Exception("User is not a system manager");
             }
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> e.getMessage());
             return Response.error(e.getMessage());
         }
@@ -353,6 +446,8 @@ public class UserService {
      */
     public boolean hasSystemManager() {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             List<Registered> users = userRepository.getAllRegisteredUsers();
             for (Registered user : users) {
                 if (user.isSystemManager()) {
@@ -360,7 +455,9 @@ public class UserService {
                 }
             }
             return false;
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error checking system manager existence: " + e.getMessage());
             return false;
         }
@@ -376,6 +473,8 @@ public class UserService {
     public Response<Void> makeSystemManager(String username) 
     {
         try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
             Registered user = userRepository.getUserByName(username);
             if (user == null) {
                 throw new Exception("User not found");
@@ -386,7 +485,13 @@ public class UserService {
             user.setSystemManager(true);
             userRepository.saveUser(user);
             return Response.ok();
-        } catch (Exception e) {
+        } 
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
             logger.error(() -> "Error making system manager: " + e.getMessage());
             return Response.error("Error making system manager: " + e.getMessage());
         }

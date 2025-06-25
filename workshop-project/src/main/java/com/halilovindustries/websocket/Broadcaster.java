@@ -72,7 +72,6 @@ public class Broadcaster {
                     System.out.println("Message successfully delivered to user: " + userUuid);
                 } catch (Exception e) {
                     System.out.println("Error delivering message to user " + userUuid + ": " + e.getMessage());
-                    e.printStackTrace();
                 }
             });
         }

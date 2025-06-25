@@ -11,6 +11,7 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
+import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +43,7 @@ import com.halilovindustries.backend.Infrastructure.MemoryNotificationRepository
 import com.halilovindustries.backend.Infrastructure.MemoryOrderRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryShopRepository;
 import com.halilovindustries.backend.Infrastructure.MemoryUserRepository;
+import com.halilovindustries.backend.Service.DatabaseHealthService;
 import com.halilovindustries.backend.Service.NotificationHandler;
 import com.halilovindustries.backend.Service.OrderService;
 import com.halilovindustries.backend.Service.ShopService;
@@ -74,6 +76,9 @@ public abstract class BaseAcceptanceTests {
     
     @Autowired
     protected OrderService orderService;
+
+    @Autowired
+    protected DatabaseHealthService databaseHealthService;
 
 
     protected IAuthentication jwtAdapter;
