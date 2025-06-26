@@ -19,9 +19,11 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.halilovindustries.backend.Domain.DTOs.*;
 
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +37,12 @@ public class SystemManagerView extends VerticalLayout
     private final SystemManagerPresenter presenter;
     private final Grid<Map.Entry<String, Suspension>> grid;
     private final Map<String, Suspension> suspensions = new LinkedHashMap<>();
+    private final Grid<ShopDTO> closedShopsGrid;
+    private final Map<String, Void> closedShops = new LinkedHashMap<>();
+
+
+
+
 
     public SystemManagerView(SystemManagerPresenter presenter) {
         this.presenter = presenter;
@@ -88,6 +96,30 @@ public class SystemManagerView extends VerticalLayout
             grid.setItems(suspensions.entrySet());
         });
     });
+
+        closedShopsGrid = new Grid<>();
+        closedShopsGrid.addColumn(ShopDTO::getName)
+                .setHeader("Shop Name").setAutoWidth(true);
+        closedShopsGrid.addColumn(ShopDTO::getId)
+                .setHeader("Shop ID").setAutoWidth(true);
+        closedShopsGrid.setItems(Collections.emptyList()); // placeholder until data arrives
+        closedShopsGrid.setSizeFull();
+        add(closedShopsGrid);
+
+        // update closed‐shops in exactly the same pattern
+        presenter.watchClosedShops(list -> {
+            UI.getCurrent().access(() -> {
+                if (list != null) {
+                    closedShopsGrid.setItems(list);
+                } else {
+                    closedShopsGrid.setItems(Collections.emptyList());
+                }
+            });
+        });
+
+
+
+
     }
 
     private void openSuspendUserDialog() {

@@ -48,6 +48,8 @@ public abstract class AbstractPresenter {
     public String getUsername(String sessionToken) {
         return userService.getUsername(sessionToken);
     }
+
+
     
 
     /**

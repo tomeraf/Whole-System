@@ -125,6 +125,10 @@ public class MainLayout extends AppLayout {
                                         nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
                                         nav.addItem(new SideNavItem("Inbox", InboxView.class, VaadinIcon.ENVELOPE.create()));
                                         nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
+                                        presenter.isSystemManager(isManager -> {if (isManager) {nav.addItem(new SideNavItem("System Manager", SystemManagerView.class, VaadinIcon.TOOLS.create()));}});
+
+
+
                                     } catch (Exception e) {
                                         System.err.println("Error adding nav items: " + e.getMessage());
                                     }

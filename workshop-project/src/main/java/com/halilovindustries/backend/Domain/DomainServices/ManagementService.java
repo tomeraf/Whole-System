@@ -348,4 +348,23 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to view bids");
         }
     }
+
+//    public void reOpenShop(Registered supplyManager, Shop shop,Registered founder) {
+//        Lock shopWrite = concurrencyHandler.getShopWriteLock(shop.getId());
+//        shopWrite.lock();
+//        try {
+//            if(supplyManager.isSystemManager()){
+//                openShopAsSystemManager(supplyManager, shop,founder);
+//            } else if (supplyManager.getAppointer(shop.getId())==-1) {
+//                shop.openShop();
+//            } else {
+//                throw new IllegalArgumentException("You don't have permission to close the shop");
+//            }
+//        } finally {
+//            shopWrite.unlock();
+//        }
+//
+//
+//
+//    }
 }

@@ -1556,4 +1556,80 @@ public class ShopService extends DatabaseAwareService {
             }
         }); 
     }
+
+    @Transactional
+    public Response<List<ShopDTO>> getClosedShops(String token) {
+        try {
+            // Check database health before proceeding
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(token)) {
+                throw new Exception("User is not logged in");
+            }
+            Guest guest = userRepository.getUserById(Integer.parseInt(authenticationAdapter.getUsername(token)));
+            if(!guest.isSystemManager()) {
+                throw new Exception("User is not a system manager");
+            }
+            List<Shop> shops = shopRepository.getAllShops().values().stream().filter(shop -> !shop.isOpen()).toList();
+            List<ShopDTO> shopDTOs = new ArrayList<>();
+            for (Shop shop : shops) {
+                List<Item> items = shop.getItems();
+                HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
+                for (Item item : items) {
+                    ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
+                            item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
+                            item.getNumOfOrders());
+                    itemDTOs.put(item.getId(), itemDTO);
+                }
+                ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
+                        shop.getRating(), shop.getRatingCount());
+                shopDTOs.add(shopDTO);
+            }
+            return Response.ok(shopDTOs);
+        }
+        catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error watching closed shops: " + e.getMessage());
+            return Response.error("Error watching closed shops: " + e.getMessage());
+        }
+    }
+
+//    @Transactional
+//    public Response<Void> reopenShop(String token, int shopID)  {
+//        // Check if the user is logged in
+//        // If not, prompt to log in or register
+//        // If logged in, close the shop with the provided details
+//        try {
+//            // Check database health before proceeding
+//            checkDatabaseHealth("current method");
+//            // now exclusive: no reads or other writes
+//            if (!authenticationAdapter.validateToken(token)) {
+//                throw new Exception("User is not logged in");
+//            }
+//            int userID = Integer.parseInt(authenticationAdapter.getUsername(token));
+//            Registered user = (Registered) this.userRepository.getUserById(userID);
+//            Registered founder= (Registered) this.userRepository.getUserById(shopRepository.getShopById(shopID).getFounderID());
+//            if(user.isSuspended()) {
+//                return Response.error("User is suspended");
+//            }
+//            Shop shop = shopRepository.getShopById(shopID);
+//            List<Integer> membersIDs = shop.getMembersIDs();
+//            managementService.reOpenShop(user, shop,founder);
+//            notificationHandler.notifyUsers(membersIDs, "Shop " + shop.getName() + " is closed");
+//            logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
+//            return Response.ok();
+//        }
+//        catch (MaintenanceModeException e) {
+//            // Special handling for maintenance mode
+//            return Response.error(e.getMessage());
+//        }
+//        catch (Exception e) {
+//            handleDatabaseException(e);
+//            logger.error(() -> "Error closing shop: " + e.getMessage());
+//            return Response.error("Error: " + e.getMessage());
+//        }
+//    }
 }
