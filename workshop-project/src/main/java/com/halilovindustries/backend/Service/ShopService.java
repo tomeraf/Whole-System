@@ -1575,8 +1575,8 @@ public class ShopService extends DatabaseAwareService {
             HashMap<Integer,List<ItemDTO>> orderHistory = orderRepository.getOrdersByShopId(shopID);
             List<BasketDTO> orderHistoryFormatted = new ArrayList<>();
             for(Map.Entry<Integer, List<ItemDTO>> entry : orderHistory.entrySet()) {
-                String username = userRepository.getUserById(orderRepository.getOrder(entry.getKey()).getUserID()).getUsername();
-                username = username == null ? "Guest" : username;
+                Guest guest = userRepository.getUserById(orderRepository.getOrder(entry.getKey()).getUserID());
+                String username = guest == null ? "Guest" : guest.getUsername();
                 BasketDTO basket = new BasketDTO(entry.getKey(),username, entry.getValue());
                 orderHistoryFormatted.add(basket);
             }
