@@ -15,6 +15,7 @@ import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
@@ -1556,4 +1557,36 @@ public class ShopService extends DatabaseAwareService {
             }
         }); 
     }
+
+    //view shop order history
+    @Transactional
+    public Response<List<BasketDTO>> getShopOrderHistory(String sessionToken, int shopID) {
+        try {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.getShopOrderHistory(user,shop);
+            HashMap<Integer,List<ItemDTO>> orderHistory = orderRepository.getOrdersByShopId(shopID);
+            List<BasketDTO> orderHistoryFormatted = new ArrayList<>();
+            for(Map.Entry<Integer, List<ItemDTO>> entry : orderHistory.entrySet()) {
+                String username = userRepository.getUserById(orderRepository.getOrder(entry.getKey()).getUserID()).getUsername();
+                username = username == null ? "Guest" : username;
+                BasketDTO basket = new BasketDTO(entry.getKey(),username, entry.getValue());
+                orderHistoryFormatted.add(basket);
+            }
+            logger.info(() -> "Order history retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(orderHistoryFormatted);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving order history: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
 }
+

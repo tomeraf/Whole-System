@@ -348,4 +348,9 @@ public class ManagementService {
             throw new IllegalArgumentException("You don't have permission to view bids");
         }
     }
+    public void getShopOrderHistory(Registered user, Shop shop) {
+        if (!user.hasPermission(shop.getId(), Permission.VIEW)) {
+            throw new IllegalArgumentException("You don't have permission to view shop order history");
+        }
+    }
 }
