@@ -238,7 +238,18 @@ public class Shop {
 
     public boolean canPurchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //itemId -> quantity
         if (!isOpen) {
-            throw new RuntimeException("Shop is closed. Cannot purchase items.");
+            StringBuilder a = new StringBuilder();
+            for (Integer itemId : itemsToPurchase.keySet()) {
+                if (!isItemInShop(itemId)) {
+                    throw new IllegalArgumentException("Item ID does not exist in the shop.");
+                }
+                a.append(getItem(itemId).getName()).append(", ");
+            }
+            // a.deleteCharAt(a.length()-1);
+            // a.deleteCharAt(a.length()-1);
+
+            String s = "Cannot purchase items: " + a.toString() + " because the shop is closed shop.";
+            throw new RuntimeException(s);
         }
         if (itemsToPurchase.isEmpty()) {
             throw new IllegalArgumentException("Shopping basket is empty. Cannot purchase items.");
@@ -590,7 +601,8 @@ public class Shop {
         for(Integer itemId : itemsMap.keySet()) {
             if(!isItemInShop(itemId))
             {
-                throw new IllegalArgumentException("Item ID does not exist in the shop.");
+                continue; // Skip items that are not in the shop
+                //throw new IllegalArgumentException("Item ID does not exist in the shop.");
             }
             Item item = getItem(itemId);
             if(item.getQuantity() < itemsMap.get(itemId)) {

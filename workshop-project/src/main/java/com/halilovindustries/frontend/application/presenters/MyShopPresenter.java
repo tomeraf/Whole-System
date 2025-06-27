@@ -111,14 +111,15 @@ public class MyShopPresenter extends AbstractPresenter {
 
             Response<ItemDTO> resp = shopService.addItemToShop(token, shopID, itemName, category, itemPrice, description);
             if (!resp.isOk()) {
-                Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
+                //Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
                 onFinish.accept(null);
             } else {
                 ItemDTO item = resp.getData();
                 if (item == null) {
-                    Notification.show("No item info found.", 2000, Position.MIDDLE);
+                    //Notification.show("No item info found.", 2000, Position.MIDDLE);
+                    onFinish.accept(null);
                 } else {
-                    Notification.show("Item added successfully!", 2000, Position.MIDDLE);
+                    //Notification.show("Item added successfully!", 2000, Position.MIDDLE);
                     onFinish.accept(item);
                 }
             }
