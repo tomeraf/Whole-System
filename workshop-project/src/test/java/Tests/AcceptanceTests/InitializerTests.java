@@ -243,7 +243,7 @@ public class InitializerTests extends BaseAcceptanceTests {
 
     }
 
-    /*
+
 
     @Test
     public void shop_creation_test(){
@@ -254,6 +254,7 @@ public class InitializerTests extends BaseAcceptanceTests {
         register-user(u4, u4, 2000-01-01);
         register-user(u5, u5, 2000-01-01);
         register-user(u6, u6, 2000-01-01);
+        logout-user(u6);
         login-user(u2, u2);
         create-shop(s1, firstShop);
         create-shop(s2, secondShop);
@@ -264,9 +265,9 @@ public class InitializerTests extends BaseAcceptanceTests {
         add-shop-manager(0, u5, UPDATE_ITEM_QUANTITY);
         add-shop-manager(0, u6, ANSWER_BID);
         remove-appointment(0, u6);
-        add-user-permission(0, u5, VIEW);
-        add-user-permission(0, u5, APPOINTMENT);
-        remove-user-permission(0, u5, VIEW);
+        add-permission(0, u5, VIEW);
+        add-permission(0, u5, APPOINTMENT);
+        remove-permission(0, u5, VIEW);
         logout-user();
     """;
         try {
@@ -301,8 +302,8 @@ public class InitializerTests extends BaseAcceptanceTests {
             Response<ShopDTO> res2 = shopService.getShopInfo(ST, 0);
             assertTrue(res2.isOk(), "s1 should exist");
 
-            res2 = shopService.getShopInfo(ST, 1);
-            assertFalse(res2.isOk(), "s2 shouldn't exist");
+            Response<List<ShopDTO>> res3 = shopService.showAllShops(ST);
+            assertFalse(res3.getData().contains(shopService.getShopInfo(ST,1).getData()), "s2 shouldn't exist");
 
             List<UserDTO> members = shopService.getShopMembers(ST, 0).getData();
             assertEquals(members.size(),3, "s1 should have 3 members");
@@ -325,67 +326,27 @@ public class InitializerTests extends BaseAcceptanceTests {
 
     }
 
-
-
-    @Test
-    public void name(){
-        String content = """
-                register-user(u1, u1, 1999-06-16);
-                register-user(u2, u2, 2000-01-01);
-                register-user(u3, u3, 2000-01-01);
-                register-user(u4, u4, 2000-01-01);
-                login-user(u2, u2);
-                createShop(s1, firstShop);
-                addShopOwner(0, u3);
-                addShopManager(0, u4, UPDATE_ITEM_QUANTITY);
-                addItem(0, item1, FOOD, 20 , item1item1 , 10 );
-                addItem(0, item2, FOOD, 20 , item2item2 , 10 );
-                addItem(0, item3, FOOD, 20 , item3item3 , 10 );
-                removeItem(0, 1);
-                changeItemPrice(0, 0, 15);
-                changeItemQuantity(0, 0, 3);
-                changeItemName(0, 0, item0);
-                changeItemDescription(0, 0, item0item0);
-                logoutUser();
-                login-User(u4,u4)
-                changeItemQuantity(0, 2, 5);
-                logoutUser()
-    """;
-            try {
-                runInit(content);
-
-
-
-
-
-            } catch (Exception E){
-                fail("something went wrong: "+ E.getMessage());
-            }
-
-    }
-
     @Test
     public void shop_outsider_test(){
         String content = """
            register-user(u1, u1, 1999-06-16);
            register-user(u2, u2, 2000-01-01);
            register-user(u3, u3, 2000-01-01);
+           logout-user(u3);
            login-user(u2, u2);
-           createShop(s1, firstShop);
-           addItem(0, item1, FOOD, 20 , item1item1 , 10 );
-           addItem(0, item2, FOOD, 20 , item2item2 , 10 );
-           logoutUser();
+           create-shop(s1, firstShop);
+           add-item(0, item1, FOOD, 20 , item1item1 , 10 );
+           add-item(0, item2, FOOD, 20 , item2item2 , 10 );
+           logout-user(u2);
            login-user(u3, u3);
-           addToCart(0, 0, 5);
-           addToCart(0, 1, 6)
-           removeFromCart(0, 1);
-           rateShop(0, 3);
-           rateItem(0, 0, 2);
-           sendMessage(0, test1 , testing messages);
-           logoutUser();
+           add-to-cart(0, 0, 5);
+           add-to-cart(0, 1, 6);
+           remove-from-cart(0, 1);
+           send-message(0, test1 , testing messages);
+           logout-user(3);
            login-user(u2,u2);
-           respondToMessage(0,  0, test1good, test1 went well);
-           logoutUser();
+           respond-to-message(0,  0, test1good, test1 went well);
+           logout-user(u2);
     """;
         try {
             runInit(content);
@@ -400,11 +361,5 @@ public class InitializerTests extends BaseAcceptanceTests {
 
     }
 
-    @Test
-    public void FailInitialized(){
 
-
-    }
-
-     */
 }
