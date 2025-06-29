@@ -248,7 +248,7 @@ public class Shop {
             // a.deleteCharAt(a.length()-1);
             // a.deleteCharAt(a.length()-1);
 
-            String s = "Cannot purchase items: " + a.toString() + " because the shop is closed shop.";
+            String s = "Cannot purchase items: " + a.toString() + " because the shop is closed.";
             throw new RuntimeException(s);
         }
         if (itemsToPurchase.isEmpty()) {

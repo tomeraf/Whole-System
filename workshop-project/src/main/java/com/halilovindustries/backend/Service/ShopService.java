@@ -850,6 +850,8 @@ public class ShopService extends DatabaseAwareService {
             }
             Shop shop = shopRepository.getShopById(shopID);
             managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
+            notificationHandler.notifyUser(appointee.getUserID() + "",
+                    "You have been appointed as a manager in shop: " + shop.getName());
             logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
                     + userID);
         } catch (MaintenanceModeException e) {

@@ -58,7 +58,10 @@ public class PurchaseService {
         itemLock.lock();
         try {
             ShoppingCart cart = user.getCart();
-            if(shop.canAddItemToBasket(itemId, quantity))
+            int currentQuantity = cart.getItems().get(shop.getId()) == null ? 0 :
+                                cart.getItems().get(shop.getId()).get(itemId) == null ? 0 :
+                                cart.getItems().get(shop.getId()).get(itemId);
+            if(shop.canAddItemToBasket(itemId, currentQuantity + quantity))
                 cart.addItem(shop.getId(),itemId, quantity);
             else
                 throw new IllegalArgumentException("Error: item cannot be added to cart.");
