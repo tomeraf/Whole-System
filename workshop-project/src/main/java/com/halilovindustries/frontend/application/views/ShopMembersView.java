@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Route(value = "shop-members/", layout = MainLayout.class)
 @PageTitle("Shop Members")
 public class ShopMembersView extends VerticalLayout implements HasUrlParameter<Integer> {
@@ -42,6 +44,7 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
     private Button addManager;
     private Button addOwner;
 
+    @Autowired
     public ShopMembersView(MyShopPresenter myShopPresenter) {
         this.presenter = myShopPresenter;
         setPadding(true);
