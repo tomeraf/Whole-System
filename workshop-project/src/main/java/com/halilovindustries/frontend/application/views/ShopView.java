@@ -2,6 +2,7 @@ package com.halilovindustries.frontend.application.views;
 
 import java.time.Year;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -336,6 +337,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Dialog dialog = new Dialog();
         dialog.setWidth("300px");
 
+
         NumberField minPrice = new NumberField("Min Price");
         NumberField maxPrice = new NumberField("Max Price");
         ComboBox<String> category = new ComboBox<>("Category");
@@ -343,7 +345,43 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         ComboBox<Integer> rating = new ComboBox<>("Rating");
         rating.setItems(1,2,3,4,5);
 
-        Button apply = new Button("Apply", e -> dialog.close());
+        Button apply = new Button("Apply", e -> {
+        HashMap<String, String> filters = new HashMap<>();
+
+        if (minPrice.getValue() != null) {
+            filters.put("minPrice", String.valueOf(minPrice.getValue()));
+        }
+        if (maxPrice.getValue() != null) {
+            filters.put("maxPrice", String.valueOf(maxPrice.getValue()));
+        }
+        if (category.getValue() != null && !"All".equals(category.getValue())) {
+            filters.put("category", category.getValue());
+        }
+        if (rating.getValue() != null) {
+            filters.put("rating", String.valueOf(rating.getValue()));
+        }
+
+        shopPresenter.getItemByFilter(shopId, filters, filteredItems -> {
+            UI.getCurrent().access(() -> {
+                if (filteredItems == null || filteredItems.isEmpty()) {
+                    Notification.show("No items matched your filters.", 3000, Position.MIDDLE);
+                } else {
+                    Notification.show("Filter applied.", 2000, Position.BOTTOM_START);
+                }
+                removeAll();
+                FlexLayout itemsLayout = new FlexLayout();
+                itemsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                itemsLayout.getStyle().set("gap", "1rem");
+                for (ItemDTO item : filteredItems) {
+                    itemsLayout.add(createItemCard(item)); // assuming you have this method
+                }
+                add(itemsLayout); // finally add it to the view
+
+            });
+        });
+        dialog.close();
+    });
+
         apply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         VerticalLayout layout = new VerticalLayout(

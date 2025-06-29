@@ -63,7 +63,7 @@ public class ShopPresenter extends AbstractPresenter {
         });
     }
 
-    public void getItemByFilter(int shopId, String itemName, HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
+    public void getItemByFilter(int shopId, HashMap<String, String> filters, Consumer<List<ItemDTO>> onFinish) {
         getSessionToken(token -> {
         UI ui = UI.getCurrent();
         if (ui == null) return;
@@ -74,7 +74,7 @@ public class ShopPresenter extends AbstractPresenter {
                 onFinish.accept(null);
                 return;
             }
-            Response<List<ItemDTO>> response = shopService.filterItemsInShop(token, 0, filters);
+            Response<List<ItemDTO>> response = shopService.filterItemsInShop(token,shopId, filters);
             if (!response.isOk()) {
                 UI.getCurrent().access(() ->
                     Notification.show("Error: " + response.getError(), 2000, Position.MIDDLE)
