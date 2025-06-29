@@ -23,6 +23,7 @@ import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
 
@@ -2397,5 +2398,54 @@ public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
         assertTrue(afterItems.isOk(), "Should still be able to get items");
         assertEquals(initialItems.getData().size(), afterItems.getData().size(),
             "Number of items should remain unchanged");
+    }
+    
+
+
+
+    //shop order history tests
+    @Test
+    public void testGetShopOrderHistory_ShouldReturnOrderHistory() {
+        // 1) Setup initial state
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+        String owner = fixtures.generateRegisteredUserSession("ownerSOH", "pwdSOH");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "OrderHistoryShop");
+
+        
+        Response<List<BasketDTO>> resp = shopService.getShopOrderHistory(owner, shop.getId());
+        assertTrue(resp.isOk(), "getShopOrderHistory should succeed");
+        assertTrue(resp.getData().isEmpty(), "Initial order history should be empty");
+
+        // 2) Place an order
+        String buyer = fixtures.generateRegisteredUserSession("buyerSOH", "pwdSOH");
+        orderService.addItemToCart(buyer, shop.getId(), 0, 1);
+        fixtures.successfulBuyCartContent(buyer, p, s);
+        Response<List<BasketDTO>> secondResp = shopService.getShopOrderHistory(owner, shop.getId());
+        assertTrue(secondResp.isOk(), "Should be able to get order history again");
+        assertFalse(secondResp.getData().isEmpty(), "Order history should contain the placed order");
+    }
+    @Test
+    public void testGetShopOrderHistory_ShouldReturnEmptyForNoOrders() {
+        // 1) Setup initial state
+        String owner = fixtures.generateRegisteredUserSession("ownerSOH2", "pwdSOH2");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "OrderHistoryShop2");
+
+        Response<List<BasketDTO>> resp = shopService.getShopOrderHistory(owner, shop.getId());
+        assertTrue(resp.isOk(), "getShopOrderHistory should succeed");
+        assertTrue(resp.getData().isEmpty(), "Order history should be empty for new shop");
+    }
+    @Test
+    public void testGetShopOrderHistory_NoPermissions_ShouldFail() {
+        // 1) Setup initial state
+        String owner = fixtures.generateRegisteredUserSession("ownerSOH3", "pwdSOH3");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "OrderHistoryShop3");
+        String otherUser = fixtures.generateRegisteredUserSession("otherUserSOH", "pwdSOH");
+        // 2) Attempt to get order history without permissions
+        Response<List<BasketDTO>> resp = shopService.getShopOrderHistory(otherUser, shop.getId());
+        // Assert - Basic functionality
+        assertFalse(resp.isOk(), "getShopOrderHistory should fail for user without permissions");
     }
 }

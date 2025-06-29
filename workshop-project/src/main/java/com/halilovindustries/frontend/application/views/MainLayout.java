@@ -118,17 +118,25 @@ public class MainLayout extends AppLayout {
                             if (presenter.isLoggedIn(token)) {
                                 UI.getCurrent().access(() -> {
                                     try {
-                                        // Update greeting
                                         greeting.setText("Hello, " + presenter.getUsername(token));
                                         
                                         // Add logged-in specific items
                                         nav.addItem(new SideNavItem("My Shops", MyShopsView.class, VaadinIcon.USER.create()));
                                         nav.addItem(new SideNavItem("Inbox", InboxView.class, VaadinIcon.ENVELOPE.create()));
                                         nav.addItem(new SideNavItem("Order History", OrdersView.class, VaadinIcon.CHECK.create()));
-                                        presenter.isSystemManager(isManager -> {if (isManager) {nav.addItem(new SideNavItem("System Manager", SystemManagerView.class, VaadinIcon.TOOLS.create()));}});
 
-
-
+                                         // Add system manager check and menu item
+                                        presenter.isSystemManager(isManager -> {
+                                            if (isManager) {
+                                                UI.getCurrent().access(() -> {
+                                                    nav.addItem(new SideNavItem(
+                                                        "System",
+                                                        SystemManagerView.class,
+                                                        VaadinIcon.TOOLS.create()
+                                                    ));
+                                                });
+                                            }
+                                        });
                                     } catch (Exception e) {
                                         System.err.println("Error adding nav items: " + e.getMessage());
                                     }

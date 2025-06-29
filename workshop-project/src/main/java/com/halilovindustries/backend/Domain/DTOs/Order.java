@@ -39,6 +39,9 @@ public class Order {
     public List<ItemDTO> getItems() {
         return items; // Flatten the list of lists into a single list
     }
+    public List<ItemDTO> getItemsByShopId(int shopId) {
+        return items.stream().filter(item -> item.getShopId() == shopId).collect(Collectors.toList()); // Return the list of items for the specified shop ID
+    }
 
     // public List<ItemDTO> getShopItems(int shopId) {
     //     return items.stream().filter(item->item.getShopId()==shopId).toList(); // Return the list of items for the specified shop ID or null if not found

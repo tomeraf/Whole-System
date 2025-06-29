@@ -15,6 +15,7 @@ import com.halilovindustries.backend.Domain.Shop.*;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
+import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
 import com.halilovindustries.backend.Domain.DTOs.ConditionDTO;
 import com.halilovindustries.backend.Domain.DTOs.DiscountDTO;
@@ -1557,79 +1558,35 @@ public class ShopService extends DatabaseAwareService {
         }); 
     }
 
+    //view shop order history
     @Transactional
-    public Response<List<ShopDTO>> getClosedShops(String token) {
+    public Response<List<BasketDTO>> getShopOrderHistory(String sessionToken, int shopID) {
         try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-            if (!authenticationAdapter.validateToken(token)) {
+            if (!authenticationAdapter.validateToken(sessionToken)) {
                 throw new Exception("User is not logged in");
             }
-            Guest guest = userRepository.getUserById(Integer.parseInt(authenticationAdapter.getUsername(token)));
-            if(!guest.isSystemManager()) {
-                throw new Exception("User is not a system manager");
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
             }
-            List<Shop> shops = shopRepository.getAllShops().values().stream().filter(shop -> !shop.isOpen()).toList();
-            List<ShopDTO> shopDTOs = new ArrayList<>();
-            for (Shop shop : shops) {
-                List<Item> items = shop.getItems();
-                HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
-                for (Item item : items) {
-                    ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
-                            item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
-                            item.getNumOfOrders());
-                    itemDTOs.put(item.getId(), itemDTO);
-                }
-                ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
-                        shop.getRating(), shop.getRatingCount());
-                shopDTOs.add(shopDTO);
+            Shop shop = this.shopRepository.getShopById(shopID);
+            managementService.getShopOrderHistory(user,shop);
+            HashMap<Integer,List<ItemDTO>> orderHistory = orderRepository.getOrdersByShopId(shopID);
+            List<BasketDTO> orderHistoryFormatted = new ArrayList<>();
+            for(Map.Entry<Integer, List<ItemDTO>> entry : orderHistory.entrySet()) {
+                String username = userRepository.getUserById(orderRepository.getOrder(entry.getKey()).getUserID()).getUsername();
+                username = username == null ? "Guest" : username;
+                BasketDTO basket = new BasketDTO(entry.getKey(),username, entry.getValue());
+                orderHistoryFormatted.add(basket);
             }
-            return Response.ok(shopDTOs);
-        }
-        catch (MaintenanceModeException e) {
-            // Special handling for maintenance mode
-            return Response.error(e.getMessage());
-        }
-        catch (Exception e) {
-            handleDatabaseException(e);
-            logger.error(() -> "Error watching closed shops: " + e.getMessage());
-            return Response.error("Error watching closed shops: " + e.getMessage());
+            logger.info(() -> "Order history retrieved in shop: " + shop.getName() + " by user: " + userID);
+            return Response.ok(orderHistoryFormatted);
+        } catch (Exception e) {
+            logger.error(() -> "Error retrieving order history: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
         }
     }
 
-//    @Transactional
-//    public Response<Void> reopenShop(String token, int shopID)  {
-//        // Check if the user is logged in
-//        // If not, prompt to log in or register
-//        // If logged in, close the shop with the provided details
-//        try {
-//            // Check database health before proceeding
-//            checkDatabaseHealth("current method");
-//            // now exclusive: no reads or other writes
-//            if (!authenticationAdapter.validateToken(token)) {
-//                throw new Exception("User is not logged in");
-//            }
-//            int userID = Integer.parseInt(authenticationAdapter.getUsername(token));
-//            Registered user = (Registered) this.userRepository.getUserById(userID);
-//            Registered founder= (Registered) this.userRepository.getUserById(shopRepository.getShopById(shopID).getFounderID());
-//            if(user.isSuspended()) {
-//                return Response.error("User is suspended");
-//            }
-//            Shop shop = shopRepository.getShopById(shopID);
-//            List<Integer> membersIDs = shop.getMembersIDs();
-//            managementService.reOpenShop(user, shop,founder);
-//            notificationHandler.notifyUsers(membersIDs, "Shop " + shop.getName() + " is closed");
-//            logger.info(() -> "Shop closed: " + shop.getName() + " by user: " + userID);
-//            return Response.ok();
-//        }
-//        catch (MaintenanceModeException e) {
-//            // Special handling for maintenance mode
-//            return Response.error(e.getMessage());
-//        }
-//        catch (Exception e) {
-//            handleDatabaseException(e);
-//            logger.error(() -> "Error closing shop: " + e.getMessage());
-//            return Response.error("Error: " + e.getMessage());
-//        }
-//    }
 }
+

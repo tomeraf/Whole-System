@@ -1,5 +1,7 @@
 package com.halilovindustries.frontend.application.views;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.halilovindustries.frontend.application.presenters.MyShopPresenter;
 import com.vaadin.flow.component.ClickNotifier;
 import com.vaadin.flow.component.Component;
@@ -30,9 +32,11 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
     private Button inboxBtn;
     private Button policiesBtn;
     private Button closeBtn;
+    private Button historyBtn;
 
     H2 title;
 
+    @Autowired
     public ManageShopView(MyShopPresenter presenter) {
         this.presenter = presenter;
 
@@ -42,6 +46,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
 
         // 1️⃣ Title + Controls Row
         title = new H2(shopName);
+
 
         policiesBtn = new Button("Policies", VaadinIcon.GAVEL.create());
         policiesBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
@@ -75,6 +80,12 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
                             .set("border", "white")
                             .set("color", "white");
         
+        historyBtn = new Button("History", VaadinIcon.CLOCK.create());
+        historyBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        historyBtn.getStyle().set("background-color", "white")
+                            .set("border", "2px solid darkblue");
+        
+        
 
         // pack the buttons together
         HorizontalLayout controls = new HorizontalLayout(
@@ -82,6 +93,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
                 membersBtn,
                 editItemsBtn,
                 inboxBtn,
+                historyBtn,
                 closeBtn
         );
         controls.setSpacing(true);
@@ -114,6 +126,8 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
         inboxBtn.addClickListener(e -> UI.getCurrent().navigate("shop-inbox/" + shopID));
 
         policiesBtn.addClickListener(e -> UI.getCurrent().navigate("shop-policies/" + shopID));
+
+        historyBtn.addClickListener(e -> UI.getCurrent().navigate("shop-history/" + shopID));
 
         closeBtn.addClickListener(e -> {
             // 1️⃣ Ask for confirmation

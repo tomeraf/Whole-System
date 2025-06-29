@@ -1,10 +1,13 @@
 package com.halilovindustries.frontend.application.views;
 
+import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.User.Suspension;
+import com.halilovindustries.frontend.application.presenters.ShopsPresenter;
 import com.halilovindustries.frontend.application.presenters.SystemManagerPresenter;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
@@ -28,13 +31,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Route(value = "system-manager", layout = MainLayout.class)
 @PageTitle("System Manager")
 public class SystemManagerView extends VerticalLayout 
-        //implements BeforeEnterObserver 
-        {
+    {
 
     private final SystemManagerPresenter presenter;
+    private final ShopsPresenter shopsPresenter;
     private final Grid<Map.Entry<String, Suspension>> grid;
     private final Map<String, Suspension> suspensions = new LinkedHashMap<>();
     private final Grid<ShopDTO> closedShopsGrid;
@@ -44,8 +49,10 @@ public class SystemManagerView extends VerticalLayout
 
 
 
-    public SystemManagerView(SystemManagerPresenter presenter) {
+    @Autowired
+    public SystemManagerView(SystemManagerPresenter presenter, ShopsPresenter shopsPresenter) {
         this.presenter = presenter;
+        this.shopsPresenter = shopsPresenter;
         setPadding(true);
         setSpacing(true);
 
@@ -168,41 +175,62 @@ public class SystemManagerView extends VerticalLayout
 
     private void openCloseShopDialog() {
         Dialog dlg = new Dialog();
-        dlg.setWidth("300px");
+        dlg.setWidth("400px");
         dlg.add(new H2("Close Shop"));
 
-        TextField shopNameField = new TextField("Shop Name");
-        shopNameField.setRequired(true);
-
-
-        Button close = new Button("Close", evt -> {
-            String shopName = shopNameField.getValue();
-            if (shopName.isEmpty()) {
-                Notification.show("Shop name is required", 3000, Position.MIDDLE);
-                return;
-            }
-            presenter.getShopId(shopName, shopId -> {
-                if (shopId == null) {
-                    Notification.show("Shop not found", 3000, Position.MIDDLE);
-                    return;
+        // Create a ComboBox for shop selection instead of a text field
+        ComboBox<ShopDTO> shopSelector = new ComboBox<>("Select Shop");
+        shopSelector.setItemLabelGenerator(ShopDTO::getName);
+        shopSelector.setWidthFull();
+        shopSelector.setRequired(true);
+        
+        // Load all shops from the system
+        shopsPresenter.showAllShops(shops -> {
+            UI.getCurrent().access(() -> {
+                shopSelector.setItems(shops);
+                if (shops.isEmpty()) {
+                    shopSelector.setPlaceholder("No shops available");
+                    Notification.show("No shops found in the system", 
+                        3000, Position.MIDDLE);
+                } else {
+                    shopSelector.setPlaceholder("Select a shop to close");
                 }
-
-                presenter.closeShop(shopId, success -> {
-                    UI.getCurrent().access(() -> {
-                        if (success) {
-                            dlg.close();
-                        } else {
-                        }
-                    });
-                });
             });
         });
-        close.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        Button close = new Button("Close Shop", evt -> {
+            ShopDTO selectedShop = shopSelector.getValue();
+            if (selectedShop == null) {
+                Notification.show("Please select a shop", 3000, Position.MIDDLE);
+                return;
+            }
+            
+        
+            presenter.closeShop(selectedShop.getId(), success -> {
+            UI.getCurrent().access(() -> {
+                if (success) {
+                    Notification.show("Shop closed successfully", 3000, Position.MIDDLE);
+                    dlg.close();
+                } else {
+                    Notification.show("Failed to close shop", 3000, Position.MIDDLE);
+                }
+            });
+        });
+    });
+
+    
+        close.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         Button cancel = new Button("Cancel", evt -> dlg.close());
 
         HorizontalLayout actions = new HorizontalLayout(close, cancel);
-        dlg.add(shopNameField, actions);
+        actions.setSpacing(true);
+        
+        VerticalLayout content = new VerticalLayout(shopSelector, actions);
+        content.setPadding(false);
+        content.setSpacing(true);
+        
+        dlg.add(content);
         dlg.open();
     }
     
