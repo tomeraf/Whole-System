@@ -259,12 +259,13 @@ public class Shop {
         for (Integer itemId : itemsToPurchase.keySet()) {
             allItems.put(getItem(itemId), itemsToPurchase.get(itemId));
         }
+
         purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
             Item item = items.stream()          //used to check if exists, if not throw exception
                 .filter(i -> i.getId() == id)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+                .orElseThrow(() -> new IllegalArgumentException(id +" does not exist in the shop."));
             result = result && getItem(id).quantityCheck(itemsToPurchase.get(id)); //assuming basket.get(item) returns the quantity of the item wanting to purchase
         }
         return result;
@@ -596,22 +597,22 @@ public class Shop {
         return discountPolicy.getDiscountTypes();
     }
 
-    public HashMap<Item, Double> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
+    public Pair<HashMap<Item, Double>,List<Integer>> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
         HashMap<Item, Integer> allItems = new HashMap<>();
+        List<Integer> badItems = new ArrayList<>();
         for(Integer itemId : itemsMap.keySet()) {
-            if(!isItemInShop(itemId))
+            if(!isItemInShop(itemId) || getItem(itemId).getQuantity() < itemsMap.get(itemId))
             {
-                continue; // Skip items that are not in the shop
-                //throw new IllegalArgumentException("Item ID does not exist in the shop.");
+
+                badItems.add(itemId);
+                continue;
+
             }
             Item item = getItem(itemId);
-            if(item.getQuantity() < itemsMap.get(itemId)) {
-                itemsMap.remove(itemId);
-            }
             allItems.put(item, itemsMap.get(itemId));
         }
 
-        return discountPolicy.getPricePerItem(allItems);
+        return new Pair<>(discountPolicy.getPricePerItem(allItems),badItems);
     }
     public boolean isItemInShop(int itemId) {
         return items.stream().anyMatch(item -> item.getId() == itemId);

@@ -297,6 +297,32 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         .set("border-radius", "0 4px 4px 0").set("border", "1px solid #ccc").set("border-left", "none")
         .set("background-color", "#F7B05B").set("color", "black");
 
+        searchBtn.addClickListener(e -> {
+                    String itemName = searchBar.getValue().trim();
+                    shopPresenter.getItemByFilter(shopId,itemName, new HashMap<>(), filteredItems -> {
+                        UI.getCurrent().access(() -> {
+                            if (filteredItems == null || filteredItems.isEmpty()) {
+                                Notification.show("No items matched your filters.", 3000, Position.MIDDLE);
+                            } else {
+                                Notification.show("Filter applied.", 2000, Position.BOTTOM_START);
+                            }
+                            removeAll();
+                            FlexLayout itemsLayout = new FlexLayout();
+                            itemsLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+                            itemsLayout.getStyle().set("gap", "1rem");
+                            for (ItemDTO item : filteredItems) {
+                                itemsLayout.add(createItemCard(item)); // assuming you have this method
+                            }
+                            add(itemsLayout); // finally add it to the view
+
+                        });
+                    });
+                });
+
+
+
+
+
     // 5️⃣ Message button
     msgBtn = new Button("Message", VaadinIcon.ENVELOPE.create());
     msgBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -361,7 +387,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             filters.put("rating", String.valueOf(rating.getValue()));
         }
 
-        shopPresenter.getItemByFilter(shopId, filters, filteredItems -> {
+        shopPresenter.getItemByFilter(shopId,null, filters, filteredItems -> {
             UI.getCurrent().access(() -> {
                 if (filteredItems == null || filteredItems.isEmpty()) {
                     Notification.show("No items matched your filters.", 3000, Position.MIDDLE);

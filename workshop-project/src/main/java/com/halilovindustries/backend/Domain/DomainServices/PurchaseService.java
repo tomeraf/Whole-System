@@ -124,7 +124,7 @@ public class PurchaseService {
             }
             HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
             for(Shop shop : itemsToBuy.keySet()) {
-                itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)));
+                itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)).getKey());
             }
             Double total = 0.0;
             for(Shop shop : itemsToBuy.keySet()) {
@@ -155,13 +155,20 @@ public class PurchaseService {
     }
 
 
-    public List<ItemDTO> checkCartContent(Guest user,List<Shop> shops)
+    public Pair<List<ItemDTO>,Boolean> checkCartContent(Guest user,List<Shop> shops)
     {
         List<ItemDTO> cart = new ArrayList<>();
         Map<Integer,Map<Integer,Integer>> items = user.getCart().getItems();
+        boolean isBadItem = false;
         for(Shop shop : shops) {
             Map<Integer,Integer> itemsMap = items.get(shop.getId());
-            HashMap<Item,Double> discountedPrices= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
+            Pair<HashMap<Item,Double>,List<Integer>> discountedPricesPair= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
+            List<Integer> badItems = discountedPricesPair.getValue();
+            for(Integer badItem : badItems) {
+                isBadItem=true;
+                user.getCart().deleteItem(shop.getId(), badItem);
+            }
+            HashMap<Item,Double> discountedPrices = discountedPricesPair.getKey();
             List<ItemDTO> itemsList = new ArrayList<>();
             for(Item item : discountedPrices.keySet()) {
                 int quantity = itemsMap.get(item.getId());
@@ -169,7 +176,8 @@ public class PurchaseService {
             }
             cart.addAll(itemsList);
         }
-        return cart;
+
+        return new Pair<>(cart, isBadItem);
     }
 
     // public void directPurchase(Guest user, int itemId)
