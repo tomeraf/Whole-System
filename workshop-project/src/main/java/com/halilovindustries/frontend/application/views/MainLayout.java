@@ -137,6 +137,10 @@ public class MainLayout extends AppLayout {
                                                 });
                                             }
                                         });
+
+                                        // Register for notifications
+                                        // String userId = presenter.extractUserId(token);
+                                        // registerForNotifications(userId);
                                     } catch (Exception e) {
                                         System.err.println("Error adding nav items: " + e.getMessage());
                                     }
@@ -342,15 +346,18 @@ public class MainLayout extends AppLayout {
                 // Normal flow for non-maintenance mode
                 refreshDrawer();
                 
-                // Try to register for notifications if user is logged in
-                try {
-                    presenter.getSessionToken(token -> {
-                        // Existing token validation code...
-                    });
-                } catch (Exception e) {
-                    System.err.println("Error checking session token: " + e.getMessage());
-                }
+                // Add this block to register for notifications if user is logged in
+                presenter.getSessionToken(token -> {
+                    if (token != null && presenter.validateToken(token) && presenter.isLoggedIn(token)) {
+                        String userId = presenter.extractUserId(token);
+                        System.out.println("Re-registering notifications for user: " + userId);
+                        UI.getCurrent().access(() -> {
+                            registerForNotifications(userId);
+                        });
+                    }
+                });
             }
+            
         } catch (Exception e) {
             System.err.println("Error in onAttach: " + e.getMessage());
             // Ensure we at least have a basic UI even in case of error
