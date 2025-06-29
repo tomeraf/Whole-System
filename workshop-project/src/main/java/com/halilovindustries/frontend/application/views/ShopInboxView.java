@@ -3,6 +3,8 @@ package com.halilovindustries.frontend.application.views;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.frontend.application.presenters.ShopInboxPresenter;
 import com.vaadin.flow.component.UI;
@@ -33,6 +35,7 @@ public class ShopInboxView extends VerticalLayout implements HasUrlParameter<Int
     private Button back = new Button("← Back");
     
 
+    @Autowired
     public ShopInboxView(ShopInboxPresenter presenter) {
         this.presenter = presenter;
         setPadding(true);

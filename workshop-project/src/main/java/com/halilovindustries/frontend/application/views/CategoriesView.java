@@ -6,7 +6,6 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
-// 1️⃣ Register under “shops” and tie it to MainLayout
 @Route(value = "Categories", layout = MainLayout.class)
 @CssImport("./themes/my-app/categories-view.css")
 public class CategoriesView extends VerticalLayout {

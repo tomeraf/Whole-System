@@ -1,5 +1,7 @@
 package com.halilovindustries.frontend.application.views;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.halilovindustries.frontend.application.presenters.MyShopPresenter;
 import com.vaadin.flow.component.ClickNotifier;
 import com.vaadin.flow.component.Component;
@@ -34,6 +36,7 @@ public class ManageShopView extends VerticalLayout implements HasUrlParameter<In
 
     H2 title;
 
+    @Autowired
     public ManageShopView(MyShopPresenter presenter) {
         this.presenter = presenter;
 

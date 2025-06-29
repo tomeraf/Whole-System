@@ -1,5 +1,7 @@
 package com.halilovindustries.frontend.application.views;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.halilovindustries.backend.Domain.Message;
 import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.vaadin.flow.component.UI;
@@ -28,6 +30,7 @@ public class InboxView extends VerticalLayout{
     private Grid<Message> grid;
     private Integer shopID;
 
+    @Autowired
     public InboxView(InboxPresenter presenter) {
         this.presenter = presenter;
         setPadding(true);
