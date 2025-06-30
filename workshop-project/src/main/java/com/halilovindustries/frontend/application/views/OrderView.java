@@ -19,7 +19,6 @@ public class OrderView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
-        // 1️⃣ Title
         add(new H2("Order History"));
 
         Grid<Void> grid = new Grid<>(Void.class, false);
@@ -34,7 +33,6 @@ public class OrderView extends VerticalLayout {
                 .setHeader("Price")
                 .setAutoWidth(true);
 
-        // 3️⃣ Footer row for the total
         FooterRow footer = grid.appendFooterRow();
         footer.getCell(itemCol).setText("Total");                      // label in 1st column
         footer.getCell(qtyCol).setText("");                           // blank middle cell

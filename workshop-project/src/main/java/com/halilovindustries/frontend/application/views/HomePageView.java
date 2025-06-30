@@ -538,6 +538,7 @@ public class HomePageView extends Composite<VerticalLayout> {
                     } else if (loggedIn) {
                         String userId = presenter.extractUserId(token);
                         System.out.println("User is logged in with ID: " + userId);
+                        registerForNotifications(userId);
                         showLoggedInUI();
                     } else {
                         // Token is valid JWT but not logged in

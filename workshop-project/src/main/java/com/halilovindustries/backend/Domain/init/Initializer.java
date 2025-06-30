@@ -84,19 +84,6 @@ public class Initializer {
     }
 
     private void readAndApply() {
-        /*try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile())), StandardCharsets.UTF_8))) {
-
-
-
-
-        try(BufferedReader reader = Files.newBufferedReader(Path.of(initConfig.getInitFile()), StandardCharsets.UTF_8);
-        ){
-
-
-
-         */
-
         try {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(initConfig.getInitFile());
             BufferedReader reader;
@@ -292,18 +279,6 @@ public class Initializer {
                 case "change-item-description": {
                     if (args.length != 3)
                         throw new IllegalArgumentException("change-item-description should have 3 args");
-                    return true;
-                }
-
-                case "rate-shop": {
-                    if (args.length != 2)
-                        throw new IllegalArgumentException("rate-shop should have 2 args");
-                    return true;
-                }
-
-                case "rate-item": {
-                    if (args.length != 3)
-                        throw new IllegalArgumentException("rate-item should have 3 args");
                     return true;
                 }
 
@@ -581,23 +556,6 @@ public class Initializer {
                             Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]),
                             args[2]);
-                    return res.isOk();
-                }
-
-                case "rate-shop": {
-                    if (args.length != 2)
-                        throw new IllegalArgumentException("rate-shop should have 2 args");
-                    Response<Void> res = shopService.rateShop(initST, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
-                    return res.isOk();
-                }
-
-                case "rate-item": {
-                    if (args.length != 3)
-                        throw new IllegalArgumentException("rate-item should have 3 args");
-                    Response<Void> res = shopService.rateItem(initST,
-                            Integer.parseInt(args[0]),
-                            Integer.parseInt(args[1]),
-                            Integer.parseInt(args[2]));
                     return res.isOk();
                 }
 

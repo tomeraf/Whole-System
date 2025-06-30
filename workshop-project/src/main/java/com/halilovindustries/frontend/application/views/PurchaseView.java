@@ -28,12 +28,15 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Route(value = "purchase", layout = MainLayout.class)
 @PageTitle("Checkout")
 public class PurchaseView extends VerticalLayout {
 
     private final PurchasePresenter presenter;
 
+    @Autowired
     public PurchaseView(PurchasePresenter presenter) {
         this.presenter = presenter;            // ① store the injected presenter
 

@@ -41,10 +41,7 @@ public class Broadcaster {
      * @param listener the listener to register
      * @return a Registration that can be used to remove the listener
      */
-    public static synchronized Registration register(String sessionId, String userUuid, Consumer<String> listener) {
-        // Generate unique session ID
-        //String sessionId = UI.getCurrent().getUIId(   ) + "-" + System.currentTimeMillis();
-        
+    public static synchronized Registration register(String sessionId, String userUuid, Consumer<String> listener) {        
         // Store in both maps
         listeners.computeIfAbsent(userUuid, k -> new CopyOnWriteArrayList<>()).add(listener);
         sessionListeners.put(sessionId, new Pair<>(userUuid, listener));

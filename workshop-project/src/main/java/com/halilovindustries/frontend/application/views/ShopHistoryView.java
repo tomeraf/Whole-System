@@ -2,6 +2,8 @@ package com.halilovindustries.frontend.application.views;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.frontend.application.presenters.ShopHistoryPresenter;
@@ -20,6 +22,7 @@ import com.vaadin.flow.component.grid.Grid;
 public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>  {
     private ShopHistoryPresenter presenter;
 
+    @Autowired
     public ShopHistoryView(ShopHistoryPresenter presenter) {
         this.presenter = presenter;
         setPadding(true);
