@@ -161,12 +161,22 @@ public class PurchaseService {
     public Pair<List<ItemDTO>,Boolean> checkCartContent(Guest user,List<Shop> shops)
     {
         List<ItemDTO> cart = new ArrayList<>();
+        user.getCart().update();
         Map<Integer,Map<Integer,Integer>> items = user.getCart().getItems();
         boolean isBadItem = false;
         for(Shop shop : shops) {
-            Map<Integer,Integer> itemsMap = items.get(shop.getId());
+            if (items.get(shop.getId()) == null){
+                continue;
+            }
+            Map<Integer,Integer> itemsMap = items.get(shop.getId());    
             Pair<HashMap<Item,Double>,List<Integer>> discountedPricesPair= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
             List<Integer> badItems = discountedPricesPair.getValue();
+            for(Integer itemId : itemsMap.keySet()) {
+                if(discountedPricesPair.getKey().keySet().stream().filter(item -> item.getId() == itemId).toList().size() == 0 && !discountedPricesPair.getValue().contains(itemId)) {
+                    isBadItem = true;
+                    user.getCart().deleteItem(shop.getId(), itemId);
+                }
+            }
             for(Integer badItem : badItems) {
                 isBadItem=true;
                 user.getCart().deleteItem(shop.getId(), badItem);

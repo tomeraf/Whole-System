@@ -139,7 +139,6 @@ public class PoliciesPresenter extends AbstractPresenter {
                 onFinish.accept(null);
                 return;
             }
-
             Response<ShopDTO> resp = shopService.getShopInfo(token, shopID);
             if (!resp.isOk()) {
                 Notification.show("Error: " + resp.getError(), 2000, Position.MIDDLE);
