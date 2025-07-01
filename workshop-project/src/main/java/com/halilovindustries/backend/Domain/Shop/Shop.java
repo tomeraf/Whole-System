@@ -601,7 +601,7 @@ public class Shop {
         HashMap<Item, Integer> allItems = new HashMap<>();
         List<Integer> badItems = new ArrayList<>();
         for(Integer itemId : itemsMap.keySet()) {
-            if(!isItemInShop(itemId) || getItem(itemId).getQuantity() < itemsMap.get(itemId))
+            if(!isItemInShop(itemId) || getItem(itemId).getQuantity() < itemsMap.get(itemId) || !isOpen())
             {
 
                 badItems.add(itemId);

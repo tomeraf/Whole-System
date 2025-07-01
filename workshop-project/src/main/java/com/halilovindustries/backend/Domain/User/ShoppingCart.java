@@ -2,6 +2,7 @@ package com.halilovindustries.backend.Domain.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -66,9 +67,15 @@ public class ShoppingCart {
 
     // Use case #2.4.b: Change cart content
     public boolean deleteItem(int shopID, int itemID) {
-        for (ShoppingBasket basket : baskets) {
+        Iterator<ShoppingBasket> iterator = baskets.iterator();
+        while (iterator.hasNext()) {
+            ShoppingBasket basket = iterator.next();
             if (basket.getShopID() == shopID) {
-                return basket.removeItem(itemID);
+                boolean removed = basket.removeItem(itemID);
+                if (basket.getItems().isEmpty()) {
+                    iterator.remove(); 
+                }
+                return removed;
             }
         }
         return false;
@@ -80,6 +87,7 @@ public class ShoppingCart {
         for (ShoppingBasket basket : baskets) {
             basket.clearBasket();
         }
+        baskets.clear();
     }
     public List<ShoppingBasket> getBaskets() {
         return baskets;
@@ -90,6 +98,9 @@ public class ShoppingCart {
             shopIDs.add(basket.getShopID());
         }
         return shopIDs;
+    }
+    public void update() {
+        baskets.removeIf(basket -> basket.getItems().isEmpty());
     }
 }
 
