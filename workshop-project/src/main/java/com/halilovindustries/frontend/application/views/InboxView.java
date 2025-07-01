@@ -3,6 +3,7 @@ package com.halilovindustries.frontend.application.views;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.halilovindustries.backend.Domain.Message;
+import com.halilovindustries.backend.Domain.OfferMessage;
 import com.halilovindustries.frontend.application.presenters.InboxPresenter;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -13,6 +14,8 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -69,16 +72,77 @@ public class InboxView extends VerticalLayout{
         // 2️⃣ Show the content in a dialog when they click a row
         grid.asSingleSelect().addValueChangeListener(e -> {
             Message msg = e.getValue();
-            if (msg != null) {
-                Dialog dlg = new Dialog();
-                dlg.add(
-                    new H2(msg.getTitle()),
-                    new Paragraph(msg.getContent()),
-                    new Button("Close", ev -> dlg.close())
-                );
-                dlg.open();
+            if (msg == null) return;
+
+            Dialog dlg = new Dialog(new H2(msg.getTitle()),
+                                    new Paragraph(msg.getContent()));
+
+            // 1️⃣ Offer → Accept / Reject
+            if (msg.isOffer() && ((OfferMessage)msg).getDecision() == null) {
+                Button accept = new Button(VaadinIcon.CHECK.create(), ev -> {
+                    presenter.respondToOffer(
+                        msg.getShopName(), 
+                        msg.getId(), 
+                        true, 
+                        success -> {
+                            if (success) {
+                                // 1️⃣ update local OfferMessage
+                                ((OfferMessage) msg).setDecision(true);
+                                // 2️⃣ close dialog
+                                dlg.close();
+                                // 3️⃣ show feedback
+                                Notification.show("Offer accepted", 2000, Position.MIDDLE);
+                                // 4️⃣ refresh just that item (or entire grid)
+                                grid.getDataProvider().refreshItem(msg);
+                            }
+                        }
+                    );
+                });
+                accept.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+
+                Button reject = new Button(VaadinIcon.CLOSE.create(), ev -> {
+                    presenter.respondToOffer(
+                        msg.getShopName(),
+                        msg.getId(),
+                        false,
+                        success -> {
+                            if (success) {
+                                ((OfferMessage) msg).setDecision(false);
+                                dlg.close();
+                                Notification.show("Offer rejected", 2000, Position.MIDDLE);
+                                grid.getDataProvider().refreshItem(msg);
+                            }
+                        }
+                    );
+                });
+                reject.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+                dlg.add(new HorizontalLayout(accept, reject));
             }
+            else if (msg.isOffer() && ((OfferMessage)msg).getDecision() != null) {
+                String decisionText = ((OfferMessage)msg).getDecision() != null && ((OfferMessage)msg).getDecision()
+                                  ? "You accepted this offer"
+                                  : "You rejected this offer";
+                dlg.add(new Paragraph(decisionText));
+                dlg.add(new Button("Close", ev -> dlg.close()));
+            }
+            // 2️⃣ User-to-shop conversation → Reply
+            else if (msg.needResponse() && msg.isFromUser()) {
+                Button reply = new Button("Reply", ev -> {
+                    dlg.close();
+                    openMessageDialog();  // your existing reply-dialog helper
+                });
+                reply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                dlg.add(reply);
+            }
+            // 3️⃣ Anything else → just Close
+            else {
+                dlg.add(new Button("Close", ev -> dlg.close()));
+            }
+
+            dlg.open();
         });
+
 
         add(grid);
         setSizeFull();

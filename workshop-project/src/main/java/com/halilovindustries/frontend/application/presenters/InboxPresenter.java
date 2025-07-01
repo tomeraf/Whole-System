@@ -60,6 +60,35 @@ public class InboxPresenter extends AbstractPresenter {
         });
         });
     }
+
+    public void respondToOffer(String shopName, int messageId, boolean decision, Consumer<Boolean> onFinish) {
+        getSessionToken(token -> {
+        UI ui = UI.getCurrent();
+        if (ui == null) return;
+
+        ui.access(() -> {
+            if (token == null || !validateToken(token) || !isLoggedIn(token)) {
+                Notification.show("No session token found, please reload.", 2000, Notification.Position.MIDDLE);
+                onFinish.accept(false);
+                return;
+            }
+            Response<Void> response = shopService.answerAppointmentOffer(token, shopName, messageId, decision);
+            UI.getCurrent().access(() -> {
+                if (response.isOk()) {
+                    Notification success = Notification.show("Response Sent Successfully");
+                    success.setPosition(Position.MIDDLE);
+                    success.setDuration(3000);
+                    onFinish.accept(true);
+                } else {
+                    Notification failure = Notification.show("Failed to send response");
+                    failure.setPosition(Position.MIDDLE);
+                    failure.setDuration(3000);
+                    onFinish.accept(false);
+                }
+            });
+        });
+        });
+    }
     
     public void getInbox(Consumer<List<Message>> onFinish) {
         getSessionToken(token -> {

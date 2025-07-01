@@ -25,7 +25,7 @@ import com.halilovindustries.backend.Domain.User.*;
 import jakarta.transaction.Transactional;
 
 import com.halilovindustries.backend.Domain.Message;
-
+import com.halilovindustries.backend.Domain.OfferMessage;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.ConcurrencyHandler;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IAuthentication;
@@ -831,9 +831,124 @@ public class ShopService extends DatabaseAwareService {
         }
         return Response.ok();
     }
+
     @Transactional
-    public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName,
-            Set<Permission> permission) {
+    public Response<Void> sendOwnershipOffer(String sessionToken, int shopID, String appointeeName) {
+        try {
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            interactionService.offerMessage(user, appointee, shopRepository.getNextMessageId(), shop, "Ownership offer", appointeeName, false, null);
+            notificationHandler.notifyUser(appointee.getUserID() + "",
+                    "You have received an ownership offer for shop: " + shop.getName());
+            logger.info(() -> "Ownership offer sent: " + appointeeName + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error sending ownership offer: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public Response<Void> sendManagementOffer(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
+        try {
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Registered appointee = userRepository.getUserByName(appointeeName);
+            if (appointee.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            interactionService.offerMessage(user, appointee, shopRepository.getNextMessageId(), shop, "Management offer", appointeeName, true, permission);
+            notificationHandler.notifyUser(appointee.getUserID() + "",
+                    "You have received a management offer for shop: " + shop.getName());
+            logger.info(() -> "Management offer sent: " + appointeeName + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error sending management offer: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+
+    @Transactional
+    public Response<Void> answerAppointmentOffer(String sessionToken, String shopname, int msgId, boolean decision) {
+        try {
+            checkDatabaseHealth("current method");
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            int shopId = shopRepository.getAllShops().keySet().stream()
+                    .filter(id -> shopRepository.getShopById(id).getName().equals(shopname))
+                    .findFirst()
+                    .orElseThrow(() -> new Exception("Shop not found"));
+            Shop shop = shopRepository.getShopById(shopId);
+            if (shop == null) {
+                throw new Exception("Shop not found");
+            }
+            boolean isOffer = interactionService.answerOfferMessage(shop, msgId, decision);
+            if (decision) {
+                OfferMessage offer = (OfferMessage)shop.getMessage(msgId);
+                List<Integer> membersIDs = shop.getMembersIDs();
+                List<Integer> ownersIDs = shop.getOwnerIDs().stream().toList();
+                if (offer.isManagerOffer()) {
+                    managementService.addManager((Registered)userRepository.getUserById(offer.getAppointerId()), shopId, user, offer.getOfferDetails(), (Integer id) -> shopRepository.getShopByIdWithLock(id));
+                    notificationHandler.notifyUsers(membersIDs, "User " + user.getUsername() + " accepted being a manager in the shop: " + shop.getName());
+                } else {
+                    managementService.addOwner((Registered)userRepository.getUserById(offer.getAppointerId()), shop, user);
+                    notificationHandler.notifyUsers(membersIDs, "User " + user.getUsername() + " accepted being an owner in the shop: " + shop.getName());
+                }
+            }
+            logger.info(() -> "Offer answered: " + msgId + " by user: " + userID);
+            return Response.ok();
+        } catch (MaintenanceModeException e) {
+            // Special handling for maintenance mode
+            return Response.error(e.getMessage());
+        }
+        catch (Exception e) {
+            handleDatabaseException(e);
+            logger.error(() -> "Error answering offer: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
