@@ -628,7 +628,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
                     shopPresenter.purchaseAuctionItem(shopID, auction.getId(), payDto, shipDto, order -> {
                         ui.access(() -> {
-                            if (order != null) {
+                            if (order) {
                                 Notification.show("Order placed! 🎉", 2000, Position.MIDDLE);
                                 dialog.close(); // Close on success
                                 UI.getCurrent().navigate(""); // Or refresh, or go somewhere
