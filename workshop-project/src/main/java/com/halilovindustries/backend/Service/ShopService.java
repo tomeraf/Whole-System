@@ -295,9 +295,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<UserDTO> members = new ArrayList<>();
             List<Integer> ownerIDs = new ArrayList<>(shop.getOwnerIDs());
@@ -939,9 +936,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = shopRepository.getShopById(shopID);
             Registered member = userRepository.getUserByName(memberName);
             List<Permission> permissions = managementService.getMembersPermissions(user, shop, member);
@@ -1243,9 +1237,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<ConditionDTO> conditions = managementService.getPurchaseConditions(user, shop);
             logger.info(() -> "Purchase conditions retrieved in shop: " + shop.getName() + " by user: " + userID);
@@ -1271,9 +1262,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<DiscountDTO> discounts = managementService.getDiscounts(user, shop);
             logger.info(() -> "Discounts retrieved in shop: " + shop.getName() + " by user: " + userID);
@@ -1299,9 +1287,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<AuctionDTO> auctions = shop.getActiveAuctions();
             logger.info(() -> "Active auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
@@ -1327,9 +1312,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<AuctionDTO> auctions = shop.getFutureAuctions();
             logger.info(() -> "future auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
@@ -1355,9 +1337,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<BidDTO> bids = managementService.getBids(user, shop).stream()
                 .filter(bid -> !bid.isDone())
@@ -1385,9 +1364,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
              
             if (shop.getBids() == null) {
@@ -1449,9 +1425,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopByName(shopName);
             return Response.ok(shop.getId());
         } 
@@ -1475,9 +1448,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             List<AuctionDTO> auctions = shop.getWonAuctions(userID);
             logger.info(() -> "Won auctions retrieved in shop: " + shop.getName() + " by user: " + userID);
@@ -1543,7 +1513,8 @@ public class ShopService extends DatabaseAwareService {
         }
     }
 
-    @Scheduled(fixedRate = 30000) // Runs every 60 seconds
+    @Scheduled(fixedRate = 30000) // Runs every 30 seconds
+    @Transactional
     public void checkAndNotifyAuctions() {
         executeSkippableOperation(() -> {
             List<Shop> shops = shopRepository.getAllShops().values().stream().toList();
@@ -1567,9 +1538,6 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.getShopOrderHistory(user,shop);
             HashMap<Integer,List<ItemDTO>> orderHistory = orderRepository.getOrdersByShopId(shopID);
