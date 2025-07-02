@@ -78,7 +78,7 @@ public class DBUserRepository implements IUserRepository {
 
     @Override
     public Registered getUserByName(String username) {
-        return jpaAdapter.findByUsername(username).orElseThrow();
+        return jpaAdapter.findByUsername(username).orElse(null);
     }
 
     @Override
