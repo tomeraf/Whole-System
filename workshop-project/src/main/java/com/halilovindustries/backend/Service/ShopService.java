@@ -757,40 +757,6 @@ public class ShopService extends DatabaseAwareService {
             return Response.error("Error: " + e.getMessage());
         }
     }
-    // management
-    // @Transactional
-    // public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
-    //         try {
-    //         // Check database health before proceeding
-    //         checkDatabaseHealth("current method");
-    //             if (!authenticationAdapter.validateToken(sessionToken)) {
-    //                 throw new Exception("User is not logged in");
-    //             }
-    //             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-    //             Registered user = (Registered) this.userRepository.getUserById(userID);
-    //             if (user.isSuspended()) {
-    //                 return Response.error("User is suspended");
-    //             }
-    //             Registered appointee = this.userRepository.getUserByName(appointeeName);
-    //             if (appointee.isSuspended()) {
-    //                 return Response.error("User is suspended");
-    //             }
-    //             Shop shop = this.shopRepository.getShopById(shopID);
-    //             this.managementService.addOwner(user, shop, appointee);
-    //             logger.info(() -> "Shop owner added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
-    //                     + userID);
-    //         } 
-    //     catch (MaintenanceModeException e) {
-    //         // Special handling for maintenance mode
-    //         return Response.error(e.getMessage());
-    //     }
-    //     catch (Exception e) {
-    //         handleDatabaseException(e);
-    //             logger.error(() -> "Error adding shop owner: " + e.getMessage());
-    //             return Response.error("Error: " + e.getMessage());
-    //         }
-    //     return Response.ok();
-    // }
 
     @Transactional
     public Response<Void> removeAppointment(String sessionToken, int shopID, String appointeeName) {
@@ -1721,4 +1687,3 @@ public class ShopService extends DatabaseAwareService {
 
 
 }
-
