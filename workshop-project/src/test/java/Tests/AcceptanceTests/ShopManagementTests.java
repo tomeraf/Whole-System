@@ -1487,7 +1487,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3. Shop status verification
         Response<List<ShopDTO>> userShops = shopService.showUserShops(ownerToken);
         assertTrue(userShops.isOk(), "Should be able to get user's shops");
-        assertFalse(userShops.getData().stream()
+        assertTrue(userShops.getData().stream()
             .anyMatch(s -> s.getId() == shop.getId()), 
             "Shop should still appear in owner's shop list");
     }
@@ -1521,64 +1521,6 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         Response<ShopDTO> shopInfo = shopService.getShopInfo(ownerToken, shop.getId());
         assertTrue(shopInfo.isOk(), "Owner should still have access to closed shop");
     }
-
-    // @Test
-    // @Transactional
-    // @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    // public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws Exception {
-    //     for (int i = 0; i < 10; i++) {
-    //         // --- 1) SETUP & COMMIT ---
-    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop"+i);
-    //         fixtures.registerUserWithoutLogin("candidate"+i, "pass");
-    //         int shopId = shop.getId();
-
-    //         // capture initial shop‐item count
-    //         int initialItemCount =
-    //             shopService.showShopItems(ownerToken, shopId).getData().size();
-
-    //         // commit these inserts so child threads can see them
-    //         TestTransaction.flagForCommit();
-    //         TestTransaction.end();
-    //         TestTransaction.start();
-
-    //         // --- 2) SPAWN TWO PARALLEL ADD-MANAGER CALLS ---
-    //         Set<Permission> perms = Set.of(Permission.VIEW);
-    //         final int iteration = i; // capture the current iteration for use in lambdas
-    //         Callable<Boolean> c1 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
-    //         Callable<Boolean> c2 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
-
-    //         ExecutorService ex = Executors.newFixedThreadPool(2);
-    //         List<Future<Boolean>> results = ex.invokeAll(List.of(c1, c2));
-    //         ex.shutdown();
-
-    //         long successCount = results.stream().map(f -> {
-    //             try { return f.get(); }
-    //             catch (Exception e) { return false; }
-    //         }).filter(ok -> ok).count();
-
-    //         // --- 3) ASSERT EXACTLY ONE SUCCEEDED ---
-    //         assertEquals(1, successCount, "Exactly one of the two concurrent addShopManager calls should succeed");
-
-    //         // --- 4) INVARIANT: SHOP ITEMS UNCHANGED ---
-    //         int afterItemCount =
-    //             shopService.showShopItems(ownerToken, shopId).getData().size();
-    //         assertEquals(initialItemCount, afterItemCount, "Shop's item count must remain unchanged");
-
-    //         // --- 5) INVARIANT: MANAGER HAS ONE PERMISSION (VIEW) ---
-    //         Response<List<Permission>> candPerms =
-    //             shopService.getMemberPermissions(ownerToken, shopId, "candidate"+i);
-    //         assertTrue(candPerms.isOk(), "Should be able to fetch candidate's permissions");
-    //         assertEquals(1, candPerms.getData().size(), "Candidate should have exactly one permission");
-    //         assertTrue(candPerms.getData().contains(Permission.VIEW), "That permission must be VIEW");
-
-    //         // --- 6) INVARIANT: OWNER RETAINS THEIR PERMISSIONS ---
-    //         Response<List<Permission>> ownerPerms =
-    //             shopService.getMemberPermissions(ownerToken, shopId, "owner"+i);
-    //         assertTrue(ownerPerms.isOk(), "Should be able to fetch owner's permissions");
-    //         assertFalse(ownerPerms.getData().isEmpty(), "Owner should still have at least one permission");
-    //     }
-    // }
 
 
     @Test
