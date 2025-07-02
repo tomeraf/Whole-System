@@ -70,7 +70,7 @@ public class PurchasePresenter extends AbstractPresenter {
                     success.setDuration(3000);
                     onFinish.accept(response.getData());
                 } else {
-                    Notification failure = Notification.show("Failed to purchase items");
+                    Notification failure = Notification.show(response.getError());
                     failure.setPosition(Position.MIDDLE);
                     failure.setDuration(3000);
                     onFinish.accept(null);

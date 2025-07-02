@@ -4,12 +4,22 @@ package com.halilovindustries.backend.Domain;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 
 @Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(
+  name = "dtype",
+  discriminatorType = DiscriminatorType.STRING,
+  columnDefinition = "VARCHAR(31) NOT NULL DEFAULT 'MESSAGE'"
+)
 public class Message {
     @Id
     //@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -66,5 +76,8 @@ public class Message {
     }
     public boolean isFromUser() {
         return FromUser;
+    }
+    public boolean isOffer() {
+        return false; // Default implementation, can be overridden in subclasses
     }
 }

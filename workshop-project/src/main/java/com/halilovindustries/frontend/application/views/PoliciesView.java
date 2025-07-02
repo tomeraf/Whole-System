@@ -29,6 +29,7 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class PoliciesView extends VerticalLayout implements HasUrlParameter<Integer> {
 
     private final PoliciesPresenter presenter;
-    private int shopId;
+    private int shopId = -1;
     private boolean suppressPurchaseEvents = false;
     private boolean suppressDiscountEvents = false;
 
@@ -170,18 +171,21 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         // add grids
         add(conditionsGrid);
         add(discountsGrid);
+        // =====================================shop ID1: " + shopId);
 
-        // configure both dialogs
-        configureConditionDialog(); // builds conditionDialog & wiring
-        configureDiscountDialog();
-        configureDiscountConditionDialog(
-                true,
-                dcItemSelect1, dcCategorySelect1, dcLimitsSelect1, dcMinField1, dcMaxField1,
-                dlg -> discountConditionDialog1 = dlg);
-        configureDiscountConditionDialog(
-                false,
-                dcItemSelect2, dcCategorySelect2, dcLimitsSelect2, dcMinField2, dcMaxField2,
-                dlg -> discountConditionDialog2 = dlg);
+        // // configure both dialogs
+        // configureConditionDialog(); // builds conditionDialog & wiring
+        // configureDiscountDialog();
+        //         =====================================shop ID2: " + shopId);
+
+        // configureDiscountConditionDialog(
+        //         true,
+        //         dcItemSelect1, dcCategorySelect1, dcLimitsSelect1, dcMinField1, dcMaxField1,
+        //         dlg -> discountConditionDialog1 = dlg);
+        // configureDiscountConditionDialog(
+        //         false,
+        //         dcItemSelect2, dcCategorySelect2, dcLimitsSelect2, dcMinField2, dcMaxField2,
+        //         dlg -> discountConditionDialog2 = dlg);
 
         // openers
         addConditionButton.addClickListener(e -> conditionDialog.open());
@@ -216,6 +220,19 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
             // build & load discounts
             configureDiscountsGrid(shop);
             loadDiscounts();
+
+        // configure both dialogs
+        configureConditionDialog(); // builds conditionDialog & wiring
+        configureDiscountDialog();
+        configureDiscountConditionDialog(
+                true,
+                dcItemSelect1, dcCategorySelect1, dcLimitsSelect1, dcMinField1, dcMaxField1,
+                dlg -> discountConditionDialog1 = dlg);
+        configureDiscountConditionDialog(
+                false,
+                dcItemSelect2, dcCategorySelect2, dcLimitsSelect2, dcMinField2, dcMaxField2,
+                dlg -> discountConditionDialog2 = dlg);
+
         });
     }
 
@@ -334,18 +351,60 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         limitsSelect2.addValueChangeListener(e -> update.run());
         minField2.addValueChangeListener(e -> update.run());
         maxField2.addValueChangeListener(e -> update.run());
+        Runnable clearAllFields = () -> {
+            // Clear selections
+            itemSelect1.clear();
+            itemSelect2.clear();
+            categorySelect1.clear();
+            categorySelect2.clear();
+            limitsSelect1.clear();
+            limitsSelect2.clear();
+            minField1.clear();
+            minField2.clear();
+            maxField1.clear();
+            maxField2.clear();
+            
+            // Reset item options to full list
+            presenter.getShopInfo(shopId, shop -> {
+                List<String> items = shop.getItems().values().stream()
+                        .map(dto -> dto.getName()).toList();
+                itemSelect1.setItems(items);
+                itemSelect2.setItems(items);
+            });
+            
+            // Reset other options to defaults
+            categorySelect1.setItems(Category.values());
+            categorySelect2.setItems(Category.values());
+            limitsSelect1.setItems(ConditionLimits.values());
+            limitsSelect2.setItems(ConditionLimits.values());
+            
+            // Update buttons state
+            updateConditionButtons();
+        };
+        Button clearAllButton = createClearAllButton(clearAllFields);
+
+        // Create a horizontal layout for the buttons
+        HorizontalLayout actionButtons = new HorizontalLayout(baseButton, xorButton, andButton, orButton);
+        actionButtons.setWidthFull();
+        actionButtons.setJustifyContentMode(JustifyContentMode.START);
+
+        // Create bottom layout with both button groups
+        HorizontalLayout bottomLayout = new HorizontalLayout(actionButtons, clearAllButton);
+        bottomLayout.setWidthFull();
+        bottomLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
         VerticalLayout content = new VerticalLayout(
-                new Label("Condition 1"),
-                new HorizontalLayout(itemSelect1, categorySelect1),
-                new HorizontalLayout(limitsSelect1),
-                new HorizontalLayout(minField1, maxField1),
-                new Label("Condition 2"),
-                new HorizontalLayout(itemSelect2, categorySelect2),
-                new HorizontalLayout(limitsSelect2),
-                new HorizontalLayout(minField2, maxField2),
-                new HorizontalLayout(baseButton, xorButton, andButton, orButton));
-        conditionDialog = new Dialog(content);
-        conditionDialog.setWidth("500px");
+            new Label("Condition 1"),
+            new HorizontalLayout(itemSelect1, categorySelect1),
+            new HorizontalLayout(limitsSelect1),
+            new HorizontalLayout(minField1, maxField1),
+            new Label("Condition 2"),
+            new HorizontalLayout(itemSelect2, categorySelect2),
+            new HorizontalLayout(limitsSelect2),
+            new HorizontalLayout(minField2, maxField2),
+            bottomLayout);  // Add the combined layout
+            conditionDialog = new Dialog(content);
+            conditionDialog.setWidth("500px");
 
         // ── NEW: re-use hook ─────────────────────────────────────
         conditionDialog.addOpenedChangeListener(evt -> {
@@ -367,16 +426,17 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
                 onConditionSaved = null;
             }
         });
+
     }
 
     private void updateConditionButtons() {
         boolean firstFilled = limitsSelect1.getValue() != null
-                && minField1.getValue() != null
-                && maxField1.getValue() != null;
+                && (minField1.getValue() != null
+                || maxField1.getValue() != null);
 
         boolean secondFilled = limitsSelect2.getValue() != null
-                && minField2.getValue() != null
-                && maxField2.getValue() != null;
+                && (minField2.getValue() != null
+                || maxField2.getValue() != null);
 
         // Disable all by default
         baseButton.setEnabled(false);
@@ -685,12 +745,12 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         // Enable BASE only if something is filled
         Runnable updateButtons = () -> {
             boolean firstFilled = limitsSel1.getValue() != null
-                    && minField1.getValue() != null
-                    && maxField1.getValue() != null;
+                    && (minField1.getValue() != null
+                    || maxField1.getValue() != null);
 
             boolean secondFilled = limitsSel2.getValue() != null
-                    && minField2.getValue() != null
-                    && maxField2.getValue() != null;
+                    || (minField2.getValue() != null
+                    && maxField2.getValue() != null);
 
             base.setEnabled(false);
             xor.setEnabled(false);
@@ -716,17 +776,50 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         maxField1.addValueChangeListener(e -> updateButtons.run());
         minField2.addValueChangeListener(e -> updateButtons.run());
         maxField2.addValueChangeListener(e -> updateButtons.run());
+
+         Runnable clearAllFields = () -> {
+            // Clear selections
+            itemSel1.clear();
+            categorySel1.clear();
+            limitsSel1.clear();
+            minField1.clear();
+            maxField1.clear();
+            itemSel2.clear();
+            categorySel2.clear();
+            limitsSel2.clear();
+            minField2.clear();
+            maxField2.clear();
+            
+            // Reset item options to full list
+            presenter.getShopInfo(shopId, shop -> {
+                List<String> items = shop.getItems().values().stream()
+                        .map(dto -> dto.getName()).toList();
+                itemSel1.setItems(items);
+                itemSel2.setItems(items);
+            });
+            
+            // Reset other options to defaults
+            categorySel1.setItems(Category.values());
+            categorySel2.setItems(Category.values());
+            limitsSel1.setItems(ConditionLimits.values());
+            limitsSel2.setItems(ConditionLimits.values());
+            
+            // Update button state
+            updateButtons.run();
+        };
+        Button clearAllButton = createClearAllButton(clearAllFields);
         // Build dialog layout — SAME AS `configureConditionDialog`
         VerticalLayout content = new VerticalLayout(
-                new Label("Condition 1"),
-                new HorizontalLayout(itemSel1, categorySel1),
-                new HorizontalLayout(limitsSel1),
-                new HorizontalLayout(minField1, maxField1),
-                new Label("Condition 2"),
-                new HorizontalLayout(itemSel2, categorySel2),
-                new HorizontalLayout(limitsSel2),
-                new HorizontalLayout(minField2, maxField2),
-                new HorizontalLayout(base, xor, and, or));
+            new Label("Condition 1"),
+            new HorizontalLayout(itemSel1, categorySel1),
+            new HorizontalLayout(limitsSel1),
+            new HorizontalLayout(minField1, maxField1),
+            new Label("Condition 2"),
+            new HorizontalLayout(itemSel2, categorySel2),
+            new HorizontalLayout(limitsSel2),
+            new HorizontalLayout(minField2, maxField2),
+            new HorizontalLayout(base, xor, and, or),
+            clearAllButton);
         Dialog dlg = new Dialog(content);
         dlg.setWidth("500px");
 
@@ -771,7 +864,17 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     private void configureDiscountDialog() {
         discountDialog = new Dialog();
         discountDialog.setWidth("1000px");
+        Select<String> discountItemSelect1 = new Select<>();
+        Select<String> discountItemSelect2 = new Select<>();
 
+        presenter.getShopInfo(shopId, shop -> {
+            
+            List<String> names = shop.getItems().values().stream().map(i -> i.getName()).toList();
+            discountItemSelect1.setLabel("Item 1");
+            discountItemSelect2.setLabel("Item 2");
+            discountItemSelect1.setItems(names);
+            discountItemSelect2.setItems(names);
+        }); 
         // Create UI elements
         Select<DiscountKind> discountKindSelect = new Select<>();
         discountKindSelect.setLabel("Discount Kind");
@@ -785,14 +888,10 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         discountType2Select.setLabel("Type 2");
         discountType2Select.setItems(DiscountType.values());
 
-        Select<String> discountItemSelect1 = new Select<>();
-        discountItemSelect1.setLabel("Item 1");
         Select<Category> discountCategorySelect1 = new Select<>();
         discountCategorySelect1.setLabel("Category 1");
         discountCategorySelect1.setItems(Category.values());
 
-        Select<String> discountItemSelect2 = new Select<>();
-        discountItemSelect2.setLabel("Item 2");
         Select<Category> discountCategorySelect2 = new Select<>();
         discountCategorySelect2.setLabel("Category 2");
         discountCategorySelect2.setItems(Category.values());
@@ -865,22 +964,67 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
+         Runnable clearAllFields = () -> {
+            discountKindSelect.clear();
+            discountType1Select.clear();
+            discountType2Select.clear();
+            discountItemSelect1.clear();
+            discountItemSelect2.clear();
+            discountCategorySelect1.clear();
+            discountCategorySelect2.clear();
+            percentage1Field.clear();
+            percentage2Field.clear();
+            selectedCondition1 = null;
+            selectedCondition2 = null;
+            
+            // Reset options to defaults
+            discountKindSelect.setItems(DiscountKind.values());
+            discountType1Select.setItems(DiscountType.values());
+            discountType2Select.setItems(DiscountType.values());
+            discountCategorySelect1.setItems(Category.values());
+            discountCategorySelect2.setItems(Category.values());
+            
+            // Reset item options to full list
+            presenter.getShopInfo(shopId, shop -> {
+                List<String> names = shop.getItems().values().stream()
+                        .map(i -> i.getName()).toList();
+                discountItemSelect1.setItems(names);
+                discountItemSelect2.setItems(names);
+            });
+            
+            // Reset visibility and enabled states
+            cond1Button.setVisible(false);
+            cond2Button.setVisible(false);
+            discountItemSelect2.setEnabled(false);
+            discountCategorySelect2.setEnabled(false);
+            discountType2Select.setEnabled(false);
+            percentage2Field.setEnabled(false);
+            cond2Button.setEnabled(false);
+        };
+        Button clearAllButton = createClearAllButton(clearAllFields);
+
         // Set up dialog layout
         VerticalLayout content = new VerticalLayout(
-                discountKindSelect,
-                new HorizontalLayout(discountType1Select, discountItemSelect1, discountCategorySelect1,
-                        percentage1Field),
-                new HorizontalLayout(cond1Button),
-                new HorizontalLayout(discountType2Select, discountItemSelect2, discountCategorySelect2,
-                        percentage2Field),
-                new HorizontalLayout(cond2Button),
-                saveButton);
+            discountKindSelect,
+            new HorizontalLayout(discountType1Select, discountItemSelect1, discountCategorySelect1,
+            percentage1Field),
+            new HorizontalLayout(cond1Button),
+            new HorizontalLayout(discountType2Select, discountItemSelect2, discountCategorySelect2,
+            percentage2Field),
+            new HorizontalLayout(cond2Button),
+            saveButton,
+            clearAllButton);
 
         discountDialog.add(content);
 
         Runnable updateDiscountKindUI = () -> {
+            //List<String> names = shop.getItems().values().stream().map(i -> i.getName()).toList();
             boolean isCombined = DiscountKind.COMBINE.equals(discountKindSelect.getValue());
             boolean isMax = DiscountKind.MAX.equals(discountKindSelect.getValue());
+            if (discountKindSelect.getValue() == DiscountKind.BASE)
+                discountType1Select.setItems(DiscountType.BASE);
+            if (discountKindSelect.getValue() == DiscountKind.CONDITIONAL)
+                discountType1Select.setItems(DiscountType.CONDITIONAL);
             discountItemSelect2.setEnabled(isCombined || isMax);
             discountCategorySelect2.setEnabled(isCombined || isMax);
             discountType2Select.setEnabled(isCombined || isMax);
@@ -909,6 +1053,13 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
             onConditionSaved = dto -> selectedCondition2 = dto;
             discountConditionDialog2.open();
         });
+    }
+    private Button createClearAllButton(Runnable clearAction) {
+        Button clearAll = new Button("Clear All");
+        clearAll.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
+        clearAll.getStyle().set("margin-top", "15px");
+        clearAll.addClickListener(e -> clearAction.run());
+        return clearAll;
     }
 
 }

@@ -35,9 +35,9 @@ public class MyShopsView extends VerticalLayout {
         setSpacing(true);
 
         // header (back + create)
-        Button back = new Button("← Back", e -> UI.getCurrent().navigate(""));
+        //Button back = new Button("← Back to Home Page", e -> UI.getCurrent().navigate(""));
         Button create = new Button("Create Shop", e -> openCreateDialog());
-        HorizontalLayout header = new HorizontalLayout(back, create);
+        HorizontalLayout header = new HorizontalLayout(create);
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setSpacing(true);
         add(header);

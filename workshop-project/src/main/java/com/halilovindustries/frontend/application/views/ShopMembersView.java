@@ -269,6 +269,43 @@ public class ShopMembersView extends VerticalLayout implements HasUrlParameter<I
             perms.setItems(allPerms.stream().map(Permission::name).collect(Collectors.toList()));
             perms.select(currentPerms);
             perms.setWidthFull();
+
+            perms.addValueChangeListener(ev -> {
+                Set<String> newPerms = ev.getValue();
+
+
+
+                // figure out what was added or removed
+                Set<String> added   = new HashSet<>(newPerms);
+                Set<String> removed = new HashSet<>(currentPerms);
+                added.removeAll(currentPerms);
+                removed.removeAll(newPerms);
+
+                String username = memberName;  // capture in lambda
+
+                // for each newly‐granted permission
+                for (String p : added) {
+                    presenter.addShopManagerPermission(shopID, username, Permission.valueOf(p), ok -> {
+                        if (!ok) {
+                            Notification.show("Failed to add “" + p + "”", 2000, Position.MIDDLE);
+                        }
+                    });
+                }
+
+                // for each permission that was un‐checked
+                for (String p : removed) {
+                    presenter.removeShopManagerPermission(shopID, username, Permission.valueOf(p), ok -> {
+                        if (!ok) {
+                            Notification.show("Failed to remove “" + p + "”", 2000, Position.MIDDLE);
+                        }
+                    });
+                }
+
+                // update your local snapshot so you don’t re‐fire on every setItems()
+                currentPerms.clear();
+                currentPerms.addAll(newPerms);
+            });
+
             Span managerLabel = new Span("MANAGER");
             managerLabel.getStyle().set("color", "blue").set("font-weight", "bold");
             card.add(managerLabel, perms);

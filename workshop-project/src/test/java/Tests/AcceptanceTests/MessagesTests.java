@@ -164,16 +164,8 @@ public class MessagesTests extends BaseAcceptanceTests {
 
 
         // Give the manager the ANSWER_MESSAGE permission so they can respond:
-        Response<Void> addMgrResp = shopService.addShopManager(
-            ownerToken,
-            shopId,
-            managerUsername,
-            Set.of(Permission.ANSWER_MESSAGE)
-        );
-
-        
-        assertTrue(addMgrResp.isOk(), "addShopManager(with ANSWER_MESSAGE) should succeed");
-
+        fixtures.successfulAddManager(ownerToken, managerToken, shopId, shop.getName(), Set.of(Permission.ANSWER_MESSAGE));
+  
         // 6) Manager calls respondToMessage
         String title_2 = "Response to your question";
         String responseText = "Yes—this item is in stock!";

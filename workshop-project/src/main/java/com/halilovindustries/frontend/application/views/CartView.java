@@ -35,8 +35,8 @@ public class CartView extends Composite<VerticalLayout>
                        implements BeforeEnterObserver {
     private final CartPresenter presenter;
     private final Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
-    private final Button back = new Button("← Back",
-                                         e -> UI.getCurrent().navigate(""));
+//    private final Button back = new Button("← Back",
+//                                         e -> UI.getCurrent().navigate(""));
 
     @Autowired
     public CartView(CartPresenter presenter) {
@@ -57,7 +57,7 @@ public class CartView extends Composite<VerticalLayout>
 
 
         
-        HorizontalLayout toolbar = new HorizontalLayout(back, checkout);
+        HorizontalLayout toolbar = new HorizontalLayout(checkout);
         toolbar.setAlignItems(FlexComponent.Alignment.CENTER);
 
         // 1) configure columns

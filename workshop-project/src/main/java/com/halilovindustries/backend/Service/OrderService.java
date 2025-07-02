@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.halilovindustries.backend.Domain.DTOs.*;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 
@@ -22,10 +23,6 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSys
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.MaintenanceModeException;
-import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
-import com.halilovindustries.backend.Domain.DTOs.Order;
-import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
-import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DomainServices.PurchaseService;
 import com.halilovindustries.backend.Domain.Repositories.IOrderRepository;
 import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
@@ -81,9 +78,13 @@ public class OrderService extends DatabaseAwareService {
             
             Guest guest = userRepository.getUserById(userID);
             List<Shop> shops= shopRepository.getAllShops().values().stream().filter(shop ->guest.getCart().getShopIDs().contains(shop.getId())).collect(Collectors.toList());
-            List<ItemDTO> itemDTOs = purchaseService.checkCartContent(guest,shops);
+            Pair<List<ItemDTO>,Boolean> itemDTOsPair = purchaseService.checkCartContent(guest,shops);
+            if(itemDTOsPair.getValue()) {
+                logger.info(() -> "i should sent a msg!");
+                notificationHandler.notifyUser(userID + "", "Non-existing items were removed from your cart");
+            }
             logger.info(() -> "Cart contents: All items were listed successfully");
-            return Response.ok(itemDTOs);
+            return Response.ok(itemDTOsPair.getKey());
         } 
         
         catch (MaintenanceModeException e) {
@@ -101,7 +102,7 @@ public class OrderService extends DatabaseAwareService {
      * Adds items to the user's shopping cart.
      *
      * @param sessionToken current session token
-     * @param itemDTOs list of items to add
+     * @param itemID list of items to add
      */
     // items = shopId, itemID
     @Transactional
@@ -278,7 +279,7 @@ public class OrderService extends DatabaseAwareService {
      * Answers on a counter bid.
      *
      * @param sessionToken current session token
-     * @param itemID the item to bid on
+     * @param shopId the item to bid on
      * @param accept whether to accept the counter bid
      */
     @Transactional

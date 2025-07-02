@@ -59,7 +59,10 @@ public class PurchaseService {
         itemLock.lock();
         try {
             ShoppingCart cart = user.getCart();
-            if(shop.canAddItemToBasket(itemId, quantity))
+            int currentQuantity = cart.getItems().get(shop.getId()) == null ? 0 :
+                                cart.getItems().get(shop.getId()).get(itemId) == null ? 0 :
+                                cart.getItems().get(shop.getId()).get(itemId);
+            if(shop.canAddItemToBasket(itemId, currentQuantity + quantity))
                 cart.addItem(shop.getId(),itemId, quantity);
             else
                 throw new IllegalArgumentException("Error: item cannot be added to cart.");
@@ -125,7 +128,7 @@ public class PurchaseService {
             }
             HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
             for(Shop shop : itemsToBuy.keySet()) {
-                itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)));
+                itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)).getKey());
             }
             
             // 1. Calculate the total price without reducing inventory
@@ -173,13 +176,30 @@ public class PurchaseService {
     }
 
 
-    public List<ItemDTO> checkCartContent(Guest user,List<Shop> shops)
+    public Pair<List<ItemDTO>,Boolean> checkCartContent(Guest user,List<Shop> shops)
     {
         List<ItemDTO> cart = new ArrayList<>();
+        user.getCart().update();
         Map<Integer,Map<Integer,Integer>> items = user.getCart().getItems();
+        boolean isBadItem = false;
         for(Shop shop : shops) {
-            Map<Integer,Integer> itemsMap = items.get(shop.getId());
-            HashMap<Item,Double> discountedPrices= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
+            if (items.get(shop.getId()) == null){
+                continue;
+            }
+            Map<Integer,Integer> itemsMap = items.get(shop.getId());    
+            Pair<HashMap<Item,Double>,List<Integer>> discountedPricesPair= shop.getDiscountedPrices(new HashMap<>(itemsMap));//returns updated prices and removes items that cannot be purchased(due to quantity))
+            List<Integer> badItems = discountedPricesPair.getValue();
+            for(Integer itemId : itemsMap.keySet()) {
+                if(discountedPricesPair.getKey().keySet().stream().filter(item -> item.getId() == itemId).toList().size() == 0 && !discountedPricesPair.getValue().contains(itemId)) {
+                    isBadItem = true;
+                    user.getCart().deleteItem(shop.getId(), itemId);
+                }
+            }
+            for(Integer badItem : badItems) {
+                isBadItem=true;
+                user.getCart().deleteItem(shop.getId(), badItem);
+            }
+            HashMap<Item,Double> discountedPrices = discountedPricesPair.getKey();
             List<ItemDTO> itemsList = new ArrayList<>();
             for(Item item : discountedPrices.keySet()) {
                 int quantity = itemsMap.get(item.getId());
@@ -187,7 +207,8 @@ public class PurchaseService {
             }
             cart.addAll(itemsList);
         }
-        return cart;
+
+        return new Pair<>(cart, isBadItem);
     }
 
     public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer)

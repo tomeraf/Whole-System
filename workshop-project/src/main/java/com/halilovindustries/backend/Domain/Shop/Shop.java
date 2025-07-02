@@ -238,7 +238,18 @@ public class Shop {
 
     public boolean canPurchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //itemId -> quantity
         if (!isOpen) {
-            throw new RuntimeException("Shop is closed. Cannot purchase items.");
+            StringBuilder a = new StringBuilder();
+            for (Integer itemId : itemsToPurchase.keySet()) {
+                if (!isItemInShop(itemId)) {
+                    throw new IllegalArgumentException("Item ID does not exist in the shop.");
+                }
+                a.append(getItem(itemId).getName()).append(", ");
+            }
+            // a.deleteCharAt(a.length()-1);
+            // a.deleteCharAt(a.length()-1);
+
+            String s = "Cannot purchase items: " + a.toString() + " because the shop is closed.";
+            throw new RuntimeException(s);
         }
         if (itemsToPurchase.isEmpty()) {
             throw new IllegalArgumentException("Shopping basket is empty. Cannot purchase items.");
@@ -248,12 +259,13 @@ public class Shop {
         for (Integer itemId : itemsToPurchase.keySet()) {
             allItems.put(getItem(itemId), itemsToPurchase.get(itemId));
         }
+
         purchasePolicy.checkPurchase(allItems); //check if the purchase policy allows the purchase
         for (Integer id : itemsToPurchase.keySet()) {
             Item item = items.stream()          //used to check if exists, if not throw exception
                 .filter(i -> i.getId() == id)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Item ID does not exist in the shop."));
+                .orElseThrow(() -> new IllegalArgumentException(id +" does not exist in the shop."));
             result = result && getItem(id).quantityCheck(itemsToPurchase.get(id)); //assuming basket.get(item) returns the quantity of the item wanting to purchase
         }
         return result;
@@ -646,21 +658,22 @@ public class Shop {
         return discountPolicy.getDiscountTypes();
     }
 
-    public HashMap<Item, Double> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
+    public Pair<HashMap<Item, Double>,List<Integer>> getDiscountedPrices(HashMap<Integer,Integer> itemsMap) {
         HashMap<Item, Integer> allItems = new HashMap<>();
+        List<Integer> badItems = new ArrayList<>();
         for(Integer itemId : itemsMap.keySet()) {
-            if(!isItemInShop(itemId))
+            if(!isItemInShop(itemId) || getItem(itemId).getQuantity() < itemsMap.get(itemId) || !isOpen())
             {
-                throw new IllegalArgumentException("Item ID does not exist in the shop.");
+
+                badItems.add(itemId);
+                continue;
+
             }
             Item item = getItem(itemId);
-            if(item.getQuantity() < itemsMap.get(itemId)) {
-                itemsMap.remove(itemId);
-            }
             allItems.put(item, itemsMap.get(itemId));
         }
 
-        return discountPolicy.getPricePerItem(allItems);
+        return new Pair<>(discountPolicy.getPricePerItem(allItems),badItems);
     }
     public boolean isItemInShop(int itemId) {
         return items.stream().anyMatch(item -> item.getId() == itemId);

@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.halilovindustries.backend.Domain.Message;
+import com.halilovindustries.backend.Domain.OfferMessage;
 import com.halilovindustries.frontend.application.presenters.ShopInboxPresenter;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -105,109 +106,172 @@ public class ShopInboxView extends VerticalLayout implements HasUrlParameter<Int
 
 
 
-    @Override
-public void setParameter(BeforeEvent event, Integer shopID) {
-    this.shopID = shopID;
-    removeAll();
-    add(back, new H2("Inbox"));
+//     @Override
+// public void setParameter(BeforeEvent event, Integer shopID) {
+//     this.shopID = shopID;
+//     removeAll();
+//     add(back, new H2("Inbox"));
 
-    // 1️⃣ Build the grid using your real Message class
-    Grid<Message> grid = new Grid<>(Message.class, false);
+//     // 1️⃣ Build the grid using your real Message class
+//     Grid<Message> grid = new Grid<>(Message.class, false);
     
-    grid.addColumn(msg -> msg.isFromUser() ? msg.getUserName() : msg.getShopName())
-        .setHeader("From").setAutoWidth(true);
-    grid.addColumn(Message::getTitle)
-        .setHeader("Subject")
+//     grid.addColumn(msg -> msg.isFromUser() ? msg.getUserName() : msg.getShopName())
+//         .setHeader("From").setAutoWidth(true);
+//     grid.addColumn(Message::getTitle)
+//         .setHeader("Subject")
+//         .setAutoWidth(true);
+//     grid.addColumn(msg -> msg.getDateTime().toString().substring(0, 19))
+//         .setHeader("Date")
+//         .setAutoWidth(true);
+
+//     // 2️⃣ Show the content in a dialog when they click a row
+//     // grid.asSingleSelect().addValueChangeListener(e -> {
+//     //     Message msg = e.getValue();
+//     //     if (msg != null && msg.needResponse() && msg.isFromUser()) {
+//     //         Dialog dlg = new Dialog();
+//     //         dlg.add(
+//     //             new H2(msg.getTitle()),
+//     //             new Paragraph(msg.getContent()),
+//     //             new Button("Close", ev -> dlg.close()),
+//     //             new Button("Reply", ev -> 
+//     //             {
+//     //                 dlg.close();
+//     //                 Dialog messageDialog = new Dialog();
+//     //                     messageDialog.setWidth("400px");
+
+//     //                     TextField subjectField = new TextField("Subject");
+//     //                     subjectField.setWidthFull();
+//     //                     TextField messageField = new TextField("Message");
+//     //                     messageField.setWidthFull();
+//     //                     messageField.setHeight("100px");
+
+//     //                     Button sendBtn = new Button("Send", sendEvent -> {
+//     //                         String subject = subjectField.getValue();
+//     //                         String message = messageField.getValue();
+
+//     //                         presenter.respondToMessage(shopID, msg.getId(), subject, message, success -> {
+//     //                             if (success) {
+//     //                                 messageDialog.close();
+//     //                                 UI.getCurrent().access(() -> {
+//     //                                     Dialog confirmation = new Dialog(new Span("Message sent successfully!"));
+//     //                                     confirmation.setCloseOnOutsideClick(true);
+//     //                                     confirmation.open();
+//     //                                 });
+//     //                             } else {
+//     //                                 UI.getCurrent().access(() -> {
+//     //                                     Dialog errorDialog = new Dialog(new Span("Failed to send message. Please try again."));
+//     //                                     errorDialog.setCloseOnOutsideClick(true);
+//     //                                     errorDialog.open();
+//     //                                 });
+//     //                             }
+//     //                         });
+//     //                         messageDialog.close();
+//     //                     });
+
+//     //                 sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+//     //                     VerticalLayout dialogLayout = new VerticalLayout(
+//     //                         new H2("Reply to " + msg.getUserName()),
+//     //                         subjectField,
+//     //                         messageField,
+//     //                         sendBtn
+//     //                     );
+//     //                     dialogLayout.setSpacing(true);
+//     //                     dialogLayout.setPadding(true);
+//     //                     messageDialog.add(dialogLayout);
+
+//     //                     messageDialog.setCloseOnOutsideClick(true);
+//     //                     messageDialog.setCloseOnEsc(true);
+//     //                         subjectField.clear();
+//     //                         messageField.clear();
+//     //                         messageDialog.open();
+//     //             })
+//     //         );
+//     //         dlg.open();
+//     //     }
+//     //     else
+//     //     {
+//     //         Dialog dlg = new Dialog();
+//     //         dlg.add(
+//     //             new H2(msg.getTitle()),
+//     //             new Paragraph(msg.getContent()),
+//     //             new Button("Close", closeEvent -> dlg.close())
+//     //         );
+//     //         dlg.open();
+//     //     }
+//     // });
+
+
+    
+
+//     add(grid);
+//     setSizeFull();
+
+//     // 3️⃣ Load the real messages
+//     presenter.getInbox(shopID, messages -> {
+//         UI.getCurrent().access(() -> grid.setItems(messages));
+//     });
+// }
+
+
+    @Override
+    public void setParameter(BeforeEvent event, Integer shopID) {
+        this.shopID = shopID;
+        removeAll();
+        add(back, new H2("Inbox"));
+
+        // 1️⃣ Build the grid
+        Grid<Message> grid = new Grid<>(Message.class, false);
+        grid.addColumn(msg -> msg.isFromUser() ? msg.getUserName() : msg.getShopName())
+            .setHeader("From").setAutoWidth(true);
+        grid.addColumn(Message::getTitle)
+            .setHeader("Subject").setAutoWidth(true);
+        grid.addColumn(msg -> msg.getDateTime().toString().substring(0,19))
+            .setHeader("Date").setAutoWidth(true);
+        // ← NEW: Status column
+        grid.addColumn(msg -> {
+            if (msg.isOffer()) {
+                Boolean d = ((OfferMessage)msg).getDecision();
+                if (d == null)    return "Pending …";
+                else if (d)       return "Accepted ✔";
+                else              return "Rejected ✖";
+            }
+            return "";  
+        })
+        .setHeader("Status")
         .setAutoWidth(true);
-    grid.addColumn(msg -> msg.getDateTime().toString().substring(0, 19))
-        .setHeader("Date")
-        .setAutoWidth(true);
 
-    // 2️⃣ Show the content in a dialog when they click a row
-    grid.asSingleSelect().addValueChangeListener(e -> {
-        Message msg = e.getValue();
-        if (msg != null && msg.needResponse() && msg.isFromUser()) {
-            Dialog dlg = new Dialog();
-            dlg.add(
+        // 2️⃣ Row-click: just show details + status, no actions
+        grid.asSingleSelect().addValueChangeListener(e -> {
+            Message msg = e.getValue();
+            if (msg == null) return;
+
+            Dialog dlg = new Dialog(
                 new H2(msg.getTitle()),
-                new Paragraph(msg.getContent()),
-                new Button("Close", ev -> dlg.close()),
-                new Button("Reply", ev -> 
-                {
-                    dlg.close();
-                    Dialog messageDialog = new Dialog();
-                        messageDialog.setWidth("400px");
-
-                        TextField subjectField = new TextField("Subject");
-                        subjectField.setWidthFull();
-                        TextField messageField = new TextField("Message");
-                        messageField.setWidthFull();
-                        messageField.setHeight("100px");
-
-                        Button sendBtn = new Button("Send", sendEvent -> {
-                            String subject = subjectField.getValue();
-                            String message = messageField.getValue();
-
-                            presenter.respondToMessage(shopID, msg.getId(), subject, message, success -> {
-                                if (success) {
-                                    messageDialog.close();
-                                    UI.getCurrent().access(() -> {
-                                        Dialog confirmation = new Dialog(new Span("Message sent successfully!"));
-                                        confirmation.setCloseOnOutsideClick(true);
-                                        confirmation.open();
-                                    });
-                                } else {
-                                    UI.getCurrent().access(() -> {
-                                        Dialog errorDialog = new Dialog(new Span("Failed to send message. Please try again."));
-                                        errorDialog.setCloseOnOutsideClick(true);
-                                        errorDialog.open();
-                                    });
-                                }
-                            });
-                            messageDialog.close();
-                        });
-
-                    sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-                        VerticalLayout dialogLayout = new VerticalLayout(
-                            new H2("Reply to " + msg.getUserName()),
-                            subjectField,
-                            messageField,
-                            sendBtn
-                        );
-                        dialogLayout.setSpacing(true);
-                        dialogLayout.setPadding(true);
-                        messageDialog.add(dialogLayout);
-
-                        messageDialog.setCloseOnOutsideClick(true);
-                        messageDialog.setCloseOnEsc(true);
-                            subjectField.clear();
-                            messageField.clear();
-                            messageDialog.open();
-                })
+                new Paragraph(msg.getContent())
             );
-            dlg.open();
-        }
-        else
-        {
-            Dialog dlg = new Dialog();
-            dlg.add(
-                new H2(msg.getTitle()),
-                new Paragraph(msg.getContent()),
-                new Button("Close", closeEvent -> dlg.close())
-            );
-            dlg.open();
-        }
-    });
 
-    add(grid);
-    setSizeFull();
+            if (msg.isOffer()) {
+                Boolean d = ((OfferMessage)msg).getDecision();
+                String status = d == null ? "Pending …" 
+                            : d ? "Accepted ✔" 
+                                : "Rejected ✖";
+                dlg.add(new Span("Offer status: " + status));
+            }
 
-    // 3️⃣ Load the real messages
-    presenter.getInbox(shopID, messages -> {
-        UI.getCurrent().access(() -> grid.setItems(messages));
-    });
-}
+            // always allow close
+            dlg.add(new Button("Close", ev -> dlg.close()));
+            dlg.open();
+        });
+
+        add(grid);
+        setSizeFull();
+
+        // 3️⃣ Load data
+        presenter.getInbox(shopID, messages ->
+            UI.getCurrent().access(() -> grid.setItems(messages))
+        );
+    }
 
     
 }
