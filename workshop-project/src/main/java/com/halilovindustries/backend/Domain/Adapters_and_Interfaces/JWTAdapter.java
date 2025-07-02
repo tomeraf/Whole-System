@@ -26,23 +26,14 @@ public class JWTAdapter implements IAuthentication {
     @Value("${jwt.secret}")
     private String secret;
     
-    private final long expirationTime = 3600000; // 1 hour
+    private final long expirationTime = 3 * 3600000; // 3 hours
     private SecretKey key;
 
     @PostConstruct
     public void initKey() {
         byte[] keyBytes = Base64.getDecoder().decode(secret);
         this.key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HmacSHA256");
-}
-
-    // public JWTAdapter() {
-    //     try {
-    //         KeyGenerator keyGen = KeyGenerator.getInstance("HmacSha256");
-    //         key = keyGen.generateKey();
-    //     } catch (NoSuchAlgorithmException e) {
-    //         throw new RuntimeException("HmacSha256 algorithm not available", e);
-    //     }
-    // }
+    }
 
     public String generateToken(String username) {
         // Set the expiration time to 24 hours from now

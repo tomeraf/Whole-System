@@ -32,6 +32,8 @@ public class InboxView extends VerticalLayout{
     private InboxPresenter presenter;
     private Grid<Message> grid;
     private Integer shopID;
+    private final Button back = new Button("← Back",
+                                         e -> UI.getCurrent().navigate(""));
 
     @Autowired
     public InboxView(InboxPresenter presenter) {
@@ -39,6 +41,9 @@ public class InboxView extends VerticalLayout{
         setPadding(true);
         setSpacing(true);
 
+        // — Back button —
+        HorizontalLayout backLayout = new HorizontalLayout(back);
+        add(backLayout);
         // — Title —
         add(new H2("Inbox"));
 
@@ -77,7 +82,6 @@ public class InboxView extends VerticalLayout{
             Dialog dlg = new Dialog(new H2(msg.getTitle()),
                                     new Paragraph(msg.getContent()));
 
-            // 1️⃣ Offer → Accept / Reject
             if (msg.isOffer() && ((OfferMessage)msg).getDecision() == null) {
                 Button accept = new Button(VaadinIcon.CHECK.create(), ev -> {
                     presenter.respondToOffer(
@@ -86,13 +90,9 @@ public class InboxView extends VerticalLayout{
                         true, 
                         success -> {
                             if (success) {
-                                // 1️⃣ update local OfferMessage
                                 ((OfferMessage) msg).setDecision(true);
-                                // 2️⃣ close dialog
                                 dlg.close();
-                                // 3️⃣ show feedback
                                 Notification.show("Offer accepted", 2000, Position.MIDDLE);
-                                // 4️⃣ refresh just that item (or entire grid)
                                 grid.getDataProvider().refreshItem(msg);
                             }
                         }

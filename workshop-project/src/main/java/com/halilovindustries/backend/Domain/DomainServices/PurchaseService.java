@@ -7,6 +7,7 @@ import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IShipment;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.AuctionPurchase;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.BidPurchase;
 import com.halilovindustries.backend.Domain.User.*;
 
@@ -129,23 +130,40 @@ public class PurchaseService {
             for(Shop shop : itemsToBuy.keySet()) {
                 itemsToShip.put(shop.getId(),checkCartContent(user, List.of(shop)).getKey());
             }
+            
+            // 1. Calculate the total price without reducing inventory
             Double total = 0.0;
+            HashMap<Shop, HashMap<Integer, Integer>> validatedItems = new HashMap<>();
             for(Shop shop : itemsToBuy.keySet()) {
                 HashMap<Integer, Integer> itemsMap = itemsToBuy.get(shop);
-                total =+ shop.purchaseBasket(itemsMap);
+                // Just calculate the price without reducing quantity
+                total += shop.calculateBasketPrice(itemsMap);
+                validatedItems.put(shop, itemsMap);
             }
+
+            // 2. Process payment first
             Integer paymentId = pay.processPayment(total, paymentDetails);
             if (paymentId == null) {
                 throw new IllegalArgumentException("Error: payment processing failed.");
             }
+
+            // 3. Process shipment
             Integer shipmentId = ship.processShipment(shipmentDetails);
             if (shipmentId == null) {
                 throw new IllegalArgumentException("Error: shipment processing failed.");
             }
+
+            // 4. Only now updating inventory
+            for(Shop shop : validatedItems.keySet()) {
+                HashMap<Integer, Integer> itemsMap = validatedItems.get(shop);
+                shop.updateInventory(itemsMap);
+            }
+
             cart.clearCart();
             Order order = new Order(orderID, user.getUserID(), total, itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
             return order;
-        } catch (InterruptedException ie) {
+        } 
+        catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while locking items", ie);
         } finally {
@@ -193,13 +211,6 @@ public class PurchaseService {
         return new Pair<>(cart, isBadItem);
     }
 
-    // public void directPurchase(Guest user, int itemId)
-    // {
-    //     // something with immediate purchase
-
-
-    // }
-
     public void submitBidOffer(Guest user,Shop shop ,int itemId, double offer)
     {
         ReentrantLock lock = concurrencyHandler.getItemLock(shop.getId(), itemId);
@@ -220,29 +231,54 @@ public class PurchaseService {
     }
 
     @Transactional
-    public Order purchaseBidItem(Guest guest, Shop shop, int bidId, int orderID, IPayment pay,IShipment ship, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, IExternalSystems monitor) {
+    public Order purchaseBidItem(Guest guest, Shop shop, int bidId, int orderID, IPayment pay, IShipment ship, 
+                            PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, 
+                            IExternalSystems monitor) {
         if(!(ship.validateShipmentDetails(shipmentDetails) && pay.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
         if (!monitor.handshake()) {
             throw new IllegalStateException("External services are unavailable. Try again later.");
         }
-        Pair<Integer,Double> offer = shop.purchaseBidItem(bidId, guest.getUserID());
-        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
-        List<ItemDTO> itemsList = new ArrayList<>();
-        Item item = shop.getItem(offer.getKey());
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
-        itemsToShip.put(shop.getId(), itemsList);
-
-        Integer paymentId = pay.processPayment(offer.getValue(), paymentDetails);
+        
+        // Get bid details without updating inventory
+        BidPurchase bidPurchase = shop.getBidPurchase(bidId);
+        int itemId = bidPurchase.getItemId();
+        
+        // VALIDATE ITEM AVAILABILITY FIRST
+        if (!shop.getItem(itemId).quantityCheck(1)) {
+            throw new IllegalArgumentException("Error: item is out of stock.");
+        }
+        double price = shop.calculateBidPrice(bidId);
+        
+        // Process payment first
+        Integer paymentId = pay.processPayment(price, paymentDetails);
         if (paymentId == null) {
             throw new IllegalArgumentException("Error: payment processing failed.");
         }
+        
+        // Process shipment
         Integer shipmentId = ship.processShipment(shipmentDetails);
         if (shipmentId == null) {
             throw new IllegalArgumentException("Error: shipment processing failed.");
         }
-        Order order= new Order(orderID, guest.getUserID(), offer.getKey(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
+        
+        // Only update inventory after successful payment and shipment
+        shop.updateBidInventory(bidId);
+        Pair<Integer,Double> offer = bidPurchase.purchaseBidItem(guest.getUserID());
+        
+        // Create order
+        HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
+        List<ItemDTO> itemsList = new ArrayList<>();
+        Item item = shop.getItem(itemId);
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), 
+                                shop.getId(), itemId, 1, item.getRating(), 
+                                item.getDescription(), item.getNumOfOrders()));
+        itemsToShip.put(shop.getId(), itemsList);
+        
+        Order order = new Order(orderID, guest.getUserID(), price, 
+                            itemsToShip.values().stream().flatMap(List::stream).toList(),
+                            paymentId, shipmentId);
         return order;
     }
 
@@ -251,24 +287,58 @@ public class PurchaseService {
     }
 
     @Transactional
-    public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int orderID, IPayment payment,
-                                     IShipment shipment, PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, IExternalSystems monitor) {
-        
-        if(!(shipment.validateShipmentDetails(shipmentDetails)& payment.validatePaymentDetails(paymentDetails))){
+public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int orderID, 
+                           IPayment payment, IShipment shipment, 
+                           PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, 
+                           IExternalSystems monitor) {
+
+        if(!(shipment.validateShipmentDetails(shipmentDetails) & payment.validatePaymentDetails(paymentDetails))){
             throw new IllegalArgumentException("Error: cant validate payment or shipment details.");
         }
         if (!monitor.handshake()) {
             throw new IllegalStateException("External services are unavailable. Try again later.");
         }
-        Pair<Integer,Double> offer = shop.purchaseAuctionItem(auctionID, user.getUserID());
+        
+        // Get auction details first - do this only once
+        AuctionPurchase auctionPurchase = shop.getAuctionPurchase(auctionID);
+        int itemId = auctionPurchase.getItemId();
+        
+        // VALIDATE ITEM AVAILABILITY FIRST
+        if (!shop.getItem(itemId).quantityCheck(1)) {
+            throw new IllegalArgumentException("Error: item is out of stock.");
+        }
+
+        // Calculate price (without duplicating the auction lookup)
+        double price = shop.calculateAuctionPrice(auctionID);
+        
+        // Process payment first
+        Integer paymentId = payment.processPayment(price, paymentDetails);
+        if (paymentId == null) {
+            throw new IllegalArgumentException("Error: payment processing failed.");
+        }
+        
+        // Process shipment
+        Integer shipmentId = shipment.processShipment(shipmentDetails);
+        if (shipmentId == null) {
+            throw new IllegalArgumentException("Error: shipment processing failed.");
+        }
+        
+        // Only update inventory after successful payment and shipment
+        shop.updateAuctionInventory(auctionID);
+        Pair<Integer,Double> offer = auctionPurchase.purchaseAuctionItem(user.getUserID());
+        
+        // Create order
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
-        Item item = shop.getItem(offer.getKey());
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(), offer.getKey(), 1, item.getRating(), item.getDescription(), item.getNumOfOrders()));
+        Item item = shop.getItem(itemId);
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), 
+                                shop.getId(), itemId, 1, item.getRating(), 
+                                item.getDescription(), item.getNumOfOrders()));
         itemsToShip.put(shop.getId(), itemsList);
-        Integer paymentId = payment.processPayment(offer.getValue(), paymentDetails);
-        Integer shipmentId = shipment.processShipment(shipmentDetails);
-        Order order= new Order(orderID, user.getUserID(), offer.getValue(), itemsToShip.values().stream().flatMap(List::stream).toList(),paymentId, shipmentId);
+        
+        Order order = new Order(orderID, user.getUserID(), price, 
+                            itemsToShip.values().stream().flatMap(List::stream).toList(),
+                            paymentId, shipmentId);
         return order;
     }
 

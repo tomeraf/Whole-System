@@ -104,7 +104,7 @@ public class Shop {
         this.rating = totalRating / ratedIds.size(); // Calculate the average rating
         return this.rating;
     }
-    public int getRatingCount() { return ratingCount; }
+    public int getRatingCount() { return ratedIds.size(); }
     public int getFounderID() { return founderID; }
 
     public void setName(String name) { this.name = name; }
@@ -272,18 +272,33 @@ public class Shop {
     }
 
     public double purchaseBasket(HashMap <Integer, Integer> itemsToPurchase){ //will need to be synchronized later on
-        HashMap<Item,Integer> allItems = new HashMap<>(); //<Item,quantity>
+        double price = calculateBasketPrice(itemsToPurchase);
+        updateInventory(itemsToPurchase);
+        return price;
+    }
+
+    public double calculateBasketPrice(HashMap<Integer, Integer> itemsToPurchase) {
+        HashMap<Item, Integer> allItems = new HashMap<>(); //<Item,quantity>
         for(Integer itemId: itemsToPurchase.keySet()){
             allItems.put(getItem(itemId), itemsToPurchase.get(itemId)); 
         }
-        double totalPrice =0;
+        double totalPrice = 0;
         for(Item item: allItems.keySet()){
-            item.buyItem(allItems.get(item));
             totalPrice = totalPrice + item.getPrice() * allItems.get(item); 
         }
         double discount = discountPolicy.calculateDiscount(allItems);
         totalPrice = totalPrice - discount;
         return totalPrice; 
+    }
+
+    public void updateInventory(HashMap<Integer, Integer> itemsToPurchase) {
+        HashMap<Item, Integer> allItems = new HashMap<>();
+        for(Integer itemId: itemsToPurchase.keySet()){
+            allItems.put(getItem(itemId), itemsToPurchase.get(itemId)); 
+        }
+        for(Item item: allItems.keySet()){
+            item.buyItem(allItems.get(item));
+        }
     }
 
     public void addBidPurchase(int itemId, double bidAmount, int buyerId) {  
@@ -294,6 +309,25 @@ public class Shop {
         } else {
             throw new IllegalArgumentException("Item ID does not exist in the shop.");
         }
+    }
+
+    public double calculateBidPrice(int bidId) {
+        BidPurchase bidPurchase = bidPurchaseItems.stream()
+                .filter(bid -> bid.getId() == bidId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
+        return bidPurchase.getAmount();
+    }
+
+    public void updateBidInventory(int bidId) {
+        BidPurchase bidPurchase = bidPurchaseItems.stream()
+                .filter(bid -> bid.getId() == bidId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Bid ID does not exist in the shop."));
+        if (!getItem(bidPurchase.getItemId()).quantityCheck(1)) {
+            throw new IllegalArgumentException("Item is out of stock.");
+        }
+        getItem(bidPurchase.getItemId()).buyItem(1);
     }
 
     public void addOwner(int ownerID) {
@@ -405,6 +439,7 @@ public class Shop {
             if (!getItem(bidPurchase.getItemId()).quantityCheck(1)) {
                 throw new IllegalArgumentException("Item is out of stock.");
             }
+            getItem(bidPurchase.getItemId()).buyItem(1);
             return bidPurchase.purchaseBidItem(userID);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Bid purchase failed: " + e.getMessage());
@@ -441,6 +476,32 @@ public class Shop {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Auction purchase failed: " + e.getMessage());
         }
+    }
+
+    public AuctionPurchase getAuctionPurchase(int auctionId) {
+        return auctionPurchaseItems.stream()
+            .filter(auction -> auction.getId() == auctionId)
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Auction ID does not exist in the shop."));
+    }
+
+    public double calculateAuctionPrice(int auctionId) {
+        AuctionPurchase auctionPurchase = auctionPurchaseItems.stream()
+                .filter(auction -> auction.getId() == auctionId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Auction ID does not exist in the shop."));
+        return auctionPurchase.getHighestBid();
+    }
+
+    public void updateAuctionInventory(int auctionId) {
+        AuctionPurchase auctionPurchase = auctionPurchaseItems.stream()
+                .filter(auction -> auction.getId() == auctionId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Auction ID does not exist in the shop."));
+        if (!getItem(auctionPurchase.getItemId()).quantityCheck(1)) {
+            throw new IllegalArgumentException("Item is out of stock.");
+        }
+        getItem(auctionPurchase.getItemId()).buyItem(1);
     }
 
     public void updateDiscountType(DiscountType discountType) {

@@ -27,6 +27,7 @@ import com.halilovindustries.backend.Domain.DTOs.*;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -85,10 +86,19 @@ public class SystemManagerView extends VerticalLayout
         grid = new Grid<>();
         grid.addColumn(Map.Entry::getKey)
             .setHeader("User Name").setAutoWidth(true);
-        grid.addColumn(entry -> entry.getValue().getStartDate())
-            .setHeader("Date From").setAutoWidth(true);
-        grid.addColumn(entry -> entry.getValue().getEndDate())
-            .setHeader("Date To").setAutoWidth(true);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm a");
+        grid.addColumn(entry -> {
+            LocalDateTime date = entry.getValue().getStartDate();
+            return date != null ? date.format(formatter) : "N/A";
+        })
+        .setHeader("Date From").setAutoWidth(true);
+
+        grid.addColumn(entry -> {
+            LocalDateTime date = entry.getValue().getEndDate();
+            return date != null ? date.format(formatter) : "N/A";
+        })
+        .setHeader("Date To").setAutoWidth(true);
+        
         grid.setItems(suspensions.entrySet());
         grid.setSizeFull();
         add(grid);

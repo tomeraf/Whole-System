@@ -211,7 +211,8 @@ public class OrderService extends DatabaseAwareService {
             Order order = purchaseService.buyCartContent(guest, shops, shipment, payment,orderRepository.getNextId(), paymentDetails, shipmentDetails, externalSystems, (Integer id) -> shopRepository.getShopByIdWithLock(id)); // Buy the cart content
             orderRepository.addOrder(order); // Save the order to the repository
 
-            notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + guest.getUsername());
+            String buyerName= guest.getUsername()==null ? "Guest": guest.getUsername();
+            notificationHandler.notifyUsers(shops.stream().map(shop -> shop.getOwnerIDs()).flatMap(Set::stream).collect(Collectors.toList()), "Items were purchased by " + buyerName);
             logger.info(() -> "Purchase completed successfully for cart ID: " + cartID);
             return Response.ok(order); 
         } 
