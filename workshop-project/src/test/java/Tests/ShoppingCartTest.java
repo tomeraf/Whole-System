@@ -49,7 +49,7 @@ class ShoppingCartTest {
         cart.addItem(10, 100, 2);
         boolean removed = cart.deleteItem(10, 100);
         assertTrue(removed);
-        assertTrue(cart.getItems().get(10).isEmpty());
+        assertTrue(cart.getItems().get(10) == null);
     }
 
     @Test
@@ -70,8 +70,8 @@ class ShoppingCartTest {
         cart.addItem(10, 100, 2);
         cart.addItem(11, 200, 1);
         cart.clearCart();
-        assertTrue(cart.getItems().get(10).isEmpty());
-        assertTrue(cart.getItems().get(11).isEmpty());
+        assertTrue(cart.getItems().get(10) == null);
+        assertTrue(cart.getItems().get(11) == null);
     }
 
     @Test
