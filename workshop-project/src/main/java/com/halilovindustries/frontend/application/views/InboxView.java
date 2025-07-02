@@ -29,6 +29,8 @@ public class InboxView extends VerticalLayout{
     private InboxPresenter presenter;
     private Grid<Message> grid;
     private Integer shopID;
+    private final Button back = new Button("← Back",
+                                         e -> UI.getCurrent().navigate(""));
 
     @Autowired
     public InboxView(InboxPresenter presenter) {
@@ -36,6 +38,9 @@ public class InboxView extends VerticalLayout{
         setPadding(true);
         setSpacing(true);
 
+        // — Back button —
+        HorizontalLayout backLayout = new HorizontalLayout(back);
+        add(backLayout);
         // — Title —
         add(new H2("Inbox"));
 

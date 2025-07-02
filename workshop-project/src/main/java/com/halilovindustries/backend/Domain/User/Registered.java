@@ -37,15 +37,16 @@ public class Registered extends Guest {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<IRole> roleInShops = new ArrayList<>();
 
-    @Transient
-    private Map<Integer, Message> inbox = new HashMap<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private List<Message> inbox = new ArrayList<>();
 
     public Registered(String username, String password, LocalDate dateOfBirth) {
         this.username = username;
         this.password = password;
         this.dateOfBirth = dateOfBirth;
         this.roleInShops = new ArrayList<>();
-        this.inbox = new HashMap<>();
+        this.inbox = new ArrayList();
         this.suspension = new Suspension();
     }
 
@@ -208,11 +209,11 @@ public class Registered extends Guest {
     }
 
     public void addMessage(Message message) {
-        inbox.put(message.getId(), message);
+        inbox.add(message);
     }
 
     public List<Message> getInbox() {
-        return inbox.values().stream()
+        return inbox.stream()
                 .sorted((m1, m2) -> m2.getDateTime().compareTo(m1.getDateTime()))
                 .toList();
     }
