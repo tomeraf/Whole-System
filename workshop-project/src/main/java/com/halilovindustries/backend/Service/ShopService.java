@@ -94,7 +94,9 @@ public class ShopService extends DatabaseAwareService {
                 }
                 ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
                         shop.getRating(), shop.getRatingCount());
-                shopDTOs.add(shopDTO);
+                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+                if (shop.isOpen() || userRepository.getUserById(userID).isSystemManager()) 
+                    shopDTOs.add(shopDTO);
             }
             return Response.ok(shopDTOs);
         }
@@ -121,9 +123,8 @@ public class ShopService extends DatabaseAwareService {
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
     
             List<ShopDTO> shopDTOs = new ArrayList<>();
-            List<Shop> userShops = shopRepository.getUserShops(userID).stream()
-                    .filter(Shop::isOpen)
-                    .toList();
+            List<Shop> userShops = shopRepository.getUserShops(userID);
+            
             for (Shop shop : userShops) {
                 List<Item> items = shop.getItems();
                 HashMap<Integer, ItemDTO> itemDTOs = new HashMap<>();
@@ -135,7 +136,9 @@ public class ShopService extends DatabaseAwareService {
                 }
                 ShopDTO shopDTO = new ShopDTO(shop.getId(), shop.getName(), shop.getDescription(), itemDTOs,
                         shop.getRating(), shop.getRatingCount());
-                shopDTOs.add(shopDTO);
+
+                if (shop.isOpen() || shop.getOwnerIDs().contains(userID)) 
+                    shopDTOs.add(shopDTO);
             }
             return Response.ok(shopDTOs);
         }
@@ -197,6 +200,9 @@ public class ShopService extends DatabaseAwareService {
             List<Item> filteredItems = new ArrayList<>();
             List<ItemDTO> itemDTOs = new ArrayList<>();
             for (Shop shop : shopRepository.getAllShops().values()) {
+                if (!shop.isOpen()) {
+                    continue; // Skip closed shops
+                }
                 for (Item item : shop.filter(name, category, minPrice, maxPrice, minRating, shopRating)) {
                     ItemDTO itemDTO = new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), shop.getId(),
                             item.getId(), item.getQuantity(), item.getRating(), item.getDescription(),
