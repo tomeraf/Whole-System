@@ -45,8 +45,7 @@ public class ComprehensiveDiscountTests extends BaseAcceptanceTests {
         // Add manager with permissions
         Set<Permission> managerPermissions = new HashSet<>();
         managerPermissions.add(Permission.UPDATE_DISCOUNT_POLICY);
-        shopService.addShopManager(ownerToken, shop.getId(), "DiscountManager", 
-               managerPermissions); 
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), managerPermissions);
         
         // Set up payment and shipment details for purchases
         payment = new PaymentDetailsDTO("1234567890123456", "Test User", "1", "123", "12", "25");

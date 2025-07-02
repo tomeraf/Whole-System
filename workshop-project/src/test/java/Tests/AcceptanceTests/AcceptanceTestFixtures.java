@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IExternalSystems;
 import com.halilovindustries.backend.Domain.Adapters_and_Interfaces.IPayment;
@@ -23,6 +24,9 @@ import com.halilovindustries.backend.Service.ShopService;
 import com.halilovindustries.backend.Service.UserService;
 
 import com.halilovindustries.backend.Domain.Shop.*;
+import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Domain.Message;
+import com.halilovindustries.backend.Domain.OfferMessage;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.Order;
@@ -221,6 +225,48 @@ public class AcceptanceTestFixtures {
     public void mockNegativeShipment(ShipmentDetailsDTO details) {
         when(shipment.validateShipmentDetails(details)).thenReturn(false);
         when(shipment.processShipment(details)).thenReturn(null); // null = failure
+    }
+
+    public void successfulAddOwner(String appointerToken, String appointeeToken, int shopID, String shopName) {
+        Response<Void> offer = shopService.sendOwnershipOffer(appointerToken, shopID, userService.getUsername(appointeeToken));
+        assertTrue(offer.isOk(), "Ownership offer should succeed");
+        Response<List<Message>> messages = userService.getInbox(appointeeToken);
+        assertTrue(messages.isOk(), "Inbox retrieval should succeed");
+        List<Message> inbox = messages.getData();
+        assertNotNull(inbox, "Inbox must not be null");
+        assertTrue(inbox.size() > 0, "Inbox should contain at least one message");
+        List<Message> msges = inbox.stream().filter(m -> m.isOffer()).toList();
+        assertTrue(msges.size() > 0, "Inbox should contain at least one ownership offer message");
+        OfferMessage offerMessage = (OfferMessage)msges.get(msges.size() - 1);
+        assertTrue(offerMessage.getAppointerName().equals(userService.getUsername(appointerToken)), "Offer message should have correct appointer name");
+        assertTrue(offerMessage.getAppointeeName().equals(userService.getUsername(appointeeToken)), "Offer message should have correct appointee name");
+        assertTrue(offerMessage.getShopName().equals(shopName), "Offer message should have correct shop name");
+        int msgId = offerMessage.getShopName().equals(shopName) ? offerMessage.getId() : -1;
+        Response<Void> accept = shopService.answerAppointmentOffer(appointeeToken, shopName, msgId, true);
+        assertTrue(accept.isOk(), "Ownership acceptance should succeed");
+        boolean isInShop = shopService.getShopMembers(appointerToken, shopID).getData().stream().filter(user -> user.getUsername().equals(userService.getUsername(appointeeToken))).toList().size() == 1;
+        assertTrue(isInShop, "Appointee should be in the shop members list after successful appointment");   
+    }
+
+    public void successfulAddManager(String appointerToken, String appointeeToken, int shopID, String shopName, Set<Permission> perms) {
+        Response<Void> offer = shopService.sendManagementOffer(appointerToken, shopID, userService.getUsername(appointeeToken), perms);
+        assertTrue(offer.isOk(), "Ownership offer should succeed");
+        Response<List<Message>> messages = userService.getInbox(appointeeToken);
+        assertTrue(messages.isOk(), "Inbox retrieval should succeed");
+        List<Message> inbox = messages.getData();
+        assertNotNull(inbox, "Inbox must not be null");
+        assertTrue(inbox.size() > 0, "Inbox should contain at least one message");
+        List<Message> msges = inbox.stream().filter(m -> m.isOffer()).toList();
+        assertTrue(msges.size() > 0, "Inbox should contain at least one ownership offer message");
+        OfferMessage offerMessage = (OfferMessage)msges.get(msges.size() - 1);
+        assertTrue(offerMessage.getAppointerName().equals(userService.getUsername(appointerToken)), "Offer message should have correct appointer name");
+        assertTrue(offerMessage.getAppointeeName().equals(userService.getUsername(appointeeToken)), "Offer message should have correct appointee name");
+        assertTrue(offerMessage.getShopName().equals(shopName), "Offer message should have correct shop name");
+        int msgId = offerMessage.getShopName().equals(shopName) ? offerMessage.getId() : -1;
+        Response<Void> accept = shopService.answerAppointmentOffer(appointeeToken, shopName, msgId, true);
+        assertTrue(accept.isOk(), "Ownership acceptance should succeed");
+        boolean isInShop = shopService.getShopMembers(appointerToken, shopID).getData().stream().filter(user -> user.getUsername().equals(userService.getUsername(appointeeToken))).toList().size() == 1;
+        assertTrue(isInShop, "Appointee should be in the shop members list after successful appointment");
     }
 }
 

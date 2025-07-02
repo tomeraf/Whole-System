@@ -68,13 +68,15 @@ public class InteractionService {
         if(title == null || content == null||title.isEmpty() || content.isEmpty()) {
             throw new IllegalArgumentException("Title and content cannot be null");
         }
+        if (shop.isShopMember(receiver.getUserID()))
+            throw new IllegalArgumentException("User is already a shop member");
         if(!sender.hasPermission(shop.getId(), Permission.APPOINTMENT)) {
             throw new IllegalArgumentException("You do not have permission to send appointment offers");
         }
         Message message = new OfferMessage(msgId, sender.getUsername(), shop.getName(), LocalDateTime.now(), title, content, false);
         
-        ((OfferMessage)message).setAppointerId(sender.getUserID());
-        ((OfferMessage)message).setAppointeeId(receiver.getUserID());
+        ((OfferMessage)message).setAppointerName(sender.getUsername());
+        ((OfferMessage)message).setAppointeeName(receiver.getUsername());
         ((OfferMessage)message).setDecision(null); // Pending by default
         ((OfferMessage)message).setManagerOffer(isManagerOffer);
         ((OfferMessage)message).setOfferDetails(offerDetails);

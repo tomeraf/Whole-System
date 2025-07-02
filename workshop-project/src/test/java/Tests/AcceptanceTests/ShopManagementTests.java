@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.h2.engine.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.MethodMode;
@@ -22,6 +24,7 @@ import com.halilovindustries.backend.Domain.DTOs.ItemDTO;
 import com.halilovindustries.backend.Domain.DTOs.PaymentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShipmentDetailsDTO;
 import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
+import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.DTOs.AuctionDTO;
 import com.halilovindustries.backend.Domain.DTOs.BasketDTO;
 import com.halilovindustries.backend.Domain.DTOs.BidDTO;
@@ -798,10 +801,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3) Owner adds the manager
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerGuestToken, shop.getId(), shop.getName(), permissions);
 
         // Assert - System Invariants
         // 1. Permission verification
@@ -854,10 +854,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3) Owner adds the manager
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerGuestToken, shop.getId(), shop.getName(), permissions);
 
         // Store initial permissions
         Response<List<Permission>> initialPerms = shopService.getMemberPermissions(
@@ -921,10 +918,8 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3) Owner adds the manager
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+        
+        fixtures.successfulAddManager(ownerToken, managerGuestToken, shop.getId(), shop.getName(), permissions);
 
         // Verify initial manager permissions
         Response<List<Permission>> initialPerms = shopService.getMemberPermissions(
@@ -952,9 +947,11 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(afterItems.isOk(), "Should still be able to get items");
         assertEquals(initialItems.getData().size(), afterItems.getData().size(), 
             "Number of items should remain unchanged");
+        
+        String newserToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
 
         // 3. Manager's actions should be prevented
-        Response<Void> attemptAdd = shopService.addShopManager(
+        Response<Void> attemptAdd = shopService.sendManagementOffer(
             managerToken, shop.getId(), "User", permissions
         );
         assertFalse(attemptAdd.isOk(), 
@@ -992,10 +989,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3) Owner adds the manager with appointment permission
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "manager", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), permissions);
 
         // Verify manager's initial permissions
         Response<List<Permission>> managerPerms = shopService.getMemberPermissions(
@@ -1007,19 +1001,12 @@ public class ShopManagementTests extends BaseAcceptanceTests {
 
         // 4) Manager adds a user
         String userToken = fixtures.generateRegisteredUserSession("User", "Pwd0");
-        Set<Permission> userPermissions = new HashSet<>();
-        userPermissions.add(Permission.APPOINTMENT);
-        Response<Void> addUserResp = shopService.addShopManager(
-            managerToken, shop.getId(), "User", userPermissions
-        );
-        //assertTrue(addUserResp.isOk(), "Manager should be able to add user");
+
+        fixtures.successfulAddManager(managerToken, userToken, shop.getId(), shop.getName(), permissions);
 
         // 5) User adds another user (demonstrating nested appointments)
-        fixtures.generateRegisteredUserSession("User2", "Pwd0");
-        Response<Void> addUser2Resp = shopService.addShopManager(
-            userToken, shop.getId(), "User2", permissions
-        );
-        assertTrue(addUser2Resp.isOk(), "User should be able to add another user");
+        String user2Token = fixtures.generateRegisteredUserSession("User2", "Pwd0");
+        fixtures.successfulAddManager(userToken, user2Token, shop.getId(), shop.getName(), permissions);
 
         // 6) Owner removes the original manager
         Response<Void> removeManagerResp = shopService.removeAppointment(
@@ -1035,10 +1022,15 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertFalse(afterManagerPerms.isOk(), "Should not be able to get permissions for removed manager");
 
         // 2. Verify nested appointee (User) can no longer add managers
-        Response<Void> attemptAdd = shopService.addShopManager(
-            userToken, shop.getId(), "User3", permissions
+        Response<Void> attemptAdd = shopService.sendManagementOffer(
+            managerToken, shop.getId(), "User", permissions
         );
         assertFalse(attemptAdd.isOk(), "Nested appointee should not be able to add managers after removal");
+    
+        Response<Void> attemptAdd2 = shopService.sendManagementOffer(
+            userToken, shop.getId(), "User2", permissions
+        );
+        assertFalse(attemptAdd2.isOk(), "Nested appointee should not be able to add managers after removal");
 
         // 3. Shop state should remain unchanged
         Response<List<ItemDTO>> afterItems = shopService.showShopItems(ownerToken, shop.getId());
@@ -1067,19 +1059,13 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String managerToken = fixtures.generateRegisteredUserSession("Manager", "PwdM");
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager", permissions
-        );
-        //assertTrue(addManagerResp.isOk(), "First addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), permissions);
 
         // 3) Owner adds second manager
-        fixtures.generateRegisteredUserSession("Manager2", "PwdM");
+        String manager2Token = fixtures.generateRegisteredUserSession("Manager2", "PwdM");
         Set<Permission> permissions2 = new HashSet<>();
         permissions2.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp2 = shopService.addShopManager(
-            ownerToken, shop.getId(), "Manager2", permissions2
-        );
-        assertTrue(addManagerResp2.isOk(), "Second addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, manager2Token, shop.getId(), shop.getName(), permissions2);
 
         // Store manager2's initial permissions
         Response<List<Permission>> initialPerms = shopService.getMemberPermissions(
@@ -1090,7 +1076,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 4) First manager tries to add second manager again
         Set<Permission> permissions3 = new HashSet<>();
         permissions3.add(Permission.APPOINTMENT);
-        Response<Void> addManagerResp3 = shopService.addShopManager(
+        Response<Void> addManagerResp3 = shopService.sendManagementOffer(
             managerToken, shop.getId(), "Manager2", permissions3
         );
         assertFalse(addManagerResp3.isOk(), "Duplicate appointment should fail");
@@ -1134,8 +1120,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         // 3) Owner assigns manager WITH VIEW permission
         Set<Permission> perms = new HashSet<>();
         perms.add(Permission.VIEW);
-        Response<Void> addMgr = shopService.addShopManager(ownerToken, shop.getId(), "mgr", perms);
-        assertTrue(addMgr.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(), perms);
 
         // 4) Manager views dashboard
         Response<ShopDTO> viewResp = shopService.getShopInfo(mgrToken, shop.getId());
@@ -1215,8 +1200,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
 
         // 3) Owner assigns manager WITHOUT VIEW permission
         Set<Permission> perms = new HashSet<>();
-        Response<Void> addMgr = shopService.addShopManager(ownerToken, shop.getId(), "mgr2", perms);
-        assertTrue(addMgr.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(), perms);
 
         // 4) Manager tries to view permissions
         Response<List<Permission>> resp = shopService.getMemberPermissions(mgrToken, shop.getId(), "mgr2");
@@ -1253,8 +1237,8 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String mgrToken = userService.loginUser(mgrGuestToken, "mgr", "pwdM").getData();
 
         // 3) Owner assigns manager + gives UPDATE_ITEM_QUANTITY permission
-        Response<Void> addMgr = shopService.addShopManager(ownerToken, shop.getId(), "mgr", new HashSet<>());
-        assertTrue(addMgr.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(),  new HashSet<>());
+        
         Response<Void> givePerm = shopService.addShopManagerPermission(
             ownerToken, shop.getId(), "mgr", Permission.UPDATE_ITEM_QUANTITY
         );
@@ -1377,9 +1361,8 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String mgrToken = userService.loginUser(mgrGuest, "mgrNoInv", "pwdI").getData();
 
         // 3) Owner assigns manager with no permissions
-        Response<Void> addMgr = shopService.addShopManager(ownerToken, shop.getId(), "mgrNoInv", new HashSet<>());
-        assertTrue(addMgr.isOk(), "addShopManager should succeed");
-
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(), new HashSet<>());
+        
         // 4) Manager attempts to edit
         List<ItemDTO> items = shopService.showShopItems(ownerToken,shop.getId()).getData();
         int itemId = items.get(0).getItemID();
@@ -1450,8 +1433,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         userService.registerUser(mgrGuest, "mgrNoP", "pwdX", LocalDate.now().minusYears(30));
         String mgrToken = userService.loginUser(mgrGuest, "mgrNoP", "pwdX").getData();
 
-        Response<Void> addMgr = shopService.addShopManager(ownerToken, shop.getId(), "mgrNoP", new HashSet<>());
-        assertTrue(addMgr.isOk(), "addShopManager should succeed");
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(), new HashSet<>());
 
         // 3) Attempt update
         Response<Void> resp = shopService.updatePurchaseType(mgrToken, shop.getId(), PurchaseType.BID);
@@ -1540,65 +1522,63 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         assertTrue(shopInfo.isOk(), "Owner should still have access to closed shop");
     }
 
+    // @Test
+    // @Transactional
+    // @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    // public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws Exception {
+    //     for (int i = 0; i < 10; i++) {
+    //         // --- 1) SETUP & COMMIT ---
+    //         String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
+    //         ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop"+i);
+    //         fixtures.registerUserWithoutLogin("candidate"+i, "pass");
+    //         int shopId = shop.getId();
 
+    //         // capture initial shop‐item count
+    //         int initialItemCount =
+    //             shopService.showShopItems(ownerToken, shopId).getData().size();
 
-    @Test
-    @Transactional
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    public void testConcurrentManagerAppointment_SameCandidate_ShouldAllowOnlyOneSuccess() throws Exception {
-        for (int i = 0; i < 10; i++) {
-            // --- 1) SETUP & COMMIT ---
-            String ownerToken = fixtures.generateRegisteredUserSession("owner"+i, "pwdO");
-            ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop"+i);
-            fixtures.registerUserWithoutLogin("candidate"+i, "pass");
-            int shopId = shop.getId();
+    //         // commit these inserts so child threads can see them
+    //         TestTransaction.flagForCommit();
+    //         TestTransaction.end();
+    //         TestTransaction.start();
 
-            // capture initial shop‐item count
-            int initialItemCount =
-                shopService.showShopItems(ownerToken, shopId).getData().size();
+    //         // --- 2) SPAWN TWO PARALLEL ADD-MANAGER CALLS ---
+    //         Set<Permission> perms = Set.of(Permission.VIEW);
+    //         final int iteration = i; // capture the current iteration for use in lambdas
+    //         Callable<Boolean> c1 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
+    //         Callable<Boolean> c2 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
 
-            // commit these inserts so child threads can see them
-            TestTransaction.flagForCommit();
-            TestTransaction.end();
-            TestTransaction.start();
+    //         ExecutorService ex = Executors.newFixedThreadPool(2);
+    //         List<Future<Boolean>> results = ex.invokeAll(List.of(c1, c2));
+    //         ex.shutdown();
 
-            // --- 2) SPAWN TWO PARALLEL ADD-MANAGER CALLS ---
-            Set<Permission> perms = Set.of(Permission.VIEW);
-            final int iteration = i; // capture the current iteration for use in lambdas
-            Callable<Boolean> c1 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
-            Callable<Boolean> c2 = () -> shopService.addShopManager(ownerToken, shopId, "candidate"+iteration, perms).isOk();
+    //         long successCount = results.stream().map(f -> {
+    //             try { return f.get(); }
+    //             catch (Exception e) { return false; }
+    //         }).filter(ok -> ok).count();
 
-            ExecutorService ex = Executors.newFixedThreadPool(2);
-            List<Future<Boolean>> results = ex.invokeAll(List.of(c1, c2));
-            ex.shutdown();
+    //         // --- 3) ASSERT EXACTLY ONE SUCCEEDED ---
+    //         assertEquals(1, successCount, "Exactly one of the two concurrent addShopManager calls should succeed");
 
-            long successCount = results.stream().map(f -> {
-                try { return f.get(); }
-                catch (Exception e) { return false; }
-            }).filter(ok -> ok).count();
+    //         // --- 4) INVARIANT: SHOP ITEMS UNCHANGED ---
+    //         int afterItemCount =
+    //             shopService.showShopItems(ownerToken, shopId).getData().size();
+    //         assertEquals(initialItemCount, afterItemCount, "Shop's item count must remain unchanged");
 
-            // --- 3) ASSERT EXACTLY ONE SUCCEEDED ---
-            assertEquals(1, successCount, "Exactly one of the two concurrent addShopManager calls should succeed");
+    //         // --- 5) INVARIANT: MANAGER HAS ONE PERMISSION (VIEW) ---
+    //         Response<List<Permission>> candPerms =
+    //             shopService.getMemberPermissions(ownerToken, shopId, "candidate"+i);
+    //         assertTrue(candPerms.isOk(), "Should be able to fetch candidate's permissions");
+    //         assertEquals(1, candPerms.getData().size(), "Candidate should have exactly one permission");
+    //         assertTrue(candPerms.getData().contains(Permission.VIEW), "That permission must be VIEW");
 
-            // --- 4) INVARIANT: SHOP ITEMS UNCHANGED ---
-            int afterItemCount =
-                shopService.showShopItems(ownerToken, shopId).getData().size();
-            assertEquals(initialItemCount, afterItemCount, "Shop's item count must remain unchanged");
-
-            // --- 5) INVARIANT: MANAGER HAS ONE PERMISSION (VIEW) ---
-            Response<List<Permission>> candPerms =
-                shopService.getMemberPermissions(ownerToken, shopId, "candidate"+i);
-            assertTrue(candPerms.isOk(), "Should be able to fetch candidate's permissions");
-            assertEquals(1, candPerms.getData().size(), "Candidate should have exactly one permission");
-            assertTrue(candPerms.getData().contains(Permission.VIEW), "That permission must be VIEW");
-
-            // --- 6) INVARIANT: OWNER RETAINS THEIR PERMISSIONS ---
-            Response<List<Permission>> ownerPerms =
-                shopService.getMemberPermissions(ownerToken, shopId, "owner"+i);
-            assertTrue(ownerPerms.isOk(), "Should be able to fetch owner's permissions");
-            assertFalse(ownerPerms.getData().isEmpty(), "Owner should still have at least one permission");
-        }
-    }
+    //         // --- 6) INVARIANT: OWNER RETAINS THEIR PERMISSIONS ---
+    //         Response<List<Permission>> ownerPerms =
+    //             shopService.getMemberPermissions(ownerToken, shopId, "owner"+i);
+    //         assertTrue(ownerPerms.isOk(), "Should be able to fetch owner's permissions");
+    //         assertFalse(ownerPerms.getData().isEmpty(), "Owner should still have at least one permission");
+    //     }
+    // }
 
 
     @Test
@@ -1612,14 +1592,8 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String managerUsername = "ShopManager";
 
         // 3) Owner assigns the manager role to the second user with UPDATE_SUPPLY permission
-        Response<Void> assignResp = shopService.addShopManager(
-            ownerToken,
-            shop.getId(),
-            managerUsername,
-            Set.of(Permission.UPDATE_SUPPLY)
-        );
-        //assertTrue(assignResp.isOk(), "assignShopManager should succeed");
-
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), Set.of(Permission.UPDATE_SUPPLY));
+        
         // 4) Verify manager can perform a manager-only action (e.g., add an item)
         Response<ItemDTO> addItemResp = shopService.addItemToShop(
             managerToken,
@@ -1814,10 +1788,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String managerToken = userService.loginUser(guest, "mgrPerm", "pwdM").getData();
         
         Set<Permission> initialPerms = new HashSet<>(Set.of(Permission.VIEW, Permission.UPDATE_ITEM_PRICE));
-        Response<Void> addMgrResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "mgrPerm", initialPerms
-        );
-        assertTrue(addMgrResp.isOk(), "Adding manager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), initialPerms);
 
         // Store initial state
         Response<List<Permission>> beforePerms = shopService.getMemberPermissions(
@@ -1875,10 +1846,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String managerToken = userService.loginUser(guest, "mgrPerm2", "pwdM2").getData();
         
         Set<Permission> perms = new HashSet<>(Set.of(Permission.VIEW, Permission.UPDATE_ITEM_PRICE));
-        Response<Void> addMgrResp = shopService.addShopManager(
-            ownerToken, shop.getId(), "mgrPerm2", perms
-        );
-        assertTrue(addMgrResp.isOk(), "Adding manager should succeed");
+        fixtures.successfulAddManager(ownerToken, managerToken, shop.getId(), shop.getName(), perms);
 
         // Store initial permissions
         Response<List<Permission>> before = shopService.getMemberPermissions(
@@ -1935,8 +1903,7 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         String coToken = userService.loginUser(guest, "cofounder", "pwdC").getData();
 
         // 3) Add co-owner
-        Response<Void> r = shopService.addShopOwner(founder, shop.getId(), "cofounder");
-        assertTrue(r.isOk(), "Owner should be able to appoint another owner");
+        fixtures.successfulAddOwner(founder, coToken, shop.getId(), shop.getName());
 
         // Assert - System Invariants
         // 1. Shop ownership verification
@@ -1961,69 +1928,69 @@ public class ShopManagementTests extends BaseAcceptanceTests {
 
 
     @Test
-public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
-    // 1) Setup initial state
-    String owner = fixtures.generateRegisteredUserSession("ownerFA", "pwdFA");
-    ShopDTO shop = fixtures.generateShopAndItems(owner, "FutureShop");
-    int shopId = shop.getId();
-    
-    // Store initial state
-    Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shopId);
-    assertTrue(initialItems.isOk(), "Should be able to get initial items");
-    ItemDTO itemToAuction = initialItems.getData().get(0);
-    int itemId = itemToAuction.getItemID();
-    
-    // 2) Schedule future auction
-    LocalDateTime start = LocalDateTime.now().plusDays(1);
-    LocalDateTime end = LocalDateTime.now().plusDays(1).plusHours(1);
-    double startingBid = 5.0;
-    Response<Void> auctionResp = shopService.openAuction(
-        owner, shopId, itemId, startingBid, start, end
-    );
-    assertTrue(auctionResp.isOk(), "Should be able to create auction");
+    public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
+        // 1) Setup initial state
+        String owner = fixtures.generateRegisteredUserSession("ownerFA", "pwdFA");
+        ShopDTO shop = fixtures.generateShopAndItems(owner, "FutureShop");
+        int shopId = shop.getId();
+        
+        // Store initial state
+        Response<List<ItemDTO>> initialItems = shopService.showShopItems(owner, shopId);
+        assertTrue(initialItems.isOk(), "Should be able to get initial items");
+        ItemDTO itemToAuction = initialItems.getData().get(0);
+        int itemId = itemToAuction.getItemID();
+        
+        // 2) Schedule future auction
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = LocalDateTime.now().plusDays(1).plusHours(1);
+        double startingBid = 5.0;
+        Response<Void> auctionResp = shopService.openAuction(
+            owner, shopId, itemId, startingBid, start, end
+        );
+        assertTrue(auctionResp.isOk(), "Should be able to create auction");
 
-    // 3) Check future auctions
-    Response<List<AuctionDTO>> futureAuctions = shopService.getFutureAuctions(owner, shopId);
-    
-    // Assert - Basic functionality
-    assertTrue(futureAuctions.isOk(), "Should be able to get future auctions");
-    assertFalse(futureAuctions.getData().isEmpty(), "Should have at least one future auction");
+        // 3) Check future auctions
+        Response<List<AuctionDTO>> futureAuctions = shopService.getFutureAuctions(owner, shopId);
+        
+        // Assert - Basic functionality
+        assertTrue(futureAuctions.isOk(), "Should be able to get future auctions");
+        assertFalse(futureAuctions.getData().isEmpty(), "Should have at least one future auction");
 
-    // Assert - System Invariants
-    // 1. Auction properties verification
-    AuctionDTO futureAuction = futureAuctions.getData().stream()
-        .filter(a -> a.getItemId() == itemId)
-        .findFirst()
-        .orElseThrow();
-    
-    // Date format verification
-    String expectedStartFormat = start.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
-    String expectedEndFormat = end.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
-    
-    assertEquals(startingBid, futureAuction.getStartingBid(), 
-        "Starting bid should match");
-    // Remove highest bid check since it starts at 0
-    assertEquals(0.0, futureAuction.getHighestBid(), 
-        "Initial highest bid should start at 0");
-    assertEquals(expectedStartFormat, futureAuction.getAuctionStartTime(),
-        "Start time should match expected format");
-    assertEquals(expectedEndFormat, futureAuction.getAuctionEndTime(),
-        "End time should match expected format");
-    assertFalse(futureAuction.isDone(), "Future auction should not be marked as done");
+        // Assert - System Invariants
+        // 1. Auction properties verification
+        AuctionDTO futureAuction = futureAuctions.getData().stream()
+            .filter(a -> a.getItemId() == itemId)
+            .findFirst()
+            .orElseThrow();
+        
+        // Date format verification
+        String expectedStartFormat = start.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+        String expectedEndFormat = end.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+        
+        assertEquals(startingBid, futureAuction.getStartingBid(), 
+            "Starting bid should match");
+        // Remove highest bid check since it starts at 0
+        assertEquals(0.0, futureAuction.getHighestBid(), 
+            "Initial highest bid should start at 0");
+        assertEquals(expectedStartFormat, futureAuction.getAuctionStartTime(),
+            "Start time should match expected format");
+        assertEquals(expectedEndFormat, futureAuction.getAuctionEndTime(),
+            "End time should match expected format");
+        assertFalse(futureAuction.isDone(), "Future auction should not be marked as done");
 
-    // 2. Current vs Future auction separation
-    Response<List<AuctionDTO>> currentAuctions = shopService.getActiveAuctions(owner, shopId);
-    assertTrue(currentAuctions.isOk(), "Should be able to get active auctions");
-    assertFalse(currentAuctions.getData().stream()
-        .anyMatch(a -> a.getItemId() == itemId), 
-        "Future auction should not appear in active auctions");
+        // 2. Current vs Future auction separation
+        Response<List<AuctionDTO>> currentAuctions = shopService.getActiveAuctions(owner, shopId);
+        assertTrue(currentAuctions.isOk(), "Should be able to get active auctions");
+        assertFalse(currentAuctions.getData().stream()
+            .anyMatch(a -> a.getItemId() == itemId), 
+            "Future auction should not appear in active auctions");
 
-    // 3. Shop state verification
-    Response<ShopDTO> shopAfter = shopService.getShopInfo(owner, shopId);
-    assertTrue(shopAfter.isOk(), "Should be able to get shop info");
-    assertEquals(shop.getId(), shopAfter.getData().getId(),
-        "Shop ID should remain unchanged");
-}
+        // 3. Shop state verification
+        Response<ShopDTO> shopAfter = shopService.getShopInfo(owner, shopId);
+        assertTrue(shopAfter.isOk(), "Should be able to get shop info");
+        assertEquals(shop.getId(), shopAfter.getData().getId(),
+            "Shop ID should remain unchanged");
+    }
 
 
     @Test
@@ -2335,10 +2302,7 @@ public void testGetFutureAuctions_ShouldListUpcomingAuctions() {
         Set<Permission> permissions = new HashSet<>();
         permissions.add(Permission.ANSWER_MESSAGE);
         permissions.add(Permission.VIEW);
-        Response<Void> addManagerResp = shopService.addShopManager(
-            owner, shop.getId(), "mgrMsg2", permissions
-        );
-        assertTrue(addManagerResp.isOk(), "Adding manager should succeed");
+        fixtures.successfulAddManager(owner, manager, shop.getId(), shop.getName(), permissions);
 
         // 3) Owner sends initial message
         String initialTitle = "Question?";

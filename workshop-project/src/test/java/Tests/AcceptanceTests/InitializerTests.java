@@ -7,8 +7,11 @@ import com.halilovindustries.backend.Domain.DTOs.ShopDTO;
 import com.halilovindustries.backend.Domain.DTOs.UserDTO;
 import com.halilovindustries.backend.Domain.Response;
 import com.halilovindustries.backend.Domain.User.Permission;
+import com.halilovindustries.backend.Domain.init.InitService;
 import com.halilovindustries.backend.Domain.init.Initializer;
 import com.halilovindustries.backend.Domain.init.StartupConfig;
+
+import org.springframework.transaction.annotation.Transactional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 public class InitializerTests extends BaseAcceptanceTests {
-    private Initializer initializer;
+    private InitService initializer;
     private String ST;
     private Path initFile;
 
@@ -39,14 +42,13 @@ public class InitializerTests extends BaseAcceptanceTests {
     public void tearDown() throws Exception {
         Files.deleteIfExists(initFile);
     }
-
     private void runInit(String content) throws IOException {
         initFile = Files.createTempFile("initTest", ".txt");
         Files.writeString(initFile, content); // optional content
         StartupConfig startupConfig = new StartupConfig();
         startupConfig.setInitFile(initFile.toString());
-        initializer = new Initializer(startupConfig, userService, shopService, orderService, databaseHealthService);
-        initializer.init();
+        initializer = new InitService(startupConfig, userService, shopService, orderService, databaseHealthService);
+        initializer.initializeSystem();
     }
     @Test
     public void good_init(){
@@ -61,7 +63,6 @@ public class InitializerTests extends BaseAcceptanceTests {
           register-user(u4, u4, 2000-01-01);
           register-user(u5, u5, 2000-01-01);
           register-user(u6, u6, 2000-01-01);
-          logout-user(u6);
 
           // User u2 logs in
           login-user(u2, u2);
@@ -70,14 +71,14 @@ public class InitializerTests extends BaseAcceptanceTests {
           create-shop(s1, descs1);
 
           // User u2 add Bamba to the shop
-          add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
+          add-item(s1, Bamba, FOOD, 5.5, fking Bamba, 10);
 
           // User u2 appoints u3 as manager of the shop with permission to manage inventory
-          add-shop-manager(0, u3, UPDATE_ITEM_QUANTITY);
+          add-shop-manager(s1, u3, UPDATE_ITEM_QUANTITY);
 
           // u2 appoints u4 and u5 as shop owners
-          add-shop-owner(0, u4);
-          add-shop-owner(0, u5);
+          add-shop-owner(s1, u4);
+          add-shop-owner(s1, u5);
 
           // u2 logs out
           logout-user(u2);
@@ -152,14 +153,14 @@ public class InitializerTests extends BaseAcceptanceTests {
           create-shop(s1, descs1);
 
           // User u2 add Bamba to the shop
-          add-item(0, Bamba, FOOD, 5.5, fking Bamba, 10);
+          add-item(s1, Bamba, FOOD, 5.5, fking Bamba, 10);
 
           // User u2 appoints u3 as manager of the shop with permission to manage inventory
-          add-shop-manager(0, u3, UPDATE_ITEM_QUANTITY);
+          add-shop-manager(s1, u3, UPDATE_ITEM_QUANTITY);
 
           // u2 appoints u4 and u5 as shop owners
-          add-shop-owner(0, u4);
-          add-shop-owner(0, u5);
+          add-shop-owner(s1, u4);
+          add-shop-owner(s1, u5);
 
           // u2 logs out
           logout-user(u2);
@@ -254,20 +255,19 @@ public class InitializerTests extends BaseAcceptanceTests {
         register-user(u4, u4, 2000-01-01);
         register-user(u5, u5, 2000-01-01);
         register-user(u6, u6, 2000-01-01);
-        logout-user(u6);
         login-user(u2, u2);
         create-shop(s1, firstShop);
         create-shop(s2, secondShop);
-        close-shop(1);
-        add-shop-owner(0, u3);
-        add-shop-owner(0, u4);
-        remove-appointment(0, u4);
-        add-shop-manager(0, u5, UPDATE_ITEM_QUANTITY);
-        add-shop-manager(0, u6, ANSWER_BID);
-        remove-appointment(0, u6);
-        add-permission(0, u5, VIEW);
-        add-permission(0, u5, APPOINTMENT);
-        remove-permission(0, u5, VIEW);
+        close-shop(s2);
+        add-shop-owner(s1, u3);
+        add-shop-owner(s1, u4);
+        remove-appointment(s1, u4);
+        add-shop-manager(s1, u5, UPDATE_ITEM_QUANTITY);
+        add-shop-manager(s1, u6, ANSWER_BID);
+        remove-appointment(s1, u6);
+        add-permission(s1, u5, VIEW);
+        add-permission(s1, u5, APPOINTMENT);
+        remove-permission(s1, u5, VIEW);
         logout-user();
     """;
         try {
@@ -332,20 +332,19 @@ public class InitializerTests extends BaseAcceptanceTests {
            register-user(u1, u1, 1999-06-16);
            register-user(u2, u2, 2000-01-01);
            register-user(u3, u3, 2000-01-01);
-           logout-user(u3);
            login-user(u2, u2);
            create-shop(s1, firstShop);
-           add-item(0, item1, FOOD, 20 , item1item1 , 10 );
-           add-item(0, item2, FOOD, 20 , item2item2 , 10 );
+           add-item(s1, item1, FOOD, 20 , item1item1 , 10 );
+           add-item(s1, item2, FOOD, 20 , item2item2 , 10 );
            logout-user(u2);
            login-user(u3, u3);
-           add-to-cart(0, 0, 5);
-           add-to-cart(0, 1, 6);
-           remove-from-cart(0, 1);
-           send-message(0, test1 , testing messages);
+           add-to-cart(s1, 0, 5);
+           add-to-cart(s1, 1, 6);
+           remove-from-cart(s1, 1);
+           send-message(s1, test1 , testing messages);
            logout-user(3);
            login-user(u2,u2);
-           respond-to-message(0,  0, test1good, test1 went well);
+           respond-to-message(s1, 0, test1good, test1 went well);
            logout-user(u2);
     """;
         try {

@@ -36,7 +36,7 @@ external:
   externalUrl: https://damp-lynna-wsep-1984852e.koyeb.app/
 
 startup:
-  initFile: empty_init.txt
+  initFile: init.txt
   # empty_init.txt
   # init.txt
   defaultSystemManager:

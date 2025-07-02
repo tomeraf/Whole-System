@@ -755,39 +755,39 @@ public class ShopService extends DatabaseAwareService {
         }
     }
     // management
-    @Transactional
-    public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Registered appointee = this.userRepository.getUserByName(appointeeName);
-                if (appointee.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = this.shopRepository.getShopById(shopID);
-                this.managementService.addOwner(user, shop, appointee);
-                logger.info(() -> "Shop owner added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-            } 
-        catch (MaintenanceModeException e) {
-            // Special handling for maintenance mode
-            return Response.error(e.getMessage());
-        }
-        catch (Exception e) {
-            handleDatabaseException(e);
-                logger.error(() -> "Error adding shop owner: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            }
-        return Response.ok();
-    }
+    // @Transactional
+    // public Response<Void> addShopOwner(String sessionToken, int shopID, String appointeeName) {
+    //         try {
+    //         // Check database health before proceeding
+    //         checkDatabaseHealth("current method");
+    //             if (!authenticationAdapter.validateToken(sessionToken)) {
+    //                 throw new Exception("User is not logged in");
+    //             }
+    //             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+    //             Registered user = (Registered) this.userRepository.getUserById(userID);
+    //             if (user.isSuspended()) {
+    //                 return Response.error("User is suspended");
+    //             }
+    //             Registered appointee = this.userRepository.getUserByName(appointeeName);
+    //             if (appointee.isSuspended()) {
+    //                 return Response.error("User is suspended");
+    //             }
+    //             Shop shop = this.shopRepository.getShopById(shopID);
+    //             this.managementService.addOwner(user, shop, appointee);
+    //             logger.info(() -> "Shop owner added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
+    //                     + userID);
+    //         } 
+    //     catch (MaintenanceModeException e) {
+    //         // Special handling for maintenance mode
+    //         return Response.error(e.getMessage());
+    //     }
+    //     catch (Exception e) {
+    //         handleDatabaseException(e);
+    //             logger.error(() -> "Error adding shop owner: " + e.getMessage());
+    //             return Response.error("Error: " + e.getMessage());
+    //         }
+    //     return Response.ok();
+    // }
 
     @Transactional
     public Response<Void> removeAppointment(String sessionToken, int shopID, String appointeeName) {
@@ -927,10 +927,10 @@ public class ShopService extends DatabaseAwareService {
                 List<Integer> membersIDs = shop.getMembersIDs();
                 List<Integer> ownersIDs = shop.getOwnerIDs().stream().toList();
                 if (offer.isManagerOffer()) {
-                    managementService.addManager((Registered)userRepository.getUserById(offer.getAppointerId()), shopId, user, offer.getOfferDetails(), (Integer id) -> shopRepository.getShopByIdWithLock(id));
+                    managementService.addManager((Registered)userRepository.getUserByName(offer.getAppointerName()), shopId, user, offer.getOfferDetails(), (Integer id) -> shopRepository.getShopByIdWithLock(id));
                     notificationHandler.notifyUsers(membersIDs, "User " + user.getUsername() + " accepted being a manager in the shop: " + shop.getName());
                 } else {
-                    managementService.addOwner((Registered)userRepository.getUserById(offer.getAppointerId()), shop, user);
+                    managementService.addOwner((Registered)userRepository.getUserByName(offer.getAppointerName()), shop, user);
                     notificationHandler.notifyUsers(membersIDs, "User " + user.getUsername() + " accepted being an owner in the shop: " + shop.getName());
                 }
             }
@@ -947,39 +947,39 @@ public class ShopService extends DatabaseAwareService {
         }
     }
 
-    @Transactional
-    public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
-        try {
-            checkDatabaseHealth("current method");
-            if (!authenticationAdapter.validateToken(sessionToken)) {
-                throw new Exception("User is not logged in");
-            }
-            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-            Registered user = (Registered) this.userRepository.getUserById(userID);
-            if (user.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Registered appointee = userRepository.getUserByName(appointeeName);
-            if (appointee.isSuspended()) {
-                return Response.error("User is suspended");
-            }
-            Shop shop = shopRepository.getShopById(shopID);
-            managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
-            notificationHandler.notifyUser(appointee.getUserID() + "",
-                    "You have been appointed as a manager in shop: " + shop.getName());
-            logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
-                    + userID);
-        } catch (MaintenanceModeException e) {
-            // Special handling for maintenance mode
-            return Response.error(e.getMessage());
-        }
-        catch (Exception e) {
-            handleDatabaseException(e);
-            logger.error(() -> "Error adding shop manager: " + e.getMessage());
-            return Response.error("Error: " + e.getMessage());
-        }
-        return Response.ok();
-    }
+    // @Transactional
+    // public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
+    //     try {
+    //         checkDatabaseHealth("current method");
+    //         if (!authenticationAdapter.validateToken(sessionToken)) {
+    //             throw new Exception("User is not logged in");
+    //         }
+    //         int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+    //         Registered user = (Registered) this.userRepository.getUserById(userID);
+    //         if (user.isSuspended()) {
+    //             return Response.error("User is suspended");
+    //         }
+    //         Registered appointee = userRepository.getUserByName(appointeeName);
+    //         if (appointee.isSuspended()) {
+    //             return Response.error("User is suspended");
+    //         }
+    //         Shop shop = shopRepository.getShopById(shopID);
+    //         managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
+    //         notificationHandler.notifyUser(appointee.getUserID() + "",
+    //                 "You have been appointed as a manager in shop: " + shop.getName());
+    //         logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
+    //                 + userID);
+    //     } catch (MaintenanceModeException e) {
+    //         // Special handling for maintenance mode
+    //         return Response.error(e.getMessage());
+    //     }
+    //     catch (Exception e) {
+    //         handleDatabaseException(e);
+    //         logger.error(() -> "Error adding shop manager: " + e.getMessage());
+    //         return Response.error("Error: " + e.getMessage());
+    //     }
+    //     return Response.ok();
+    // }
 
     @Transactional
     public Response<Void> addShopManagerPermission(String sessionToken, int shopID, String appointeeName,

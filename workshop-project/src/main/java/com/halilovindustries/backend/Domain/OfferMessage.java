@@ -16,8 +16,8 @@ import jakarta.persistence.Id;
 @Entity
 @DiscriminatorValue("OFFER")
 public class OfferMessage extends Message {
-    private int appointerId;
-    private int appointeeId;
+    private String appointerName;
+    private String appointeeName;
 
     private Boolean decision; // if null = pending, if true = accepted, if false = rejected
 
@@ -27,32 +27,32 @@ public class OfferMessage extends Message {
     
     public OfferMessage(int id, String userName, String shopName, LocalDateTime dateTime, String title, String content, boolean FromUser) {
         super(id, userName, shopName, dateTime, title, content, FromUser);
-        this.appointerId = -1; // default value for appointerId
-        this.appointeeId = -1; // default value for appointeeId
+        this.appointerName = null; // default value for appointerId
+        this.appointeeName = null; // default value for appointeeId
         this.decision = false; // default value for decision
         this.managerOffer = false; // default value for managerOffer
         this.offerDetails = null; // default value for offerDetails
     }
     public OfferMessage() {
         super(); // Default constructor for JPA
-        this.appointerId = -1; // default value for appointerId
-        this.appointeeId = -1; // default value for appointeeId
+        this.appointerName = null; // default value for appointerId
+        this.appointeeName = null; // default value for appointeeId
         this.decision = null; // default value for decision
         this.managerOffer = false; // default value for managerOffer
         this.offerDetails = null; // default value for offerDetails
     }
 
-    public int getAppointerId() {
-        return appointerId;
+    public String getAppointerName() {
+        return appointerName;
     }
-    public void setAppointerId(int appointerId) {
-        this.appointerId = appointerId;
+    public void setAppointerName(String appointerName) {
+        this.appointerName = appointerName;
     }
-    public int getAppointeeId() {
-        return appointeeId;
+    public String getAppointeeName() {
+        return appointeeName;
     }
-    public void setAppointeeId(int appointeeId) {
-        this.appointeeId = appointeeId;
+    public void setAppointeeName(String appointeeName) {
+        this.appointeeName = appointeeName;
     }
     public Boolean getDecision() {
         return this.decision;
