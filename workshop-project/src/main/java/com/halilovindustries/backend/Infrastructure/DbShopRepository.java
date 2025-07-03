@@ -29,14 +29,7 @@ public class DbShopRepository implements IShopRepository {
     public Shop getShopByName(String name) {
         return jpaShopRepository.findByName(name);
     }
-    // @Override
-    // public void updateShop(Shop shop) {
-    //     jpaShopRepository.save(shop);
-    // }
-    // @Override
-    // public void deleteShop(int id) {
-    //     jpaShopRepository.deleteById(id);
-    // }
+
     @Override
     public HashMap<Integer, Shop> getAllShops() {
         List<Shop> shops = jpaShopRepository.findAll();
