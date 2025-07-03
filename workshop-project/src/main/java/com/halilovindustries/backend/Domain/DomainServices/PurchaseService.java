@@ -271,7 +271,7 @@ public class PurchaseService {
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(itemId);
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), 
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), price, 
                                 shop.getId(), itemId, 1, item.getRating(), 
                                 item.getDescription(), item.getNumOfOrders()));
         itemsToShip.put(shop.getId(), itemsList);
@@ -331,7 +331,7 @@ public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int 
         HashMap<Integer, List<ItemDTO>> itemsToShip = new HashMap<>();
         List<ItemDTO> itemsList = new ArrayList<>();
         Item item = shop.getItem(itemId);
-        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), item.getPrice(), 
+        itemsList.add(new ItemDTO(item.getName(), item.getCategory(), price, 
                                 shop.getId(), itemId, 1, item.getRating(), 
                                 item.getDescription(), item.getNumOfOrders()));
         itemsToShip.put(shop.getId(), itemsList);
