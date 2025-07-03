@@ -274,7 +274,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         }
 
     private VerticalLayout buildActionsBar() {
-    // 2️⃣ Filter button
+    //Filter button
     Button filterBtn = new Button("", VaadinIcon.FILTER.create());
     filterBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
     filterBtn.getStyle()
@@ -283,14 +283,14 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         .set("background-color", "lightblue").set("color", "black");
     filterBtn.addClickListener(e -> openFilterDialog());
 
-    // 3️⃣ Search bar
+    //Search bar
     TextField searchBar = new TextField();
     searchBar.setPlaceholder("Search here…");
     searchBar.setWidth("400px");
     searchBar.getStyle()
         .set("height", "38px").set("border-radius", "0").set("border-left", "none").set("border-right", "none");
 
-    // 4️⃣ Search button
+    //Search button
     Button searchBtn = new Button(VaadinIcon.SEARCH.create());
     searchBtn.getStyle()
         .set("height", "36px").set("min-width", "36px").set("padding", "0")
@@ -323,7 +323,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
 
 
-    // 5️⃣ Message button
+    //Message button
     msgBtn = new Button("Message", VaadinIcon.ENVELOPE.create());
     msgBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     msgBtn.getStyle()
@@ -335,7 +335,7 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         openMessageDialog()
     );
 
-    // 6️⃣ Search group
+    // Search group
     HorizontalLayout searchBarGroup = new HorizontalLayout(filterBtn, searchBar, searchBtn);
     searchBarGroup.setWidthFull();
     searchBarGroup.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
@@ -343,13 +343,13 @@ sendBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     searchBarGroup.setSpacing(false);
     searchBarGroup.setPadding(false);
 
-    // 7️⃣ Actions row (center search + right message)
+    // Actions row (center search + right message)
     HorizontalLayout actionsRow = new HorizontalLayout(searchBarGroup, msgBtn);
     actionsRow.setWidthFull();
     actionsRow.setAlignItems(FlexComponent.Alignment.CENTER);
     actionsRow.expand(searchBarGroup);
 
-    // ✅ Wrap in a container
+    // Wrap in a container
     VerticalLayout wrapper = new VerticalLayout();
     wrapper.setPadding(false);
     wrapper.setSpacing(false);

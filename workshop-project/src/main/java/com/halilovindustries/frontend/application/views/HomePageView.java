@@ -535,11 +535,13 @@ public class HomePageView extends Composite<VerticalLayout> {
                         );
                         presenter.saveSessionToken();
                         showGuestUI();
+                        loadRandomItems();
                     } else if (loggedIn) {
                         String userId = presenter.extractUserId(token);
                         System.out.println("User is logged in with ID: " + userId);
                         registerForNotifications(userId);
                         showLoggedInUI();
+                        loadRandomItems();
                     } else {
                         // Token is valid JWT but not logged in
                         System.out.println("Token valid but user not logged in");
@@ -553,15 +555,17 @@ public class HomePageView extends Composite<VerticalLayout> {
                                     presenter.saveSessionToken();
                                 }
                                 showGuestUI();
+                                loadRandomItems();
                             });
                     }
                 } catch (Exception e) {
                     System.err.println("Error in onAttach: " + e.getMessage());
+                    loadRandomItems();
                 }
             });
         });
 
-        loadRandomItems();
+        //loadRandomItems();
     }
 
     private void clearStorage() {
