@@ -74,7 +74,7 @@ public class InboxView extends VerticalLayout{
             .setHeader("Date")
             .setAutoWidth(true);
 
-        // 2️⃣ Show the content in a dialog when they click a row
+        //Show the content in a dialog when they click a row
         grid.asSingleSelect().addValueChangeListener(e -> {
             Message msg = e.getValue();
             if (msg == null) return;
@@ -126,7 +126,7 @@ public class InboxView extends VerticalLayout{
                 dlg.add(new Paragraph(decisionText));
                 dlg.add(new Button("Close", ev -> dlg.close()));
             }
-            // 2️⃣ User-to-shop conversation → Reply
+            //User-to-shop conversation → Reply
             else if (msg.needResponse() && msg.isFromUser()) {
                 Button reply = new Button("Reply", ev -> {
                     dlg.close();
@@ -135,7 +135,7 @@ public class InboxView extends VerticalLayout{
                 reply.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                 dlg.add(reply);
             }
-            // 3️⃣ Anything else → just Close
+            // Anything else → just Close
             else {
                 dlg.add(new Button("Close", ev -> dlg.close()));
             }
@@ -147,7 +147,7 @@ public class InboxView extends VerticalLayout{
         add(grid);
         setSizeFull();
 
-        //3️⃣ Load the real messages
+        //Load the real messages
         presenter.getInbox(messages -> {
             UI.getCurrent().access(() -> grid.setItems(messages));
         });
