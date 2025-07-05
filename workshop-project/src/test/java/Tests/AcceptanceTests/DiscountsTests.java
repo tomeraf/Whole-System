@@ -414,6 +414,69 @@ public class DiscountsTests extends BaseAcceptanceTests {
         assertFalse(discounts.get(0).getId().isEmpty(), "Discount ID should be assigned");
     }
 
-    
+
+    @Test
+    public void testFullDiscountAppliedToBasket_ShouldYieldZeroTotal() {
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1111222233334444", "Full", "1", "321", "11", "26"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "2", "Full", "", "321", "Country", "City", "Address", "54321"
+        );
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShopFull");
+        // Create a 100% off discount on all categories
+        DiscountDTO fullDiscount = new DiscountDTO(
+            DiscountKind.BASE, -1, null, 100, null, DiscountType.BASE
+        );
+        assertTrue(shopService.addDiscount(ownerToken, shop.getId(), fullDiscount).isOk(),
+            "Owner should be able to add a 100% discount");
+
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(0);
+        // Act: add to cart and checkout
+        assertTrue(orderService.addItemToCart(customerToken, shop.getId(), toBuy.getItemID(), 1).isOk(),
+            "Adding item to cart should succeed");
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+        Order order = fixtures.successfulBuyCartContent(customerToken, p, s);
+        // Assert: total price is zero
+        assertEquals(0.0, order.getTotalPrice(), 0.001, "Total price should be zero with 100% discount");
+    }
+
+    @Test
+    public void testZeroDiscountAppliedToBasket_ShouldYieldFullTotal() {
+        // Arrange
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "5555666677778888", "Zero", "2", "456", "10", "27"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO(
+            "3", "Zero", "", "456", "Country", "City", "Address", "67890"
+        );
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        String customerToken = fixtures.generateRegisteredUserSession("Customer", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShopZero");
+        // Create a 0% discount on all categories
+        DiscountDTO zeroDiscount = new DiscountDTO(
+            DiscountKind.BASE, -1, null, 0, null, DiscountType.BASE
+        );
+        assertTrue(shopService.addDiscount(ownerToken, shop.getId(), zeroDiscount).isOk(),
+            "Owner should be able to add a 0% discount");
+
+        List<ItemDTO> shopItems = shopService.showShopItems(ownerToken, shop.getId()).getData();
+        ItemDTO toBuy = shopItems.get(0);
+        double originalPrice = toBuy.getPrice();
+        // Act: add to cart and checkout
+        assertTrue(orderService.addItemToCart(customerToken, shop.getId(), toBuy.getItemID(), 1).isOk(),
+            "Adding item to cart should succeed");
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+        Order order = fixtures.successfulBuyCartContent(customerToken, p, s);
+        // Assert: total price equals original price
+        assertEquals(originalPrice, order.getTotalPrice(), 0.001,
+            "Total price should equal item price with 0% discount");
+    }
 
 }
