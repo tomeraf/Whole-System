@@ -15,16 +15,28 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 
 @Route(value = "shop-history/", layout = MainLayout.class)
 @PageTitle("Shop order history")
-public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer>  {
+public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<Integer> {
     private ShopHistoryPresenter presenter;
+    private final Button back = new Button("← Back", e -> UI.getCurrent().navigate(""));
+    private final VerticalLayout contentLayout = new VerticalLayout(); // Separate layout for content
 
     @Autowired
     public ShopHistoryView(ShopHistoryPresenter presenter) {
         this.presenter = presenter;
+
+        // Create a layout for the back button
+        HorizontalLayout backLayout = new HorizontalLayout(back);
+        add(backLayout);
+
+        // Add the content layout
+        add(contentLayout);
+
         setPadding(true);
         setSpacing(true);
         setSizeFull();
@@ -32,16 +44,15 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
 
     @Override
     public void setParameter(BeforeEvent event, Integer parameter) {
-        // This method can be used to load the shop history based on the shop ID
         presenter.getShopOrderHistory(parameter, this::displayOrders);
     }
 
     private void displayOrders(List<BasketDTO> orders) {
-        removeAll(); // Clear previous content
+        contentLayout.removeAll(); // Clear only the content layout
 
         for (BasketDTO basket : orders) {
             // Create a header for the basket
-            add(new H3("Order: " + basket.getOrderId()+ " | User: " + basket.getUsername()));
+            contentLayout.add(new H3("Order: " + basket.getOrderId() + " | User: " + basket.getUsername()));
 
             // Create a grid for the items in the basket
             Grid<ItemDTO> grid = new Grid<>(ItemDTO.class);
@@ -57,15 +68,24 @@ public class ShopHistoryView extends VerticalLayout implements HasUrlParameter<I
             grid.addColumn(ItemDTO::getQuantity).setHeader("Quantity");
 
             // Set the items for the grid
-            grid.setItems(basket.getItems());
+            List<ItemDTO> items = basket.getItems();
+            grid.setItems(items);
 
-            // Add the grid to the view
-            add(grid);
+            // Calculate height dynamically based on the number of rows
+            int rowCount = items.size();
+            int rowHeight = 50; // Approximate height of a single row in pixels
+            int headerHeight = 50; // Approximate height of the header in pixels
+            int totalHeight = rowCount * rowHeight + headerHeight;
+
+            // Set the grid height dynamically
+            grid.setHeight(totalHeight + "px");
+
+            // Add the grid to the content layout
+            contentLayout.add(grid);
 
             // Add a separator between baskets
-            add(new Hr());
+            contentLayout.add(new Hr());
         }
     }
-
 }
 

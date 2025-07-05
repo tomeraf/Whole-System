@@ -10,6 +10,7 @@ import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountKind;
 import com.halilovindustries.backend.Domain.Shop.Policies.Discount.DiscountType;
 import com.halilovindustries.backend.Domain.Shop.Policies.Purchase.PurchaseType;
 import com.halilovindustries.frontend.application.presenters.PoliciesPresenter;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
@@ -47,6 +48,8 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
     private int shopId = -1;
     private boolean suppressPurchaseEvents = false;
     private boolean suppressDiscountEvents = false;
+    private final Button back = new Button("← Back",
+                                         e -> UI.getCurrent().navigate(""));
 
     // ─── EXISTING CONDITION FIELDS (UNCHANGED) ─────────────────────────────────
 
@@ -115,6 +118,8 @@ public class PoliciesView extends VerticalLayout implements HasUrlParameter<Inte
         setSizeFull();
 
         // header: both buttons
+        HorizontalLayout backLayout = new HorizontalLayout(back);
+        add(backLayout);
         HorizontalLayout header = new HorizontalLayout(addConditionButton, addDiscountButton);
         purchaseTypeGroup.setLabel("Purchase Policies");
         purchaseTypeGroup.setItems(PurchaseType.values());
