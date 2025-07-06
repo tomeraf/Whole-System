@@ -3,6 +3,7 @@ package com.halilovindustries.backend.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import com.halilovindustries.backend.Domain.DTOs.*;
@@ -29,6 +30,9 @@ import com.halilovindustries.backend.Domain.Repositories.IShopRepository;
 import com.halilovindustries.backend.Domain.Repositories.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 @Service
 
@@ -43,7 +47,9 @@ public class OrderService extends DatabaseAwareService {
     private IPayment payment;
     private IShipment shipment;
     private IExternalSystems externalSystems;
-
+    private final ConcurrencyHandler concurrencyHandler;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
@@ -58,6 +64,7 @@ public class OrderService extends DatabaseAwareService {
         this.purchaseService = PurchaseService.getInstance(concurrencyHandler);
         this.notificationHandler = notificationHandler;
         this.externalSystems = externalSystems;
+        this.concurrencyHandler = concurrencyHandler;
     }
 
     /**
@@ -385,38 +392,59 @@ public class OrderService extends DatabaseAwareService {
             return Response.error("Error purchasing bid item: " + e.getMessage());
         }
     }
-    @Transactional
-    public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
-
-            try {
-            // Check database health before proceeding
-            checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User not logged in");
-                }
-                int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
-                if(guest.isSuspended()) {
-                    throw new Exception("User is suspended");
-                }
-                Registered user = userRepository.getUserByName(guest.getUsername());
-                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
     
-                logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
-                return Response.ok();
-
-            } 
+    public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
+        ReentrantLock lock = concurrencyHandler.getAuctionLock(shopId, auctionID);
+        TransactionStatus transaction = null;
+        
+        try {
+            checkDatabaseHealth("current method");
+            lock.lockInterruptibly();
             
-        catch (MaintenanceModeException e) {
-            // Special handling for maintenance mode
-            return Response.error(e.getMessage());
-        }
-        catch (Exception e) {
-            handleDatabaseException(e);
-                logger.error(() -> "Error submitting auction offer: " + e.getMessage());
-                return Response.error("Error submitting auction offer: " + e.getMessage());
+            // Start transaction manually
+            transaction = transactionManager.getTransaction(new DefaultTransactionDefinition());
+            
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User not logged in");
             }
+            
+            int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Guest guest = userRepository.getUserById(cartID);
+            
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
+            
+            Registered user = userRepository.getUserByName(guest.getUsername());
+            Shop shop = shopRepository.getShopById(shopId);
+            
+            purchaseService.submitAuctionOffer(user, shop, auctionID, offerPrice);
+            
+            // Commit transaction BEFORE releasing lock
+            transactionManager.commit(transaction);
+            transaction = null; // Mark as handled
+            
+            logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
+            return Response.ok();
+            
+        } catch (MaintenanceModeException e) {
+            if (transaction != null) {
+                transactionManager.rollback(transaction);
+            }
+            return Response.error(e.getMessage());
+        } catch (Exception e) {
+            if (transaction != null) {
+                transactionManager.rollback(transaction);
+            }
+            handleDatabaseException(e);
+            logger.error(() -> "Error submitting auction offer: " + e.getMessage());
+            return Response.error("Error submitting auction offer: " + e.getMessage());
+        } finally {
+            // Lock is released AFTER transaction is committed
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
     @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
