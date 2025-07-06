@@ -232,15 +232,6 @@ public class NotificationsTests extends BaseAcceptanceTests{
        UI.setCurrent(null);
    }
 
-    // @Test
-    // public void testRegisterWithoutUIThrows() {
-    //     UI.setCurrent(null); // Explicitly no UI context
-
-    //     assertThrows(IllegalStateException.class, () -> {
-    //         Broadcaster.register("bad-user", msg -> {});
-    //     }, "Should throw when UI.getCurrent() is null");
-    // }
-
    @Test
    public void testNotificationOnCloseShop() throws Exception {
        // Arrange

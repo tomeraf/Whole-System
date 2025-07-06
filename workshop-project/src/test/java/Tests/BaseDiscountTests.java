@@ -48,14 +48,6 @@ public class BaseDiscountTests {
         assertEquals("Item", d.getType());
     }
 
-    // @Test
-    // void categoryLevelDiscount_AppliesOnlyToThatCategory() {
-    //     BaseDiscount d = new BaseDiscount(50, Category.AUTOMOTIVE);
-    //     HashMap<Item,Integer> items = basket(1, 120.0, 1);
-    //     assertEquals("Category", d.getType());
-    //     assertEquals(60.0, d.calculateDiscount(items), 1e-6);
-    // }
-
     @Test
     void getPercentagePerItem_AllItemsForShopLevel() {
         BaseDiscount d = new BaseDiscount(20);
