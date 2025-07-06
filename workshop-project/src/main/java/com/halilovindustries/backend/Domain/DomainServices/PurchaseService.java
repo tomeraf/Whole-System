@@ -287,7 +287,7 @@ public class PurchaseService {
     }
 
     @Transactional
-public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int orderID, 
+    public Order purchaseAuctionItem(Registered user, Shop shop, int auctionID, int orderID, 
                            IPayment payment, IShipment shipment, 
                            PaymentDetailsDTO paymentDetails, ShipmentDetailsDTO shipmentDetails, 
                            IExternalSystems monitor) {

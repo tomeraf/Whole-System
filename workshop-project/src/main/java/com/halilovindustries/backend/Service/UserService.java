@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
@@ -254,6 +255,7 @@ public class UserService extends DatabaseAwareService {
     //requirement:2.6.6
     @Transactional
     public Response<Void> suspendUser(String sessionToken,String username,Optional<LocalDateTime> startDate, Optional<LocalDateTime> endDate) {
+        ReentrantLock lock = concurrencyHandler.getUsernameLock(username);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -264,6 +266,7 @@ public class UserService extends DatabaseAwareService {
             if(!guest.isSystemManager()) {
                 throw new Exception("User is not a system manager");
             }
+            lock.lockInterruptibly();
             Registered user = userRepository.getUserByName(username);
             user.addSuspension(startDate, endDate);
             return Response.ok();
@@ -277,10 +280,15 @@ public class UserService extends DatabaseAwareService {
             logger.error(() -> "Error suspending user: " + e.getMessage());
             return Response.error("Error suspending user: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     //requirement:2.6.7
     @Transactional
     public Response<Void> unsuspendUser(String sessionToken,String username) {
+        ReentrantLock lock = concurrencyHandler.getUsernameLock(username);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -291,6 +299,7 @@ public class UserService extends DatabaseAwareService {
             if(!guest.isSystemManager()) {
                 throw new Exception("User is not a system manager");
             }
+            lock.lockInterruptibly();
             Registered user = userRepository.getUserByName(username);
             user.removeSuspension();
             return Response.ok();
@@ -303,6 +312,10 @@ public class UserService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error unsuspending user: " + e.getMessage());
             return Response.error("Error unsuspending user: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
     }
     //requirement:2.6.8

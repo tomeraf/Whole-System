@@ -3,6 +3,7 @@ package com.halilovindustries.backend.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import com.halilovindustries.backend.Domain.DTOs.*;
@@ -43,6 +44,7 @@ public class OrderService extends DatabaseAwareService {
     private IPayment payment;
     private IShipment shipment;
     private IExternalSystems externalSystems;
+    private final ConcurrencyHandler concurrencyHandler;
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
@@ -55,6 +57,7 @@ public class OrderService extends DatabaseAwareService {
         this.authenticationAdapter = authenticationAdapter;
         this.payment = payment;
         this.shipment = shipment;
+        this.concurrencyHandler = concurrencyHandler;
         this.purchaseService = PurchaseService.getInstance(concurrencyHandler);
         this.notificationHandler = notificationHandler;
         this.externalSystems = externalSystems;
@@ -107,6 +110,8 @@ public class OrderService extends DatabaseAwareService {
     // items = shopId, itemID
     @Transactional
     public Response<Void> addItemToCart(String sessionToken, int shopId,int itemID, int quantity) {
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopId, itemID);
+
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -118,13 +123,13 @@ public class OrderService extends DatabaseAwareService {
             if(guest.isSuspended()) {
                 throw new Exception("User is suspended");
             }           
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             purchaseService.addItemsToCart(guest, shop,itemID,quantity); // Add items to the cart
 
             logger.info(() -> "Items added to cart successfully");
             return Response.ok();
-        } 
-        
+        }
         catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
@@ -133,6 +138,10 @@ public class OrderService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error adding items to cart: " + e.getMessage());
             return Response.error("Error adding items to cart: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
     }
 
@@ -243,6 +252,7 @@ public class OrderService extends DatabaseAwareService {
      */
     @Transactional  
     public Response<Void> submitBidOffer(String sessionToken, int shopId, int itemID, double offerPrice) {
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopId, itemID);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -257,6 +267,7 @@ public class OrderService extends DatabaseAwareService {
                 throw new Exception("User is suspended");
             }
             
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             purchaseService.submitBidOffer(guest, shop, itemID, offerPrice);
             notificationHandler.notifyUsers(shop.getMembersIDs(),"New bid offer for item " + shop.getItem(itemID).getName() + ",the offer is: " + offerPrice);
@@ -273,6 +284,10 @@ public class OrderService extends DatabaseAwareService {
             logger.error(() -> "Error submitting bid offer: " + e.getMessage());
             return Response.error("Error submitting bid offer: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     
     /**
@@ -284,6 +299,7 @@ public class OrderService extends DatabaseAwareService {
      */
     @Transactional
     public Response<Void> answerOnCounterBid(String sessionToken,int shopId,int bidId,boolean accept) {
+        ReentrantLock lock = concurrencyHandler.getBidLock(shopId, bidId);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -296,6 +312,7 @@ public class OrderService extends DatabaseAwareService {
                 throw new Exception("User is suspended");
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             List<Integer> members=userRepository.getAllRegisteredsByShopAndPermission(shopId, Permission.ANSWER_BID);
             purchaseService.answerOnCounterBid(user,shop,bidId,accept);
@@ -321,6 +338,10 @@ public class OrderService extends DatabaseAwareService {
             logger.error(() -> "Error answering on counter bid: " + e.getMessage());
             return Response.error("Error answering on counter bid: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
 
      /**
@@ -329,7 +350,7 @@ public class OrderService extends DatabaseAwareService {
      * @param sessionToken current session token
      * @return list of past Orders, or null on error
      */
-@Transactional
+    @Transactional
     public Response<List<Order>> viewPersonalOrderHistory(String sessionToken) {
         try {
             // Check database health before proceeding
@@ -352,8 +373,10 @@ public class OrderService extends DatabaseAwareService {
             return Response.error("Error viewing personal search history: " + e.getMessage());
         }
     }
+
     @Transactional
     public Response<Void> purchaseBidItem(String sessionToken,int shopId,int bidId, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
+        ReentrantLock lock = concurrencyHandler.getBidLock(shopId, bidId);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -366,7 +389,8 @@ public class OrderService extends DatabaseAwareService {
                 throw new Exception("User is suspended");
             }
             Registered user = userRepository.getUserByName(guest.getUsername());
-
+            
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseBidItem(user,shop,bidId, orderRepository.getNextId(),payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
             orderRepository.addOrder(order); // Save the order to the repository
@@ -384,30 +408,35 @@ public class OrderService extends DatabaseAwareService {
             logger.error(() -> "Error purchasing bid item: " + e.getMessage());
             return Response.error("Error purchasing bid item: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     @Transactional
     public Response<Void> submitAuctionOffer(String sessionToken, int shopId, int auctionID, double offerPrice) {
-
-            try {
+        ReentrantLock lock = concurrencyHandler.getAuctionLock(shopId, auctionID);
+        try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User not logged in");
-                }
-                int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
-                if(guest.isSuspended()) {
-                    throw new Exception("User is suspended");
-                }
-                Registered user = userRepository.getUserByName(guest.getUsername());
-                Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
-                purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
-    
-                logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
-                return Response.ok();
-
-            } 
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User not logged in");
+            }
+            int cartID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Guest guest = userRepository.getUserById(cartID); // Get the guest user by ID
+            if(guest.isSuspended()) {
+                throw new Exception("User is suspended");
+            }
+            Registered user = userRepository.getUserByName(guest.getUsername());
             
+            lock.lockInterruptibly();
+            Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
+            purchaseService.submitAuctionOffer(user,shop ,auctionID, offerPrice);
+
+            logger.info(() -> "Auction offer submitted successfully for item ID: " + auctionID);
+            return Response.ok();
+
+        } 
         catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
@@ -416,10 +445,15 @@ public class OrderService extends DatabaseAwareService {
             handleDatabaseException(e);
                 logger.error(() -> "Error submitting auction offer: " + e.getMessage());
                 return Response.error("Error submitting auction offer: " + e.getMessage());
-            }
+        } finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     @Transactional
     public Response<Void> purchaseAuctionItem(String sessionToken,int shopId,int auctionID, PaymentDetailsDTO paymentDetalis, ShipmentDetailsDTO shipmentDetalis) {
+        ReentrantLock lock = concurrencyHandler.getAuctionLock(shopId, auctionID);
+
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -432,6 +466,7 @@ public class OrderService extends DatabaseAwareService {
                 throw new Exception("User is suspended");
             }
             Registered registered = userRepository.getUserByName(guest.getUsername());
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId); // Get the shop by ID
             Order order = purchaseService.purchaseAuctionItem(registered,shop,auctionID, orderRepository.getNextId(), payment, shipment, paymentDetalis, shipmentDetalis, externalSystems);
             orderRepository.addOrder(order); // Save the order to the repository
@@ -447,6 +482,10 @@ public class OrderService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error purchasing auction item: " + e.getMessage());
             return Response.error("Error purchasing auction item: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
     }
 }

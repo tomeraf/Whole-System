@@ -28,6 +28,7 @@ import com.halilovindustries.backend.Domain.DTOs.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.halilovindustries.backend.Domain.Shop.Category;
@@ -1679,44 +1680,4 @@ public class ShoppingTests extends BaseAcceptanceTests {
         }
         assertTrue(foundItem1 && foundItem2, "Both original items should be found after login");
     }
-
-    // @Test
-    // public void testEqualBidAmount_OnlyOneAccepted() throws InterruptedException, ExecutionException {
-    //     // 1) Owner and shop setup with an auction on one item
-    //     String ownerToken = fixtures.generateRegisteredUserSession("ownerEq", "Pwd0");
-    //     ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "EqShop");
-    //     int shopId = shop.getId();
-    //     int itemId = shop.getItems().values().iterator().next().getItemID();
-    //     LocalDateTime start = LocalDateTime.now().plusSeconds(1);
-    //     LocalDateTime end = LocalDateTime.now().plusSeconds(20);
-    //     shopService.openAuction(ownerToken, shopId, itemId, 10.0, start, end);
-
-    //     Thread.sleep(1100);
-
-    //     int auctionId = shopRepository.getShopById(shopId).getActiveAuctions().get(0).getId();
-
-    //     // ensure auction is fully active before concurrent bids
-    //     Thread.sleep(50);
-        
-
-    //     // 2) Two bidders enter the system
-    //     String bidder1 = fixtures.generateRegisteredUserSession("bidderEq1", "pwd1");
-    //     String bidder2 = fixtures.generateRegisteredUserSession("bidderEq2", "pwd2");
-
-    //     double bidAmount = 20.0;
-
-    //     // 3) Concurrently submit bids with the same amount
-    //     ExecutorService executor = Executors.newFixedThreadPool(2);
-    //     Callable<Response<Void>> task1 = () -> orderService.submitAuctionOffer(bidder1, shopId, auctionId, bidAmount);
-    //     Callable<Response<Void>> task2 = () -> orderService.submitAuctionOffer(bidder2, shopId, auctionId, bidAmount);
-
-    //     List<Future<Response<Void>>> futures = executor.invokeAll(List.of(task1, task2));
-    //     executor.shutdown();
-
-    //     boolean firstOk = futures.get(0).get().isOk();
-    //     boolean secondOk = futures.get(1).get().isOk();
-
-    //     // 4) Verify that exactly one bid succeeded and one failed
-    //     assertTrue(firstOk ^ secondOk, "Exactly one bid should be accepted when both bids are equal");
-    // }
 }

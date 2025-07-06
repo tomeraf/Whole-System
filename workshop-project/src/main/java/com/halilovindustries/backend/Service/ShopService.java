@@ -56,6 +56,7 @@ public class ShopService extends DatabaseAwareService {
     private IAuthentication authenticationAdapter;
     private InteractionService interactionService = InteractionService.getInstance();
     private final NotificationHandler notificationHandler;
+    private final ConcurrencyHandler concurrencyHandler;
 
     private static final Logger logger = LoggerFactory.getLogger(ShopService.class);
 
@@ -67,6 +68,7 @@ public class ShopService extends DatabaseAwareService {
         this.orderRepository = orderRepository;
         this.authenticationAdapter = authenticationAdapter;
         this.shoppingService = new ShoppingService();
+        this.concurrencyHandler = concurrencyHandler;
         this.managementService = ManagementService.getInstance(concurrencyHandler);
         this.notificationHandler = notificationHandler;
     }
@@ -459,28 +461,28 @@ public class ShopService extends DatabaseAwareService {
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
-                if (!authenticationAdapter.validateToken(sessionToken)) {
-                    throw new Exception("User is not logged in");
-                }
-                int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-                Registered user = (Registered) this.userRepository.getUserById(userID);
-                if (user.isSuspended()) {
-                    return Response.error("User is suspended");
-                }
-                Shop shop = shopRepository.getShopById(shopID);
-                managementService.removeItemFromShop(user, shop, itemID);
-                logger.info(() -> "Item removed from shop: " + itemID + " in shop: " + shop.getName() + " by user: "
-                        + userID);
-                return Response.ok();
+            if (!authenticationAdapter.validateToken(sessionToken)) {
+                throw new Exception("User is not logged in");
+            }
+            int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
+            Registered user = (Registered) this.userRepository.getUserById(userID);
+            if (user.isSuspended()) {
+                return Response.error("User is suspended");
+            }
+            Shop shop = shopRepository.getShopById(shopID);
+            managementService.removeItemFromShop(user, shop, itemID);
+            logger.info(() -> "Item removed from shop: " + itemID + " in shop: " + shop.getName() + " by user: "
+                    + userID);
+            return Response.ok();
         } catch (MaintenanceModeException e) {
             // Special handling for maintenance mode
             return Response.error(e.getMessage());
         }
         catch (Exception e) {
             handleDatabaseException(e);
-                logger.error(() -> "Error removing item from shop: " + e.getMessage());
-                return Response.error("Error: " + e.getMessage());
-            }
+            logger.error(() -> "Error removing item from shop: " + e.getMessage());
+            return Response.error("Error: " + e.getMessage());
+        }
     }
 
     @Transactional
@@ -488,6 +490,7 @@ public class ShopService extends DatabaseAwareService {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item name in the shop with the provided details
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             checkDatabaseHealth("current method");
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
@@ -495,6 +498,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.updateItemName(user, shop, itemID, newName);
             logger.info(() -> "Item name changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
@@ -510,6 +514,10 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error changing item name in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
 
     @Transactional
@@ -517,6 +525,7 @@ public class ShopService extends DatabaseAwareService {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item quantity in the shop with the provided details
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -527,6 +536,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.updateItemQuantity(user, shop, itemID, newQuantity);
             logger.info(() -> "Item quantity changed in shop: " + itemID + " in shop: " + shop.getName()
@@ -541,12 +551,18 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error changing item quantity in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
+
     @Transactional
     public Response<Void> changeItemPriceInShop(String sessionToken, int shopID, int itemID, double newPrice) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item price in the shop with the provided details
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -557,6 +573,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.updateItemPrice(user, shop, itemID, newPrice);
             logger.info(() -> "Item price changed in shop: " + itemID + " in shop: " + shop.getName() + " by user: "
@@ -571,13 +588,18 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error changing item price in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
+    
     @Transactional
-    public Response<Void> changeItemDescriptionInShop(String sessionToken, int shopID, int itemID,
-            String newDescription) {
+    public Response<Void> changeItemDescriptionInShop(String sessionToken, int shopID, int itemID, String newDescription) {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, change the item name in the shop with the provided details
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -588,6 +610,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.updateItemDescription(user, shop, itemID, newDescription);
             logger.info(() -> "Item description changed in shop: " + itemID + " in shop: " + shop.getName()
@@ -601,6 +624,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error changing item description in shop: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
     }
 
@@ -641,6 +668,7 @@ public class ShopService extends DatabaseAwareService {
         // Check if the user is logged in
         // If not, prompt to log in or register
         // If logged in, rate the item with the provided rating
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -652,6 +680,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = this.shopRepository.getShopById(shopID);
             List<Order> orders = orderRepository.getOrdersByCustomerId(userID);
             shoppingService.RateItem(shop, userID, itemID, orders, rating);
@@ -665,6 +694,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error rating item: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
         return Response.ok();
     }
@@ -703,8 +736,8 @@ public class ShopService extends DatabaseAwareService {
         }
     }
     @Transactional
-    public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title,
-            String content) {
+    public Response<Void> respondToMessage(String sessionToken, int shopId, int messageId, String title, String content) {
+        ReentrantLock lock = concurrencyHandler.getMessageLock(shopId, messageId);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -715,6 +748,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopId);
             Message response = interactionService.respondToMessage(user, shop, messageId, title, content, shopRepository.getNextMessageId());
             Registered reciver = userRepository.getUserByName(response.getUserName());
@@ -730,6 +764,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error responding to message: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
         return Response.ok();
     }
@@ -760,6 +798,7 @@ public class ShopService extends DatabaseAwareService {
 
     @Transactional
     public Response<Void> removeAppointment(String sessionToken, int shopID, String appointeeName) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -784,6 +823,7 @@ public class ShopService extends DatabaseAwareService {
             if (appointee.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.removeAppointment(user, shop, appointee);
             
@@ -798,11 +838,16 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error removing appointment: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
         return Response.ok();
     }
 
     @Transactional
     public Response<Void> sendOwnershipOffer(String sessionToken, int shopID, String appointeeName) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -817,6 +862,7 @@ public class ShopService extends DatabaseAwareService {
             if (appointee.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             interactionService.offerMessage(user, appointee, shopRepository.getNextMessageId(), shop, "Ownership offer", appointeeName, false, null);
             notificationHandler.notifyUser(appointee.getUserID() + "",
@@ -833,10 +879,15 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error sending ownership offer: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
 
     @Transactional
     public Response<Void> sendManagementOffer(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -851,6 +902,7 @@ public class ShopService extends DatabaseAwareService {
             if (appointee.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             interactionService.offerMessage(user, appointee, shopRepository.getNextMessageId(), shop, "Management offer", appointeeName, true, permission);
             notificationHandler.notifyUser(appointee.getUserID() + "",
@@ -866,6 +918,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error sending management offer: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
     }
 
@@ -916,43 +972,9 @@ public class ShopService extends DatabaseAwareService {
         }
     }
 
-    // @Transactional
-    // public Response<Void> addShopManager(String sessionToken, int shopID, String appointeeName, Set<Permission> permission) {
-    //     try {
-    //         checkDatabaseHealth("current method");
-    //         if (!authenticationAdapter.validateToken(sessionToken)) {
-    //             throw new Exception("User is not logged in");
-    //         }
-    //         int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
-    //         Registered user = (Registered) this.userRepository.getUserById(userID);
-    //         if (user.isSuspended()) {
-    //             return Response.error("User is suspended");
-    //         }
-    //         Registered appointee = userRepository.getUserByName(appointeeName);
-    //         if (appointee.isSuspended()) {
-    //             return Response.error("User is suspended");
-    //         }
-    //         Shop shop = shopRepository.getShopById(shopID);
-    //         managementService.addManager(user, shopID, appointee, permission, (Integer id) -> shopRepository.getShopByIdWithLock(id));
-    //         notificationHandler.notifyUser(appointee.getUserID() + "",
-    //                 "You have been appointed as a manager in shop: " + shop.getName());
-    //         logger.info(() -> "Shop manager added: " + appointeeName + " in shop: " + shop.getName() + " by user: "
-    //                 + userID);
-    //     } catch (MaintenanceModeException e) {
-    //         // Special handling for maintenance mode
-    //         return Response.error(e.getMessage());
-    //     }
-    //     catch (Exception e) {
-    //         handleDatabaseException(e);
-    //         logger.error(() -> "Error adding shop manager: " + e.getMessage());
-    //         return Response.error("Error: " + e.getMessage());
-    //     }
-    //     return Response.ok();
-    // }
-
     @Transactional
-    public Response<Void> addShopManagerPermission(String sessionToken, int shopID, String appointeeName,
-            Permission permission) {
+    public Response<Void> addShopManagerPermission(String sessionToken, int shopID, String appointeeName, Permission permission) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -966,6 +988,7 @@ public class ShopService extends DatabaseAwareService {
             if (appointee.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.addPermission(user, shop, appointee, permission);
             logger.info(() -> "Shop manager permission added: " + appointeeName + " in shop: " + shop.getName()
@@ -979,12 +1002,17 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error adding shop manager permission: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
         return Response.ok();
     }
 
     @Transactional
     public Response<Void> removeShopManagerPermission(String sessionToken, int shopID, String appointeeName,
             Permission permission) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, appointeeName);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -999,6 +1027,7 @@ public class ShopService extends DatabaseAwareService {
             if (appointee.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.removePermission(user, shop, appointee, permission);
             logger.info(() -> "Shop manager permission removed: " + appointeeName + " in shop: " + shop.getName()
@@ -1012,11 +1041,16 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error removing shop manager permission: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
         return Response.ok();
     }
 
     @Transactional
     public Response<List<Permission>> getMemberPermissions(String sessionToken, int shopID, String memberName) {
+        ReentrantLock lock = concurrencyHandler.getShopUserLock(shopID, memberName);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -1025,6 +1059,7 @@ public class ShopService extends DatabaseAwareService {
             }
             int userID = Integer.parseInt(authenticationAdapter.getUsername(sessionToken));
             Registered user = (Registered) this.userRepository.getUserById(userID);
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             Registered member = userRepository.getUserByName(memberName);
             List<Permission> permissions = managementService.getMembersPermissions(user, shop, member);
@@ -1041,10 +1076,15 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error retrieving members permissions: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     @Transactional
     // bids and auctions
     public Response<Void> answerBid(String sessionToken, int shopID, int bidID, boolean accept) {
+        ReentrantLock lock = concurrencyHandler.getBidLock(shopID, bidID);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1055,6 +1095,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             List<Integer> members = userRepository.getAllRegisteredsByShopAndPermission(shopID, Permission.ANSWER_BID);
             Pair<Integer,String> notification=managementService.answerBid(user, shop, bidID, accept,members);
@@ -1073,10 +1114,15 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error answering bid: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }   
     }
 
     @Transactional
     public Response<Void> submitCounterBid(String sessionToken, int shopID, int bidID, double offerAmount) {
+        ReentrantLock lock = concurrencyHandler.getBidLock(shopID, bidID);
         try {
             checkDatabaseHealth("current method");
             if (!authenticationAdapter.validateToken(sessionToken)) {
@@ -1087,6 +1133,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = shopRepository.getShopById(shopID);
             managementService.submitCounterBid(user, shop, bidID, offerAmount);
             // Notify the customer about the counter bid
@@ -1105,11 +1152,16 @@ public class ShopService extends DatabaseAwareService {
             logger.error(() -> "Error submitting counter bid: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
         }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
+        }
     }
     
     @Transactional
     public Response<Void> openAuction(String sessionToken, int shopID, int itemID, double startingPrice,
             LocalDateTime startDate, LocalDateTime endDate) {
+        ReentrantLock lock = concurrencyHandler.getItemLock(shopID, itemID);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -1121,6 +1173,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.openAuction(user, shop, itemID, startingPrice, startDate, endDate);
             logger.info(() -> "Auction opened: " + itemID + " in shop: " + shop.getName() + " by user: " + userID);
@@ -1133,6 +1186,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error opening auction: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
         return Response.ok();
     }
@@ -1290,6 +1347,7 @@ public class ShopService extends DatabaseAwareService {
     }
     @Transactional
     public Response<Void> removePurchaseCondition(String sessionToken, int shopID, String conditionID) {
+        ReentrantLock lock = concurrencyHandler.getConditionLock(shopID, conditionID);
         try {
             // Check database health before proceeding
             checkDatabaseHealth("current method");
@@ -1301,6 +1359,7 @@ public class ShopService extends DatabaseAwareService {
             if (user.isSuspended()) {
                 return Response.error("User is suspended");
             }
+            lock.lockInterruptibly();
             Shop shop = this.shopRepository.getShopById(shopID);
             managementService.removePurchaseCondition(user, shop, conditionID);
             logger.info(() -> "Purchase condition removed in shop: " + shop.getName() + " by user: " + userID);
@@ -1313,6 +1372,10 @@ public class ShopService extends DatabaseAwareService {
             handleDatabaseException(e);
             logger.error(() -> "Error removing purchase condition: " + e.getMessage());
             return Response.error("Error: " + e.getMessage());
+        }
+        finally {
+            if (lock.isHeldByCurrentThread()) 
+                lock.unlock();
         }
         return Response.ok();
     }
