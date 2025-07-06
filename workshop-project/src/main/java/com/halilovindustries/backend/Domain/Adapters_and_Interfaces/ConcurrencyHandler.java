@@ -22,6 +22,7 @@ public class ConcurrencyHandler {
     private final ConcurrentHashMap<String, ReentrantLock> shopUserLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ReentrantLock> bidLocks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ReentrantLock> messageLocks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReentrantLock> auctionLocks = new ConcurrentHashMap<>();
 
 
     private ReentrantReadWriteLock getShopRWLock(int shopId) {
@@ -92,5 +93,10 @@ public class ConcurrencyHandler {
     public ReentrantLock getMessageLock(int shopId, int messageId) {
         String key = "shop:" + shopId + ":bid:" + messageId;
         return messageLocks.computeIfAbsent(key, k -> new ReentrantLock());
+    }
+
+    public ReentrantLock getAuctionLock(int shopId, int auctionId) {
+        String key = "shop:" + shopId + ":auction:" + auctionId;
+        return auctionLocks.computeIfAbsent(key, k -> new ReentrantLock());
     }
 }

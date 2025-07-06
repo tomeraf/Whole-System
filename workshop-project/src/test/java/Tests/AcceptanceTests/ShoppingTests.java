@@ -1679,4 +1679,118 @@ public class ShoppingTests extends BaseAcceptanceTests {
         }
         assertTrue(foundItem1 && foundItem2, "Both original items should be found after login");
     }
+
+    @Test
+    @Transactional
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    public void testEqualAuctionAmount_OnlyOneAccepted() throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            // 1) Owner & auction setup
+            String ownerToken = fixtures.generateRegisteredUserSession("ownerEq"+i, "Pwd0");
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "EqShop"+i);
+            int shopId  = shop.getId();
+            int itemId  = shop.getItems().values().iterator().next().getItemID();
+            LocalDateTime start = LocalDateTime.now().plusSeconds(1);
+            LocalDateTime end   = LocalDateTime.now().plusSeconds(20);
+            assertTrue(shopService.openAuction(ownerToken, shopId, itemId, 10.0, start, end).isOk());
+
+            // wait for auction to go live
+            Thread.sleep(1100);
+            int auctionId = shopRepository
+                .getShopById(shopId)
+                .getActiveAuctions()
+                .get(0)
+                .getId();
+
+            // 2) Two bidders enter
+            String bidder1 = fixtures.generateRegisteredUserSession("bidderEq1"+i, "pwd1");
+            String bidder2 = fixtures.generateRegisteredUserSession("bidderEq2"+i, "pwd2");
+            double bidAmount = 20.0;
+
+            // commit all setup so that child threads see it
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+            TestTransaction.start();
+
+            // 3) Race two equal bids
+            List<Callable<Boolean>> tasks = List.of(
+                () -> orderService.submitAuctionOffer(bidder1, shopId, auctionId, bidAmount).isOk(),
+                () -> orderService.submitAuctionOffer(bidder2, shopId, auctionId, bidAmount).isOk()
+            );
+
+            ExecutorService ex = Executors.newFixedThreadPool(2);
+            List<Future<Boolean>> results = ex.invokeAll(tasks);
+            ex.shutdown();
+
+            // 4) Exactly one must succeed
+            long succeeded = results.stream()
+                .map(f -> {
+                    try { return f.get(); }
+                    catch (Exception e) { return false; }
+                })
+                .filter(ok -> ok)
+                .count();
+
+            assertEquals(1,
+                succeeded,
+                "Exactly one of the two equal bids should be accepted, but got " + succeeded
+            );
+        }
+    }
+
+    @Test
+    @Transactional
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    public void testConcurrentBuyCart_OnlyOneAccepted() throws InterruptedException {
+        PaymentDetailsDTO p = new PaymentDetailsDTO(
+            "1234567890123456", "Some Name", "1", "123", "12", "25"
+        );
+        ShipmentDetailsDTO s = new ShipmentDetailsDTO("1", "Some Name", "", "123456789", "Some Country", "Some City", "Some Address", "12345");
+
+        fixtures.mockPositivePayment(p);
+        fixtures.mockPositiveShipment(s);
+
+        for (int i = 0; i < 30; i++) {
+            // 1) Owner & auction setup
+            String ownerToken = fixtures.generateRegisteredUserSession("ownerEq"+i, "Pwd0");
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "EqShop"+i);
+
+            // 2) Two bidders enter
+            String buyer1 = fixtures.generateRegisteredUserSession("bidderEq1"+i, "pwd1");
+            String buyer2 = fixtures.generateRegisteredUserSession("bidderEq2"+i, "pwd2");
+
+            ItemDTO itemDTO = shop.getItems().values().stream().filter(item -> item.getName().equals("Banana")).toList().get(0);
+
+            orderService.addItemToCart(buyer1, shop.getId(), itemDTO.getItemID(), 1);
+            orderService.addItemToCart(buyer2, shop.getId(), itemDTO.getItemID(), 1);
+            
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+            TestTransaction.start();
+            
+            // 3) Race two equal bids
+            List<Callable<Boolean>> tasks = List.of(
+                () -> orderService.buyCartContent(buyer1, p, s).isOk(),
+                () -> orderService.buyCartContent(buyer2, p, s).isOk()
+            );
+
+            ExecutorService ex = Executors.newFixedThreadPool(2);
+            List<Future<Boolean>> results = ex.invokeAll(tasks);
+            ex.shutdown();
+
+            // 4) Exactly one must succeed
+            long succeeded = results.stream()
+                .map(f -> {
+                    try { return f.get(); }
+                    catch (Exception e) { return false; }
+                })
+                .filter(ok -> ok)
+                .count();
+
+            assertEquals(1,
+                succeeded,
+                "Exactly one of the two equal bids should be accepted, but got " + succeeded
+            );
+        }
+    }
 }
