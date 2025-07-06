@@ -1680,4 +1680,62 @@ public class ShoppingTests extends BaseAcceptanceTests {
         }
         assertTrue(foundItem1 && foundItem2, "Both original items should be found after login");
     }
+
+    @Test
+    @Transactional
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    public void testEqualBidAmount_OnlyOneAccepted() throws InterruptedException {
+        for (int i = 0; i < 50; i++) {
+            // 1) Owner & auction setup
+            String ownerToken = fixtures.generateRegisteredUserSession("ownerEq"+i, "Pwd0");
+            ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "EqShop"+i);
+            int shopId  = shop.getId();
+            int itemId  = shop.getItems().values().iterator().next().getItemID();
+            LocalDateTime start = LocalDateTime.now().plusSeconds(1);
+            LocalDateTime end   = LocalDateTime.now().plusSeconds(20);
+            assertTrue(shopService.openAuction(ownerToken, shopId, itemId, 10.0, start, end).isOk());
+
+            // wait for auction to go live
+            Thread.sleep(1100);
+            int auctionId = shopRepository
+                .getShopById(shopId)
+                .getActiveAuctions()
+                .get(0)
+                .getId();
+
+            // 2) Two bidders enter
+            String bidder1 = fixtures.generateRegisteredUserSession("bidderEq1"+i, "pwd1");
+            String bidder2 = fixtures.generateRegisteredUserSession("bidderEq2"+i, "pwd2");
+            double bidAmount = 20.0;
+
+            // commit all setup so that child threads see it
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+            TestTransaction.start();
+
+            // 3) Race two equal bids
+            List<Callable<Boolean>> tasks = List.of(
+                () -> orderService.submitAuctionOffer(bidder1, shopId, auctionId, bidAmount).isOk(),
+                () -> orderService.submitAuctionOffer(bidder2, shopId, auctionId, bidAmount).isOk()
+            );
+
+            ExecutorService ex = Executors.newFixedThreadPool(2);
+            List<Future<Boolean>> results = ex.invokeAll(tasks);
+            ex.shutdown();
+
+            // 4) Exactly one must succeed
+            long succeeded = results.stream()
+                .map(f -> {
+                    try { return f.get(); }
+                    catch (Exception e) { return false; }
+                })
+                .filter(ok -> ok)
+                .count();
+
+            assertEquals(1,
+                succeeded,
+                "Exactly one of the two equal bids should be accepted, but got " + succeeded
+            );
+        }
+    }
 }
