@@ -284,5 +284,39 @@ public class SystemManagerTests extends BaseAcceptanceTests {
         userService.suspendUser(managerToken, "user", Optional.empty(), Optional.empty());
         Response<ShopDTO> response = shopService.createShop(token, "MyShop", "A shop for tests");
         assertTrue(!response.isOk(), "ודקר should not be able to create a shop while suspended");
-    }   
+    }
+
+    @Test
+    public void testBanAndUnbanUser_ShouldSucceed() {
+        // Arrange: register a normal user
+        String token = fixtures.generateRegisteredUserSession("user", "password");
+        Response<Void> response = userService.suspendUser(managerToken, "user", Optional.empty(), Optional.empty());
+        assertTrue(response.isOk(), "System Manager should be able to suspend a user");
+        Registered user = userRepository.getUserByName("user");
+        assertTrue(user.isSuspended(), "User should be suspended");
+
+        // tru to use system (e.g., create a shop)
+        // This should fail since the user is suspended
+
+        Response<ShopDTO> res = shopService.createShop(token, "MyShop", "A shop for tests");
+        assertTrue(!res.isOk(), "user should not be able to create a shop while suspended");
+
+        // then unban the user
+        response = userService.unsuspendUser(managerToken, "user");
+        assertTrue(response.isOk(), "System Manager should be able to unsuspend a user");
+
+        // Check if the user is unsuspended
+        user = userRepository.getUserByName("user");
+        assertFalse(user.isSuspended(), "User should be unsuspended");
+
+        // Now the user should be able to create a shop
+        res = shopService.createShop(token, "MyShop", "A shop for tests");
+        assertTrue(res.isOk(), "user should be able to create a shop after being unsuspended");
+        ShopDTO shop = res.getData();
+        assertNotNull(shop, "Shop should not be null after creation");
+        assertEquals("MyShop", shop.getName(), "Shop name should match the one created");
+    }
+
+
+
 }

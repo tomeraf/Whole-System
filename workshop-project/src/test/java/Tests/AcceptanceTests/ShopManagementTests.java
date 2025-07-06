@@ -1282,6 +1282,49 @@ public class ShopManagementTests extends BaseAcceptanceTests {
     }
 
     @Test
+    public void testEditItemQuantity_ManagerWithoutQuantityPermission_ShouldFail() {
+        // Arrange: owner and shop with items
+        String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "MyShop");
+
+        // Ensure initial items fetched
+        Response<List<ItemDTO>> initialItemsResp = shopService.showShopItems(ownerToken, shop.getId());
+        assertTrue(initialItemsResp.isOk(), "Should be able to get initial items");
+        List<ItemDTO> initialItems = initialItemsResp.getData();
+        ItemDTO firstItem = initialItems.get(0);
+        int originalQty = firstItem.getQuantity();
+        int newQty = originalQty + 5;
+
+        // Register and login manager WITHOUT UPDATE_ITEM_QUANTITY permission
+        String mgrGuest = userService.enterToSystem().getData();
+        userService.registerUser(mgrGuest, "mgrNoQty", "pwdQ", LocalDate.now().minusYears(30));
+        String mgrToken = userService.loginUser(mgrGuest, "mgrNoQty", "pwdQ").getData();
+        fixtures.successfulAddManager(ownerToken, mgrToken, shop.getId(), shop.getName(), new HashSet<>());
+
+        // Act: manager attempts to change quantity
+        Response<Void> editResp = shopService.changeItemQuantityInShop(
+            mgrToken, shop.getId(), firstItem.getItemID(), newQty
+        );
+
+        // Assert: basic functionality
+        assertFalse(editResp.isOk(), "Manager without quantity permission should not succeed");
+
+        // Assert: system invariants
+        // 1. Quantity unchanged
+        Response<List<ItemDTO>> afterItemsResp = shopService.showShopItems(ownerToken, shop.getId());
+        assertTrue(afterItemsResp.isOk(), "Should be able to get items after attempt");
+        ItemDTO unchanged = afterItemsResp.getData().stream()
+            .filter(i -> i.getItemID() == firstItem.getItemID())
+            .findFirst()
+            .orElseThrow();
+        assertEquals(originalQty, unchanged.getQuantity(), "Item quantity should remain unchanged");
+
+        // 2. Other properties remain unchanged
+        assertEquals(firstItem.getName(), unchanged.getName(), "Name should be unchanged");
+        assertEquals(firstItem.getPrice(), unchanged.getPrice(), "Price should be unchanged");
+    }
+
+    @Test
     public void testEditItemQuantity_WithInvalidToken_ShouldFail() {
         // 1) Setup initial state
         String ownerToken = fixtures.generateRegisteredUserSession("Owner", "Pwd0");
@@ -2353,5 +2396,53 @@ public class ShopManagementTests extends BaseAcceptanceTests {
         Response<List<BasketDTO>> resp = shopService.getShopOrderHistory(otherUser, shop.getId());
         // Assert - Basic functionality
         assertFalse(resp.isOk(), "getShopOrderHistory should fail for user without permissions");
+    }
+
+    @Test
+    public void testManagerStockPermissionRevocation_ShouldPreventFurtherUpdates() {
+        // 1) Owner setup and shop creation
+        String ownerToken = fixtures.generateRegisteredUserSession("OwnerStockRev", "Pwd0");
+        ShopDTO shop = fixtures.generateShopAndItems(ownerToken, "RevShop");
+        int shopId = shop.getId();
+        ItemDTO item = shop.getItems().get(0);
+        int itemId = item.getItemID();
+        int originalQty = item.getQuantity();
+
+        // 2) Manager setup and grant UPDATE_ITEM_QUANTITY permission
+        String mgrGuest = userService.enterToSystem().getData();
+        userService.registerUser(mgrGuest, "mgrRev", "pwdR", java.time.LocalDate.now().minusYears(30));
+        String mgrToken = userService.loginUser(mgrGuest, "mgrRev", "pwdR").getData();
+        fixtures.successfulAddManager(ownerToken, mgrToken, shopId, shop.getName(), new java.util.HashSet<>());
+        Response<Void> grantResp = shopService.addShopManagerPermission(
+            ownerToken, shopId, "mgrRev", Permission.UPDATE_ITEM_QUANTITY
+        );
+        assertTrue(grantResp.isOk(), "Granting quantity permission should succeed");
+
+        // 3) Manager updates quantity successfully
+        int newQty = originalQty + 5;
+        Response<Void> updateResp1 = shopService.changeItemQuantityInShop(
+            mgrToken, shopId, itemId, newQty
+        );
+        assertTrue(updateResp1.isOk(), "Manager should be able to update quantity with permission");
+
+        // 4) Owner revokes UPDATE_ITEM_QUANTITY permission
+        Response<Void> revokeResp = shopService.removeShopManagerPermission(
+            ownerToken, shopId, "mgrRev", Permission.UPDATE_ITEM_QUANTITY
+        );
+        assertTrue(revokeResp.isOk(), "Revoking quantity permission should succeed");
+
+        // 5) Manager attempts to update quantity again
+        Response<Void> updateResp2 = shopService.changeItemQuantityInShop(
+            mgrToken, shopId, itemId, originalQty
+        );
+        assertFalse(updateResp2.isOk(), "Manager should no longer be able to update quantity after revocation");
+
+        // 6) Invariants: quantity remains at the value set before revocation
+        Response<java.util.List<com.halilovindustries.backend.Domain.DTOs.ItemDTO>> finalItemsResp = shopService.showShopItems(ownerToken, shopId);
+        assertTrue(finalItemsResp.isOk(), "Fetching items should succeed");
+        com.halilovindustries.backend.Domain.DTOs.ItemDTO finalItem = finalItemsResp.getData().stream()
+            .filter(i -> i.getItemID() == itemId)
+            .findFirst().orElseThrow();
+        assertEquals(newQty, finalItem.getQuantity(), "Item quantity should remain as last authorized update");
     }
 }
